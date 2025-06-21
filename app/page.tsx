@@ -1,6 +1,6 @@
 import { auth, currentUser } from '@clerk/nextjs/server';
 import Image from 'next/image';
-import TestComponent from './test/_components/testComponent';
+import TestComponent from './_components/testComponent';
 
 export default async function Home() {
   const someThing = await auth();
