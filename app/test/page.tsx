@@ -4,7 +4,7 @@ import React from 'react';
 
 async function page() {
   const isAdmin = await checkRole('admin');
-  console.log({ isAdmin });
+  // console.log({ isAdmin });
   if (!isAdmin) {
     redirect('/');
   }
