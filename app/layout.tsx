@@ -7,6 +7,9 @@ import {
   SignedOut,
   UserButton,
 } from '@clerk/nextjs';
+
+import ToasterProvider from '@/components/Providers/toastProvider';
+
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 
@@ -36,6 +39,8 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
+          {' '}
+          <ToasterProvider />
           <header className="flex justify-end items-center p-4 gap-4 h-16">
             <SignedOut>
               <SignInButton />

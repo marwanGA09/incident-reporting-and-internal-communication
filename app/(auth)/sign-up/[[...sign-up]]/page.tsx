@@ -21,6 +21,7 @@ import {
 import { Position } from '@/types/globals';
 // 👇 Import server action via 'use server'
 import { setUserMetadata } from './action';
+import toast from 'react-hot-toast';
 
 export default function CompleteMetadataPage() {
   const router = useRouter();
@@ -37,8 +38,16 @@ export default function CompleteMetadataPage() {
 
   const handleSubmit = () => {
     startTransition(async () => {
-      await setUserMetadata({ role: 'regular', departmentId, position });
-      router.push('/');
+      try {
+        await setUserMetadata({ role: 'regular', departmentId, position });
+        toast.success('Profile setup complete!');
+        router.push('/');
+      } catch (error) {
+        console.error('Error setting user metadata:', error);
+        toast.error(
+          'Failed to complete profile setup. Please try again later.'
+        );
+      }
     });
   };
 
