@@ -68,7 +68,7 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Chats</SidebarGroupLabel>
+          <SidebarGroupLabel>Deparments Groups</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {groupsDeparmentLink.map((item) => (
@@ -83,9 +83,9 @@ export function AppSidebar() {
               ))}
             </SidebarMenu>
           </SidebarGroupContent>
-        </SidebarGroup>
+        </SidebarGroup>{" "}
         <SidebarGroup>
-          <SidebarGroupLabel>Deparments Groups</SidebarGroupLabel>
+          <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {groupsDeparmentLink.map((item) => (
