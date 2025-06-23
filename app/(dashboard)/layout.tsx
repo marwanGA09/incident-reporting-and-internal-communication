@@ -20,11 +20,13 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <main className="w-full h-screen flex flex-col">
-        <div className=" bg-amber-600 h-[80px] flex items-center justify-end  px-6  inset-y-0 w-full z-50 ">
+        <div className="bg-primary-foreground h-[80px] flex items-center justify-end  px-6  inset-y-0 w-full z-50 ">
           <NavigationMenu />
         </div>
-        <SidebarTrigger />
-        <div className="abslute top-[80px] bottom-0 bg-blue-600 flex-grow">
+        <div className=" absolute top-2 z-50">
+          <SidebarTrigger />
+        </div>
+        <div className="abslute top-[80px] bottom-0 flex-grow">
           <h1>sjksf</h1>
           {children}
         </div>
