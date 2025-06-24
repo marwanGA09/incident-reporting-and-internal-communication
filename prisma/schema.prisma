@@ -1,0 +1,102 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Department {
+  id    String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name  String
+  email String?  @unique
+
+  incidents     Incident[]
+  groupMessages GroupMessage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model IncidentCategory {
+  id          String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String   @unique           // e.g., "Technical", "HR"
+  description String?                    // Optional, shown in UI
+  isActive    Boolean  @default(true)    // Admin can disable without deleting
+
+  incidents   Incident[]                 // Relation to incidents using this category
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+
+model Incident {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title           String
+  description     String?
+  location        String?
+  status          IncidentStatus @default(REPORTED)
+
+  // ✅ New relation to category
+  categoryId      String @db.Uuid
+  category        IncidentCategory @relation(fields: [categoryId], references: [id])
+
+  departmentId    String
+  department      Department @relation(fields: [departmentId], references: [id])
+
+  assignedToId    String? // Clerk user ID
+  attachments     Attachment[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Attachment {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  url        String
+  fileName   String?
+  incidentId String
+  incident   Incident @relation(fields: [incidentId], references: [id])
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model DirectMessage {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text       String
+  senderId   String   // Clerk user ID
+  receiverId String   // Clerk user ID
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+model GroupMessage {
+  id           String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text         String
+  senderId     String   // Clerk user ID
+  departmentId String
+
+  department   Department @relation(fields: [departmentId], references: [id])
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+
+enum IncidentStatus {
+  REPORTED
+  IN_REVIEW
+  RESOLVED
+  CLOSED
+}

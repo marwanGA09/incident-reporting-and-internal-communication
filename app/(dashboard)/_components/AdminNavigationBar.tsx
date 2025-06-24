@@ -55,7 +55,7 @@ export function AdminNavigationBar() {
                         id="username-1"
                         name="username"
                         type="email"
-                        defaultValue="it@obn.com"
+                        defaultValue="it@obn.com "
                       />
                     </div>
                   </div>
