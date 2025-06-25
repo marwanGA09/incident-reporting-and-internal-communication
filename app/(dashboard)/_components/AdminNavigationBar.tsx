@@ -1,3 +1,4 @@
+"use client";
 import {
   NavigationMenuItem,
   NavigationMenuLink,
@@ -21,8 +22,29 @@ import {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
+import axios from "axios";
+import { useState } from "react";
 
 export function AdminNavigationBar() {
+  const [data, setData] = useState({
+    name: "",
+    email: null,
+  });
+
+  const handleChange = (e: any) => {
+    const { name, value } = e.target;
+    setData((prevData) => ({ ...prevData, [name]: value }));
+  };
+
+  const handleSubmit = async () => {
+    try {
+      const response = await axios.post("/api/department", data);
+      console.log("✅ Department created:", response.data);
+    } catch (error: any) {
+      console.error("❌ ERROR:", error.response?.data || error.message);
+    }
+  };
+
   return (
     <NavigationMenuPrimitive>
       <NavigationMenuList>
@@ -46,16 +68,22 @@ export function AdminNavigationBar() {
                   </DialogHeader>
                   <div className="grid gap-4">
                     <div className="grid gap-3">
-                      <Label htmlFor="name-1">Deparment name</Label>
-                      <Input id="name-1" name="name" placeholder="IT" />
+                      <Label htmlFor="name">Deparment name</Label>
+                      <Input
+                        id="name"
+                        name="name"
+                        placeholder="IT"
+                        onChange={handleChange}
+                      />
                     </div>
                     <div className="grid gap-3">
-                      <Label htmlFor="username-1">email</Label>
+                      <Label htmlFor="email">email</Label>
                       <Input
-                        id="username-1"
-                        name="username"
+                        id="email"
+                        name="email"
                         type="email"
-                        defaultValue="it@obn.com "
+                        placeholder="it@obn.com "
+                        onChange={handleChange}
                       />
                     </div>
                   </div>
@@ -63,7 +91,9 @@ export function AdminNavigationBar() {
                     <DialogClose asChild>
                       <Button variant="outline">Cancel</Button>
                     </DialogClose>
-                    <Button type="submit">Save changes</Button>
+                    <Button type="submit" onClick={handleSubmit}>
+                      Save changes
+                    </Button>
                   </DialogFooter>
                 </DialogContent>
               </form>
