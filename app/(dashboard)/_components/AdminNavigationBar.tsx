@@ -40,11 +40,12 @@ export function AdminNavigationBar() {
       createDeparment(formData)
         .then(() => {
           formRef.current?.reset();
-          changeDialog(false);
+          console.log("something");
         })
         .catch((err) => {
           console.error("Failed to create department:", err);
         });
+      changeDialog(false);
     });
   }
   return (
