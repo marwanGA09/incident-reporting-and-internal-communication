@@ -3,14 +3,13 @@
 import { PrismaClient } from "@prisma/client";
 const prisma = new PrismaClient();
 // import { prisma } from "@/lib/prisma"; // assumes prisma client is set up
-import { redirect } from "next/navigation";
-export async function createDeparment(formData: FormData) {
+export async function createDepartment(formData: FormData) {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
 
   if (!name) throw new Error("Department name is required");
   console.log({ name, email });
-  console.log("some thing");
+  // console.log("some thing");
   await prisma.department.create({
     data: {
       name,
@@ -19,5 +18,4 @@ export async function createDeparment(formData: FormData) {
   });
 
   // optionally redirect or revalidate
-  redirect("/dashboard"); // or return a success result
 }

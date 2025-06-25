@@ -23,29 +23,30 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 
-import { createDeparment } from "@/app/lib/actions";
-import { useRef, useState, useTransition } from "react";
-
+import { createDepartment } from "@/app/lib/actions";
+import { useState, useTransition } from "react";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
 export function AdminNavigationBar() {
-  const formRef = useRef<HTMLFormElement>(null);
   const [isPending, startTransition] = useTransition();
   const [open, setOpen] = useState(false); // 🔁 Dialog control
-
+  const router = useRouter();
   const changeDialog = (state: boolean) => {
     setOpen(state);
   };
 
   function handleSubmit(formData: FormData) {
     startTransition(() => {
-      createDeparment(formData)
+      createDepartment(formData)
         .then(() => {
-          formRef.current?.reset();
-          console.log("something");
+          toast.success("Department created successfully");
+          changeDialog(false);
+          router.refresh();
         })
         .catch((err) => {
           console.error("Failed to create department:", err);
+          toast.error("Failed to create department");
         });
-      changeDialog(false);
     });
   }
   return (
@@ -70,11 +71,7 @@ export function AdminNavigationBar() {
                     messages.
                   </DialogDescription>
                 </DialogHeader>
-                <form
-                  ref={formRef}
-                  action={handleSubmit}
-                  className="grid gap-4 py-4"
-                >
+                <form action={handleSubmit} className="grid gap-4 py-4">
                   <div className="grid gap-2">
                     <Label htmlFor="name">Department name</Label>
                     <Input id="name" name="name" placeholder="IT" required />

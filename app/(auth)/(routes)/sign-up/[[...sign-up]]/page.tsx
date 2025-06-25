@@ -3,49 +3,49 @@
 // export default function Page() {
 //   return <SignUp />;
 // }
-'use client';
+"use client";
 
-import { useRouter } from 'next/navigation';
-import { useState, useTransition } from 'react';
-import { useUser } from '@clerk/nextjs';
+import { useRouter } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useUser } from "@clerk/nextjs";
 // import { Input } from '@/components/ui/input';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
+import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectItem,
   SelectContent,
-} from '@/components/ui/select';
-import { Position } from '@/types/globals';
+} from "@/components/ui/select";
+import { Position } from "@/types/globals";
 // 👇 Import server action via 'use server'
-import { setUserMetadata } from './action';
-import toast from 'react-hot-toast';
+import { setUserMetadata } from "./action";
+import toast from "react-hot-toast";
 
 export default function CompleteMetadataPage() {
   const router = useRouter();
   const { user } = useUser();
-  const [departmentId, setDepartmentId] = useState('');
-  const [position, setPosition] = useState<Position>('lower'); // Default to 'lower'
+  const [departmentId, setDepartmentId] = useState("");
+  const [position, setPosition] = useState<Position>("lower"); // Default to 'lower'
   const [isPending, startTransition] = useTransition();
 
   const departments = [
-    { id: 'dept-news', name: 'News' },
-    { id: 'dept-tech', name: 'Technology' },
-    { id: 'dept-hr', name: 'Human Resources' },
+    { id: "dept-news", name: "News" },
+    { id: "dept-tech", name: "Technology" },
+    { id: "dept-hr", name: "Human Resources" },
   ];
 
   const handleSubmit = () => {
     startTransition(async () => {
       try {
-        await setUserMetadata({ role: 'regular', departmentId, position });
-        toast.success('Profile setup complete!');
-        router.push('/');
+        await setUserMetadata({ role: "regular", departmentId, position });
+        toast.success("Profile setup complete!");
+        router.push("/");
       } catch (error) {
-        console.error('Error setting user metadata:', error);
+        console.error("Error setting user metadata:", error);
         toast.error(
-          'Failed to complete profile setup. Please try again later.'
+          "Failed to complete profile setup. Please try again later."
         );
       }
     });
@@ -63,7 +63,7 @@ export default function CompleteMetadataPage() {
         <div className="space-y-4">
           <div>
             <Label htmlFor="department">Department</Label>
-            <Select onValueChange={(v) => setDepartmentId(v)}>
+            <Select onValueChange={(v: string) => setDepartmentId(v)}>
               <SelectTrigger id="department">
                 <SelectValue placeholder="Select your department" />
               </SelectTrigger>
@@ -96,7 +96,7 @@ export default function CompleteMetadataPage() {
             onClick={handleSubmit}
             className="w-full"
           >
-            {isPending ? 'Submitting...' : 'Finish Setup'}
+            {isPending ? "Submitting..." : "Finish Setup"}
           </Button>
         </div>
       </div>
