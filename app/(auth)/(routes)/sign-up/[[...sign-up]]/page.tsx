@@ -22,19 +22,25 @@ import { Position } from "@/types/globals";
 // 👇 Import server action via 'use server'
 import { setUserMetadata } from "./action";
 import toast from "react-hot-toast";
+import { PrismaClient } from "@prisma/client";
+const prisma = new PrismaClient();
 
-export default function CompleteMetadataPage() {
+export default async function CompleteMetadataPage() {
   const router = useRouter();
   const { user } = useUser();
   const [departmentId, setDepartmentId] = useState("");
   const [position, setPosition] = useState<Position>("lower"); // Default to 'lower'
   const [isPending, startTransition] = useTransition();
 
-  const departments = [
-    { id: "dept-news", name: "News" },
-    { id: "dept-tech", name: "Technology" },
-    { id: "dept-hr", name: "Human Resources" },
-  ];
+  const departments = await prisma.department.findMany({
+    select: { id: true, name: true },
+  });
+  // console.log({ tryDepartments });
+  // const departments = [
+  //   { id: "dept-news", name: "News" },
+  //   { id: "dept-tech", name: "Technology" },
+  //   { id: "dept-hr", name: "Human Resources" },
+  // ];
 
   const handleSubmit = () => {
     startTransition(async () => {
