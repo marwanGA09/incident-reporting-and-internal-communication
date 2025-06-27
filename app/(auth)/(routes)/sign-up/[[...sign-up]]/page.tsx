@@ -22,8 +22,7 @@ import { Position } from "@/types/globals";
 // 👇 Import server action via 'use server'
 import { setUserMetadata } from "./action";
 import toast from "react-hot-toast";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
+import { prisma } from "@/app/lib/prisma";
 
 export default async function CompleteMetadataPage() {
   const router = useRouter();

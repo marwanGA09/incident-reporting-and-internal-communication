@@ -2,9 +2,7 @@ import * as React from "react";
 
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
-
+import { prisma } from "@/app/lib/prisma";
 export async function DepartmentsScroll() {
   const departmentsObj = await prisma.department.findMany({
     select: { name: true },

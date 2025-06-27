@@ -1,8 +1,6 @@
 // app/lib/actions.ts
 "use server";
-import { PrismaClient } from "@prisma/client";
-const prisma = new PrismaClient();
-// import { prisma } from "@/lib/prisma"; // assumes prisma client is set up
+import { prisma } from "@/app/lib/prisma"; // assumes prisma client is set up
 export async function createDepartment(formData: FormData) {
   const name = formData.get("name") as string;
   const email = formData.get("email") as string;
