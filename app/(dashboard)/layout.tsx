@@ -16,7 +16,7 @@ function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className=" absolute top-2 z-50">
             <SidebarTrigger />
           </div>
-          <div className="absolute top-[80px] bottom-0 flex-grow">
+          <div className="absolute top-[80px] bottom-0 flex-grow w-full">
             {children}
           </div>
         </main>

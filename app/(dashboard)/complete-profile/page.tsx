@@ -5,5 +5,9 @@ export default async function CompleteProfilePage() {
   const departments = await prisma.department.findMany({
     select: { id: true, name: true },
   });
-  return <CompleteMetadataForm departments={departments} />;
+  return (
+    <div className="w-full flex ml-80 mt-40 ">
+      <CompleteMetadataForm departments={departments} />
+    </div>
+  );
 }

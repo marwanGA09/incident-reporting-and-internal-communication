@@ -47,7 +47,7 @@ export default function CompleteMetadataForm({ departments }: any) {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-100 px-4">
+    <div className=" ">
       <div className="bg-white shadow-md rounded-2xl p-8 max-w-md w-full space-y-6">
         <h2 className="text-2xl font-semibold text-center">
           Complete Your Profile
@@ -96,5 +96,5 @@ export default function CompleteMetadataForm({ departments }: any) {
         </div>
       </div>
     </div>
-  );
+  )
 }
