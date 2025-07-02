@@ -1,0 +1,25 @@
+import { prisma } from "@/app/lib/prisma";
+import { IncidentFormSchema } from "@/lib/validation/incidents";
+import { NextResponse } from "next/server";
+
+export async function POST(req: Request) {
+  const body = await req.json();
+  const result = IncidentFormSchema.safeParse(body);
+  console.log({ result });
+  if (!result.success) {
+    return NextResponse.json({ error: result.error }, { status: 400 });
+  }
+  try {
+    const incident = await prisma.incident.create({
+      data: result.data,
+    });
+
+    return NextResponse.json(incident, { status: 201 });
+  } catch (error) {
+    console.log("ERROR", error);
+    return NextResponse.json(
+      { error: "internal server error" },
+      { status: 500 }
+    );
+  }
+}
