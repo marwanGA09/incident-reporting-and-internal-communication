@@ -5,7 +5,8 @@ import { useIncidentFormStore } from "../_components/IncidentFormStore";
 import { Step1Schema } from "@/lib/validation/incidents";
 import { z } from "zod";
 import { useState } from "react";
-import { InputTitle } from "../_components/Input";
+import { InputForm } from "../_components/InputForm";
+import { DescriptionArea } from "../_components/DescriptionArea";
 
 export default function Step1() {
   const router = useRouter();
@@ -28,19 +29,23 @@ export default function Step1() {
   return (
     <div className="max-w-md mx-auto p-4">
       <h1 className="text-xl font-bold mb-4">Step 1: Basic Info</h1>
-      <label>Title</label>
       {/* <input
         className="border p-2 w-full mb-2"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       /> */}
-      <InputTitle value={title} onChange={setTitle} />
-      <label>Description</label>
+      <InputForm label={"Title"} value={title} onChange={setTitle} />
+      <DescriptionArea
+        label="Description"
+        value={description}
+        onChange={setDescription}
+      />
+      {/* <label>Description</label>
       <textarea
         className="border p-2 w-full mb-2"
         value={description}
         onChange={(e) => setDescription(e.target.value)}
-      />
+      /> */}
 
       {errors.length > 0 && (
         <div className="text-red-500">
