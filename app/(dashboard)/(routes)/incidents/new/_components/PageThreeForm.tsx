@@ -74,7 +74,7 @@ function PageThreeForm({
       <Button
         variant={"link"}
         onClick={handleNext}
-        className=" px-4 py-2 rounded mt-4 bg-amber-100"
+        className="self-end px-4 py-2 rounded mt-4 bg-amber-100"
       >
         {isPending ? "Loading..." : "Next"}
       </Button>

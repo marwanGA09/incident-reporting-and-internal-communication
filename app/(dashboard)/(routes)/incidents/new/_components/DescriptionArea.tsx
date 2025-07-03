@@ -11,13 +11,17 @@ export function DescriptionArea({
   onChange: (value: string) => void;
 }) {
   return (
-    <Label>
-      {label}
+    <div className="flex items-start pt-3 gap-2">
+      <Label className="pt-3" htmlFor="textarea">
+        {label}
+      </Label>
       <Textarea
+        id="textarea"
+        rows={5}
         value={value}
         placeholder="Description"
         onChange={(e) => onChange(e.target.value)}
       />
-    </Label>
+    </div>
   );
 }

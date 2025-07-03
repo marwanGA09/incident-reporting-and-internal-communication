@@ -13,9 +13,10 @@ export function InputForm({
   onChange: (value: string) => void;
 }) {
   return (
-    <Label>
+    <Label className="mt-4">
       {label}
       <Input
+        className="ml-4"
         value={value}
         type="text"
         placeholder={placeholder}

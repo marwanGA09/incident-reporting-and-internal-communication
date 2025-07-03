@@ -27,7 +27,7 @@ export default function SelectItems({
 }) {
   return (
     <Select value={value} onValueChange={onChange} disabled={disabled}>
-      <SelectTrigger className="w-[180px]">
+      <SelectTrigger className="w-11/12 ml-auto mt-3">
         <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>

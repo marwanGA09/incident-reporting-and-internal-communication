@@ -32,7 +32,7 @@ export default function Step1() {
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
+    <div className="flex flex-col max-w-xl mx-auto mt-6 px-6 py-8 bg-white shadow-lg rounded-lg">
       <h1 className="text-xl font-bold mb-4">Step 1: Basic Info</h1>
       {/* <input
         className="border p-2 w-full mb-2"
@@ -68,7 +68,7 @@ export default function Step1() {
       <Button
         variant={"link"}
         onClick={handleNext}
-        className=" px-4 py-2 rounded mt-4 bg-amber-100"
+        className="self-end px-4 py-2 rounded mt-4 bg-amber-100"
       >
         {isPending ? "Loading..." : "Next"}
       </Button>
