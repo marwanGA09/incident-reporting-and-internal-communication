@@ -12,29 +12,30 @@ import {
 import { useIncidentFormStore } from "./IncidentFormStore";
 import { useState } from "react";
 
-export default function SelectCategoryClient({
-  categories,
+export default function SelectItems({
+  items,
+  label,
   value,
+  disabled = false,
   onChange,
 }: {
   value: string;
+  label: string;
+  disabled?: boolean;
   onChange: (value: string) => void;
-  categories: { id: string; name: string }[];
+  items: { id: string; name: string }[];
 }) {
-  // const { data, setData } = useIncidentFormStore();
-  // const [categoryId, setCategoryId] = useState(data.categoryId || "");
-  console.log("SOme things");
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select value={value} onValueChange={onChange} disabled={disabled}>
       <SelectTrigger className="w-[180px]">
-        <SelectValue placeholder="Select a category" />
+        <SelectValue placeholder={label} />
       </SelectTrigger>
       <SelectContent>
         <SelectGroup>
-          <SelectLabel>Incident Category</SelectLabel>
-          {categories.map((cate) => (
-            <SelectItem key={cate.id} value={cate.id}>
-              {cate.name}
+          <SelectLabel>{label}</SelectLabel>
+          {items.map((item) => (
+            <SelectItem key={item.id} value={item.id}>
+              {item.name}
             </SelectItem>
           ))}
         </SelectGroup>

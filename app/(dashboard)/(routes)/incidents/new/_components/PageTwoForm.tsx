@@ -7,7 +7,8 @@ import { z } from "zod";
 import { Step2Schema } from "@/lib/validation/incidents";
 import { InputForm } from "./InputForm";
 // import { SelectCategory } from "./SelectCategory";
-import SelectCategoryClient from "./SelectCategoryClient";
+import { Button } from "@/components/ui/button";
+import SelectItems from "./SelectItems";
 
 function PageTwoForm({
   categories,
@@ -33,11 +34,17 @@ function PageTwoForm({
   return (
     <>
       {" "}
-      <InputForm label="Location" value={location} onChange={setLocation} />
-      <SelectCategoryClient
+      <InputForm
+        placeholder="Adama, oromia..."
+        label="Location"
+        value={location}
+        onChange={setLocation}
+      />
+      <SelectItems
+        label="Select Incident Category"
         value={categoryId}
         onChange={setCategoryId}
-        categories={categories}
+        items={categories}
       />
       {errors.length > 0 && (
         <div className="text-red-500">
@@ -46,12 +53,13 @@ function PageTwoForm({
           ))}
         </div>
       )}
-      <button
+      <Button
+        variant={"link"}
         onClick={handleNext}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        className=" px-4 py-2 rounded mt-4 bg-amber-100"
       >
         Next
-      </button>
+      </Button>
     </>
   );
 }

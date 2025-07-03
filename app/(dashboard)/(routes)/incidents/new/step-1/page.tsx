@@ -7,6 +7,7 @@ import { z } from "zod";
 import { useState } from "react";
 import { InputForm } from "../_components/InputForm";
 import { DescriptionArea } from "../_components/DescriptionArea";
+import { Button } from "@/components/ui/button";
 
 export default function Step1() {
   const router = useRouter();
@@ -34,7 +35,12 @@ export default function Step1() {
         value={title}
         onChange={(e) => setTitle(e.target.value)}
       /> */}
-      <InputForm label={"Title"} value={title} onChange={setTitle} />
+      <InputForm
+        placeholder="Add title of incident here"
+        label={"Title"}
+        value={title}
+        onChange={setTitle}
+      />
       <DescriptionArea
         label="Description"
         value={description}
@@ -55,12 +61,13 @@ export default function Step1() {
         </div>
       )}
 
-      <button
+      <Button
+        variant={"link"}
         onClick={handleNext}
-        className="bg-blue-600 text-white px-4 py-2 rounded"
+        className=" px-4 py-2 rounded mt-4 bg-amber-100"
       >
         Next
-      </button>
+      </Button>
     </div>
   );
 }
