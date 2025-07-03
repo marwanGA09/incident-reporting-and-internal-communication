@@ -47,7 +47,7 @@ const groupsDeparmentLink = [
   },
   {
     title: "Report Incidents",
-    url: "/incidents/new",
+    url: "/incidents/new/step-1",
     icon: ShieldPlusIcon,
   },
 ];
