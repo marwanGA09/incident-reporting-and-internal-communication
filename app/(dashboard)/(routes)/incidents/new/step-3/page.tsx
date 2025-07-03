@@ -10,7 +10,9 @@ export default async function Step3() {
 
   return (
     <div className="max-w-md mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Step 2: Location & Category</h1>
+      <h1 className="text-xl font-bold mb-4">
+        Step 3: Department & Assignment
+      </h1>
 
       <PageThreeForm departments={departments} />
     </div>

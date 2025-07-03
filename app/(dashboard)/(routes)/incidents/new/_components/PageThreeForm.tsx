@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import React, { useState } from "react";
-import { useIncidentFormStore } from "./IncidentFormStore";
+import React, { useState, useTransition } from "react";
+import { useIncidentFormStore, useIncidentUIForm } from "./IncidentFormStore";
 import { z } from "zod";
 import { Step3Schema } from "@/lib/validation/incidents";
 import { Button } from "@/components/ui/button";
@@ -15,18 +15,27 @@ function PageThreeForm({
 }) {
   const router = useRouter();
   const { data, setData } = useIncidentFormStore();
+  const { setUiData } = useIncidentUIForm();
   const [errors, setErrors] = useState<z.ZodIssue[]>([]);
 
   const [departmentId, setDepartmentId] = useState(data.departmentId || "");
   const [assignedToId, setAssignedToId] = useState(data.assignedToId || "");
+
+  const [isPending, startTransition] = useTransition();
   const handleNext = () => {
     const result = Step3Schema.safeParse({ departmentId, assignedToId });
     if (!result.success) {
       setErrors(result.error.issues);
       return;
     }
+    const departmentName = departments.find(
+      (dep) => dep.id === departmentId
+    )?.name;
     setData({ departmentId, assignedToId });
-    router.push("/incidents/new/review");
+    setUiData({ departmentName });
+    startTransition(() => {
+      router.push("/incidents/new/review");
+    });
   };
 
   if (errors.length > 0) {
@@ -40,21 +49,21 @@ function PageThreeForm({
         value={location}
         onChange={setLocation}
       /> */}
-      <div>
-        <SelectItems
-          disabled={true}
-          label="Assign To"
-          value={assignedToId}
-          onChange={setAssignedToId}
-          items={[]}
-        />
-      </div>
+
       <SelectItems
         label="Select Department"
         value={departmentId}
         onChange={setDepartmentId}
         items={departments}
       />
+      <SelectItems
+        disabled={true}
+        label="Assign To"
+        value={assignedToId}
+        onChange={setAssignedToId}
+        items={[]}
+      />
+
       {errors.length > 0 && (
         <div className="text-red-500">
           {errors.map((err) => (
@@ -67,7 +76,7 @@ function PageThreeForm({
         onClick={handleNext}
         className=" px-4 py-2 rounded mt-4 bg-amber-100"
       >
-        Next
+        {isPending ? "Loading..." : "Next"}
       </Button>
     </>
   );

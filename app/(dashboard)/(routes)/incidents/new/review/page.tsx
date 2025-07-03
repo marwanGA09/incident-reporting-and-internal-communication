@@ -1,23 +1,99 @@
+// "use client";
+// import {
+//   useIncidentFormStore,
+//   useIncidentUIForm,
+// } from "../_components/IncidentFormStore";
+// import { IncidentFormSchema } from "@/lib/validation/incidents";
+// import { useRouter } from "next/navigation";
+// import { useState, useTransition } from "react";
+
+// export default function Review() {
+//   const router = useRouter();
+//   const { data, clear } = useIncidentFormStore();
+//   const { uiData, clearUI } = useIncidentUIForm();
+//   console.log();
+//   const [error, setError] = useState<string | null>(null);
+//   const [success, setSuccess] = useState(false);
+
+//   const [isPending, startTransition] = useTransition();
+
+//   const handleSubmit = async () => {
+//     const result = IncidentFormSchema.safeParse(data);
+//     console.log({ result });
+//     if (!result.success) {
+//       setError("Form has invalid or incomplete data");
+//       return;
+//     }
+//     // app/api/incidents/route.ts
+//     try {
+//       const res = await fetch("/api/incidents", {
+//         method: "POST",
+//         body: JSON.stringify(result.data),
+//       });
+//       if (!res.ok) throw new Error("API error");
+
+//       clear();
+//       setSuccess(true);
+//       startTransition(() => {
+//         router.push("/incidents"); // redirect after success
+//       });
+//     } catch (e) {
+//       console.log("ERROR", e);
+//       setError("Failed to submit incident");
+//     }
+//   };
+
+//   return (
+//     <div className="max-w-md mx-auto p-4">
+//       <h1 className="text-xl font-bold mb-4">Review & Submit</h1>
+
+//       <pre className="bg-gray-100 p-4 rounded mb-4">
+//         {JSON.stringify(data, null, 2)}
+//       </pre>
+
+//       {error && <div className="text-red-500">{error}</div>}
+//       {success && (
+//         <div className="text-green-600">Incident submitted successfully!</div>
+//       )}
+
+//       <button
+//         onClick={handleSubmit}
+//         className="bg-green-600 text-white px-4 py-2 rounded"
+//       >
+//         {isPending ? "Submitting ..." : "  Submit"}
+//       </button>
+//     </div>
+//   );
+// }
+
 "use client";
-import { useIncidentFormStore } from "../_components/IncidentFormStore";
+
+import {
+  useIncidentFormStore,
+  useIncidentUIForm,
+} from "../_components/IncidentFormStore";
 import { IncidentFormSchema } from "@/lib/validation/incidents";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { Button } from "@/components/ui/button";
+import toast from "react-hot-toast";
 
 export default function Review() {
   const router = useRouter();
   const { data, clear } = useIncidentFormStore();
+  const { uiData, clearUI } = useIncidentUIForm();
+
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isPending, startTransition] = useTransition();
 
   const handleSubmit = async () => {
     const result = IncidentFormSchema.safeParse(data);
-    console.log({ result });
     if (!result.success) {
       setError("Form has invalid or incomplete data");
       return;
     }
-    // app/api/incidents/route.ts
+
     try {
       const res = await fetch("/api/incidents", {
         method: "POST",
@@ -26,33 +102,87 @@ export default function Review() {
       if (!res.ok) throw new Error("API error");
 
       clear();
+      clearUI();
       setSuccess(true);
-      router.push("/incidents"); // redirect after success
+      startTransition(() => {
+        router.push("/incidents");
+      });
+      toast.success(" Incident submitted successfully!");
     } catch (e) {
-      console.log("ERROR", e);
+      console.error("Submission Error", e);
       setError("Failed to submit incident");
     }
   };
 
   return (
-    <div className="max-w-md mx-auto p-4">
-      <h1 className="text-xl font-bold mb-4">Review & Submit</h1>
+    <div className="max-w-xl mx-auto mt-6 px-6 py-8 bg-white shadow-lg rounded-lg">
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        Review Your Incident Report
+      </h1>
 
-      <pre className="bg-gray-100 p-4 rounded mb-4">
-        {JSON.stringify(data, null, 2)}
-      </pre>
+      <div className="space-y-4">
+        <Section title="Title" value={data.title} />
+        <Section title="Description" value={data.description} />
+        <Section title="Location" value={data.location} />
 
-      {error && <div className="text-red-500">{error}</div>}
-      {success && (
-        <div className="text-green-600">Incident submitted successfully!</div>
+        <Section
+          title="Category"
+          value={uiData?.categoryName}
+          // subValue={data.categoryId}
+        />
+
+        <Section
+          title="Department"
+          value={uiData?.departmentName}
+          // subValue={data.departmentId}
+        />
+
+        <Section
+          title="Assigned To"
+          value={uiData?.assignedToName || "Not Assigned"}
+          // subValue={data.assignedToId}
+        />
+      </div>
+
+      {error && (
+        <div className="mt-4 text-red-600 font-medium border border-red-300 bg-red-50 p-3 rounded">
+          {error}
+        </div>
       )}
 
-      <button
-        onClick={handleSubmit}
-        className="bg-green-600 text-white px-4 py-2 rounded"
-      >
-        Submit
-      </button>
+      {success && (
+        <div className="mt-4 text-green-700 font-medium border border-green-300 bg-green-50 p-3 rounded">
+          Incident submitted successfully!
+        </div>
+      )}
+
+      <div className="mt-6 flex justify-center">
+        <Button
+          onClick={handleSubmit}
+          disabled={isPending}
+          className="bg-green-600 hover:bg-green-700 text-white px-6 py-2 rounded shadow"
+        >
+          {isPending ? "Submitting..." : "Submit Incident"}
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function Section({
+  title,
+  value,
+}: {
+  title: string;
+  value?: string;
+  subValue?: string;
+}) {
+  return (
+    <div className="border-b pb-3">
+      <h2 className="text-lg font-semibold">{title}</h2>
+      <p className="text-gray-800">
+        {value || <span className="text-gray-400">Not provided</span>}
+      </p>
     </div>
   );
 }

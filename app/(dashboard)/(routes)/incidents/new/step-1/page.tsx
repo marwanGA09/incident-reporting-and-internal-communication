@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useIncidentFormStore } from "../_components/IncidentFormStore";
 import { Step1Schema } from "@/lib/validation/incidents";
 import { z } from "zod";
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { InputForm } from "../_components/InputForm";
 import { DescriptionArea } from "../_components/DescriptionArea";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,8 @@ export default function Step1() {
   const [title, setTitle] = useState(data.title || "");
   const [description, setDescription] = useState(data.description || "");
 
+  const [isPending, startTransition] = useTransition();
+
   const handleNext = () => {
     const result = Step1Schema.safeParse({ title, description });
     if (!result.success) {
@@ -24,7 +26,9 @@ export default function Step1() {
       return;
     }
     setData({ title, description });
-    router.push("/incidents/new/step-2");
+    startTransition(() => {
+      router.push("/incidents/new/step-2");
+    });
   };
 
   return (
@@ -66,7 +70,7 @@ export default function Step1() {
         onClick={handleNext}
         className=" px-4 py-2 rounded mt-4 bg-amber-100"
       >
-        Next
+        {isPending ? "Loading..." : "Next"}
       </Button>
     </div>
   );
