@@ -71,13 +71,25 @@ function PageThreeForm({
           ))}
         </div>
       )}
-      <Button
-        variant={"link"}
-        onClick={handleNext}
-        className="self-end px-4 py-2 rounded mt-4 bg-amber-100"
-      >
-        {isPending ? "Loading..." : "Next"}
-      </Button>
+      <div className="flex justify-end items-center gap-2.5 mt-3">
+        <Button
+          // onClick={handleSubmit}
+          onClick={() => {
+            router.back();
+          }}
+          disabled={isPending}
+          className="bg-slate-300 hover:bg-slate-400 text-black px-6 py-2 rounded shadow"
+        >
+          {isPending ? "Edit..." : "Edit"}
+        </Button>
+        <Button
+          variant={"link"}
+          onClick={handleNext}
+          className=" bg-green-500 hover:bg-green-700 text-white  px-6 py-2 rounded shadow"
+        >
+          {isPending ? "Loading..." : "Next"}
+        </Button>
+      </div>
     </>
   );
 }

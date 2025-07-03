@@ -7,7 +7,7 @@ import UserMetadataGuard from "../_components/UserMetadataGuard";
 function DashboardLayout({ children }: { children: React.ReactNode }) {
   return (
     <UserMetadataGuard>
-      <SidebarProvider>
+      <SidebarProvider defaultOpen={true}>
         <AppSidebar />
         <main className="w-full h-screen flex flex-col">
           <div className="bg-primary-foreground h-[80px] flex items-center justify-end  px-6  inset-y-0 w-full z-50 ">

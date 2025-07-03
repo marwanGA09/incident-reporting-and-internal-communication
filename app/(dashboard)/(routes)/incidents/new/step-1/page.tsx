@@ -68,7 +68,7 @@ export default function Step1() {
       <Button
         variant={"link"}
         onClick={handleNext}
-        className="self-end px-4 py-2 rounded mt-4 bg-amber-100"
+        className="self-end bg-green-500 hover:bg-green-700 text-white  px-6 py-2 mt-3 rounded shadow"
       >
         {isPending ? "Loading..." : "Next"}
       </Button>

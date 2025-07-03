@@ -88,7 +88,17 @@ export default function Review() {
         </div>
       )}
 
-      <div className="mt-6 flex justify-center">
+      <div className="mt-6 flex justify-center gap-2.5">
+        <Button
+          // onClick={handleSubmit}
+          onClick={() => {
+            router.back();
+          }}
+          disabled={isPending}
+          className="bg-slate-300 hover:bg-slate-400 text-black px-6 py-2 rounded shadow"
+        >
+          {isPending ? "Edit..." : "Edit"}
+        </Button>
         <Button
           onClick={handleSubmit}
           disabled={isPending}
