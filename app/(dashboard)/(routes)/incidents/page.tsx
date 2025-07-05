@@ -67,7 +67,7 @@ export default async function IncidentsPage() {
   }
 
   return (
-    <div className="container mx-auto py-8">
+    <div className="container p-8">
       <h1 className="text-3xl font-bold mb-6">Incident Reports</h1>
       <IncidentsList incidents={incidents} />
     </div>

@@ -10,19 +10,33 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
 
+function getBadgeVariantForStatus(status: string) {
+  switch (status) {
+    case "REPORTED":
+      return "reported";
+    case "IN_REVIEW":
+      return "inReview";
+    case "RESOLVED":
+      return "resolved";
+    case "CLOSED":
+      return "closed";
+    default:
+      return "default";
+  }
+}
+
 export default function IncidentsList({ incidents }: { incidents: any[] }) {
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-x-auto">
       {incidents.map((incident) => (
-        <Card key={incident.id} className="hover:shadow-lg transition-shadow">
+        <Card
+          key={incident.id}
+          className="rounded-2xl border border-muted bg-background shadow-sm hover:shadow-lg   transition-shadow"
+        >
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               {incident.title}
-              <Badge
-                variant={
-                  incident.status === "RESOLVED" ? "default" : "destructive"
-                }
-              >
+              <Badge variant={getBadgeVariantForStatus(incident.status)}>
                 {incident.status}
               </Badge>
             </CardTitle>
