@@ -9,6 +9,10 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
+import { SquarePenIcon } from "lucide-react";
+import { currentUser } from "@clerk/nextjs/server";
+import { useUser } from "@clerk/nextjs";
+import { IncidentSkeleton } from "./IncidentSkeleton";
 
 function getBadgeVariantForStatus(status: string) {
   switch (status) {
@@ -26,6 +30,13 @@ function getBadgeVariantForStatus(status: string) {
 }
 
 export default function IncidentsList({ incidents }: { incidents: any[] }) {
+  const { isLoaded, user } = useUser();
+  console.log({ isLoaded, user });
+  console.log({ ggg: user?.publicMetadata });
+
+  if (!isLoaded) {
+    return <IncidentSkeleton />;
+  }
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-x-auto">
       {incidents.map((incident) => (
@@ -37,11 +48,14 @@ export default function IncidentsList({ incidents }: { incidents: any[] }) {
             <CardTitle className="flex justify-between items-center">
               {incident.title}
               <Badge variant={getBadgeVariantForStatus(incident.status)}>
-                {incident.status}
+                <span>{incident.status}</span>
+                {user?.publicMetadata.position === "higher" && (
+                  <SquarePenIcon />
+                )}
               </Badge>
             </CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
-              Reported {formatDistanceToNow(new Date(incident.createdAt))} ago
+              Reported {formatDistanceToNow(new Date(incident.createdAt))} ago{" "}
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">

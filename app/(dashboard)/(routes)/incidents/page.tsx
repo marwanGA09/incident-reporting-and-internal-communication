@@ -38,7 +38,7 @@
 import { prisma } from "@/app/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import IncidentsList from "./IncidentsList";
+import IncidentsList from "./_components/IncidentsList";
 
 export default async function IncidentsPage() {
   const user = await currentUser();

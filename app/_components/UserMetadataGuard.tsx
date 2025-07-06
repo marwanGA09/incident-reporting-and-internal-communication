@@ -2,7 +2,7 @@
 
 import { useUser } from "@clerk/nextjs";
 import { useRouter, usePathname } from "next/navigation";
-import { ReactNode, useEffect } from "react";
+import { useEffect } from "react";
 
 export default function UserMetadataGuard({
   children,
