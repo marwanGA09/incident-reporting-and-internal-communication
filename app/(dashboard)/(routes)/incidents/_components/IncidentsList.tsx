@@ -9,10 +9,9 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { formatDistanceToNow } from "date-fns";
-import { SquarePenIcon } from "lucide-react";
-import { currentUser } from "@clerk/nextjs/server";
 import { useUser } from "@clerk/nextjs";
 import { IncidentSkeleton } from "./IncidentSkeleton";
+import { Dropdown } from "./DropDown";
 
 function getBadgeVariantForStatus(status: string) {
   switch (status) {
@@ -31,8 +30,6 @@ function getBadgeVariantForStatus(status: string) {
 
 export default function IncidentsList({ incidents }: { incidents: any[] }) {
   const { isLoaded, user } = useUser();
-  console.log({ isLoaded, user });
-  console.log({ ggg: user?.publicMetadata });
 
   if (!isLoaded) {
     return <IncidentSkeleton />;
@@ -50,7 +47,7 @@ export default function IncidentsList({ incidents }: { incidents: any[] }) {
               <Badge variant={getBadgeVariantForStatus(incident.status)}>
                 <span>{incident.status}</span>
                 {user?.publicMetadata.position === "higher" && (
-                  <SquarePenIcon />
+                  <Dropdown status={incident.status} incidentId={incident.id} />
                 )}
               </Badge>
             </CardTitle>
