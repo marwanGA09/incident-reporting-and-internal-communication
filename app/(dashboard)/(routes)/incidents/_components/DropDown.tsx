@@ -15,6 +15,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { SquarePenIcon } from "lucide-react";
 import { useUser } from "@clerk/nextjs";
+import { useRouter } from "next/navigation";
 
 export function Dropdown({
   status,
@@ -23,19 +24,19 @@ export function Dropdown({
   status: string;
   incidentId: string;
 }) {
-  const { user } = useUser();
+  const router = useRouter();
   const handleValueChange = async (value: string) => {
     const result = await axios.patch(`/api/incidents/${incidentId}/status`, {
       status: value,
     });
-    user?.reload();
+    router.refresh();
   };
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="outline">
+        <span className="bg-inherit border-0 hover:bg-inherit">
           <SquarePenIcon />
-        </Button>
+        </span>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56">
         <DropdownMenuLabel>Incident Status</DropdownMenuLabel>

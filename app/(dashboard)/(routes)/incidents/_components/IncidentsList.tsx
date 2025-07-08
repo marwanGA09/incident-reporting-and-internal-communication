@@ -44,7 +44,10 @@ export default function IncidentsList({ incidents }: { incidents: any[] }) {
           <CardHeader>
             <CardTitle className="flex justify-between items-center">
               {incident.title}
-              <Badge variant={getBadgeVariantForStatus(incident.status)}>
+              <Badge
+                variant={getBadgeVariantForStatus(incident.status)}
+                className="px-4 py-2"
+              >
                 <span>{incident.status}</span>
                 {user?.publicMetadata.position === "higher" && (
                   <Dropdown status={incident.status} incidentId={incident.id} />
