@@ -9,8 +9,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useIncidentFormStore } from "./IncidentFormStore";
-import { useState } from "react";
 
 export default function SelectItems({
   items,

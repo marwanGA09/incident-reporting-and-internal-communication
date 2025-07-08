@@ -8,28 +8,21 @@ import { clerkClient } from "@/lib/clerkClient";
 export default async function IncidentsPage() {
   const user = await currentUser();
 
-  if (!user?.id) {
+  if (!user) {
     redirect("/");
   }
 
   const currentUserRole = user.publicMetadata.role;
   const currentUserDepId = user.publicMetadata.departmentId;
 
-  let incidents;
-  if (currentUserRole === "admin") {
-    incidents = await prisma.incident.findMany({
-      include: { category: true, department: true },
-      orderBy: { createdAt: "desc" },
-    });
-  } else {
-    incidents = await prisma.incident.findMany({
-      where: {
-        departmentId: String(currentUserDepId),
-      },
-      include: { category: true, department: true },
-      orderBy: { createdAt: "desc" },
-    });
-  }
+  const incidents = await prisma.incident.findMany({
+    where:
+      currentUserRole === "admin"
+        ? {}
+        : { departmentId: String(currentUserDepId) },
+    include: { category: true, department: true },
+    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
+  });
 
   const { data } = await clerkClient.users.getUserList({
     orderBy: "-created_at",
