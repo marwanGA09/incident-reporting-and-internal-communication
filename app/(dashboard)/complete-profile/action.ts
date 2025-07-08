@@ -1,11 +1,7 @@
 "use server";
 
+import { clerkClient } from "@/lib/clerkClient";
 import { auth } from "@clerk/nextjs/server";
-import { createClerkClient } from "@clerk/backend";
-
-const clerkClient = createClerkClient({
-  secretKey: process.env.CLERK_SECRET_KEY,
-});
 
 type MetadataInput = {
   role: "admin" | "regular";

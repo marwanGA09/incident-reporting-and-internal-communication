@@ -13,8 +13,8 @@ import { useUser } from "@clerk/nextjs";
 import { IncidentSkeleton } from "./IncidentSkeleton";
 import { Dropdown } from "./DropDown";
 import SelectItems from "../new/_components/SelectItems";
-import { useState } from "react";
-import { Department, IncidentCategory } from "@prisma/client";
+import axios from "axios";
+import { useRouter } from "next/navigation";
 
 function getBadgeVariantForStatus(status: string) {
   switch (status) {
@@ -41,8 +41,12 @@ function IncidentItem({
   currentUser: any;
   users: { name: string; id: string }[];
 }) {
-  const [userId, setUserId] = useState(incident.assignedToId || "");
-  console.log({ userId });
+  const router = useRouter();
+  const handleAssign = async (userId: string, id: string) => {
+    const assign = await axios.patch("api/incidents", { userId, id });
+    router.refresh();
+  };
+
   return (
     <Card
       key={incident.id}
@@ -81,14 +85,18 @@ function IncidentItem({
 
         {incident.assignedToId ? (
           <div className="text-sm text-muted-foreground">
-            <strong>Assigned to:</strong> {incident.assignedToId}
+            <strong>Assigned to:</strong>{" "}
+            {users.find((user) => user.id == incident.assignedToId)?.name}
           </div>
         ) : (
           <SelectItems
             label="Assign to Staff"
-            value={userId}
+            value={incident.assignedToId}
             items={users}
-            onChange={setUserId}
+            onChange={(userId) => {
+              handleAssign(userId, incident.id);
+            }}
+            // disabled={currentUser.publicMetadata.role === "admin"}
           />
         )}
       </CardContent>

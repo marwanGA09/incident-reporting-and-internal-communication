@@ -23,3 +23,21 @@ export async function POST(req: Request) {
     );
   }
 }
+
+export async function PATCH(req: Request) {
+  const { id, userId } = await req.json();
+  try {
+    const incident = await prisma.incident.update({
+      where: { id },
+      data: { assignedToId: userId },
+    });
+
+    return NextResponse.json(incident, { status: 201 });
+  } catch (error) {
+    console.log("ERROR", error);
+    return NextResponse.json(
+      { error: "internal server error" },
+      { status: 500 }
+    );
+  }
+}

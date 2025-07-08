@@ -1,9 +1,9 @@
 import { prisma } from "@/app/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
-import { createClerkClient } from "@clerk/backend";
 
 import { redirect } from "next/navigation";
 import IncidentsList from "./_components/IncidentsList";
+import { clerkClient } from "@/lib/clerkClient";
 
 export default async function IncidentsPage() {
   const user = await currentUser();
@@ -30,32 +30,36 @@ export default async function IncidentsPage() {
       orderBy: { createdAt: "desc" },
     });
   }
-  const clerkClient = createClerkClient({
-    secretKey: process.env.CLERK_SECRET_KEY,
-  });
 
-  const { data, totalCount } = await clerkClient.users.getUserList({
+  const { data } = await clerkClient.users.getUserList({
     orderBy: "-created_at",
     limit: 500,
   });
 
-  const users = data
-    .filter((user) => user.publicMetadata.departmentId === currentUserDepId)
-    .map((user) => {
-      return { name: user?.fullName || "", id: user.id };
-    });
+  const users =
+    currentUserRole === "admin"
+      ? data.map((user) => {
+          return {
+            name:
+              `${user?.fullName} (${user?.primaryEmailAddress?.emailAddress})` ||
+              "",
+            id: user.id,
+          };
+        })
+      : data
+          .filter(
+            (user) => user.publicMetadata.departmentId === currentUserDepId
+          )
+          .map((user) => {
+            return {
+              name:
+                `${user?.fullName} (${user?.primaryEmailAddress?.emailAddress})` ||
+                "",
+              id: user.id,
+            };
+          });
   console.log({ users });
 
-  // const onAssignUser = async (incidentId: string, userId: string) => {
-  //   await prisma.incident.update({
-  //     where: {
-  //       id: incidentId,
-  //     },
-  //     data: {
-  //       assignedToId: userId,
-  //     },
-  //   });
-  // };
   return (
     <div className="container p-8">
       <h1 className="text-3xl font-bold mb-6">Incident Reports</h1>
