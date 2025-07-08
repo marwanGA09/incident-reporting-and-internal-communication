@@ -14,23 +14,19 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { SquarePenIcon } from "lucide-react";
-import { useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 
 export function Dropdown({
   status,
   incidentId,
+  onValueChange,
 }: {
   status: string;
   incidentId: string;
+  onValueChange: (status: string, incidentId: string) => void;
 }) {
   const router = useRouter();
-  const handleValueChange = async (value: string) => {
-    const result = await axios.patch(`/api/incidents/${incidentId}/status`, {
-      status: value,
-    });
-    router.refresh();
-  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -43,7 +39,9 @@ export function Dropdown({
         <DropdownMenuSeparator />
         <DropdownMenuRadioGroup
           value={status}
-          onValueChange={handleValueChange}
+          onValueChange={(status) => {
+            onValueChange(status, incidentId);
+          }}
         >
           <DropdownMenuRadioItem value="REPORTED">
             Reported
