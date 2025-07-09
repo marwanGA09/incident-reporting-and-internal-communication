@@ -51,15 +51,28 @@ function IncidentItem({
       router.refresh();
     });
   };
-
-  const handleValueChange = async (value: string, id: string) => {
-    startTransition(async () => {
-      const result = await axios.patch(`/api/incidents/${id}/status`, {
-        status: value,
+  const handleSubmitNote = async (
+    note: string,
+    incidentId: any,
+    selectedStatus: any,
+    userId: any
+  ) => {
+    try {
+      console.log({ note, incidentId, selectedStatus, userId });
+      startTransition(async () => {
+        await axios.patch("/api/incidents", {
+          id: incidentId,
+          status: selectedStatus,
+          note,
+          userId,
+        });
+        router.refresh();
       });
-      router.refresh();
-    });
+    } catch (err) {
+      console.error("Status change failed", err);
+    }
   };
+
   return (
     <Card
       key={incident.id}
@@ -77,7 +90,14 @@ function IncidentItem({
               <Dropdown
                 status={incident.status}
                 incidentId={incident.id}
-                // onValueChange={handleValueChange}
+                handleSubmitNote={(note: string, selectedStatus: string) =>
+                  handleSubmitNote(
+                    note,
+                    incident.id,
+                    selectedStatus,
+                    currentUser?.id
+                  )
+                }
               />
             )}
           </Badge>
@@ -113,10 +133,10 @@ function IncidentItem({
             onChange={(userId) => {
               handleAssign(userId, incident.id);
             }}
-            // disabled={
-            //   currentUser.publicMetadata.role === "admin" ||
-            //   currentUser.publicMetadata.position !== "lower"
-            // }
+            disabled={
+              currentUser.publicMetadata.role === "admin" ||
+              currentUser.publicMetadata.position !== "lower"
+            }
           />
         )}
       </CardContent>

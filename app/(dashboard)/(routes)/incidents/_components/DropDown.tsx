@@ -80,34 +80,17 @@ import { useUser } from "@clerk/nextjs";
 export function Dropdown({
   status,
   incidentId,
+  handleSubmitNote,
 }: {
   status: string;
   incidentId: string;
+  handleSubmitNote: (note: string, selectedStatus: string) => void;
 }) {
-  const router = useRouter();
   const { user } = useUser();
-  const [isPending, startTransition] = React.useTransition();
   const [selectedStatus, setSelectedStatus] = React.useState<string | null>(
     null
   );
   const [dialogOpen, setDialogOpen] = React.useState(false);
-
-  const handleSubmitNote = async (note: string) => {
-    try {
-      startTransition(async () => {
-        await axios.patch("/api/incidents", {
-          id: incidentId,
-          status: selectedStatus,
-          note,
-          userId: user?.id,
-        });
-        setDialogOpen(false);
-        router.refresh();
-      });
-    } catch (err) {
-      console.error("Status change failed", err);
-    }
-  };
 
   const handleStatusChange = (newStatus: string) => {
     if (newStatus === status) return; // no change
@@ -148,11 +131,13 @@ export function Dropdown({
 
       {selectedStatus && (
         <StatusNoteDialog
-          isPending={isPending}
           open={dialogOpen}
           status={selectedStatus}
           onClose={() => setDialogOpen(false)}
-          onSubmit={handleSubmitNote}
+          onSubmit={(note) => {
+            handleSubmitNote(note, selectedStatus);
+            setDialogOpen(false);
+          }}
         />
       )}
     </>
