@@ -25,14 +25,28 @@ export async function POST(req: Request) {
 }
 
 export async function PATCH(req: Request) {
-  const { id, userId } = await req.json();
+  const { id, status, note, userId } = await req.json();
   try {
-    const incident = await prisma.incident.update({
+    // const incident = await prisma.incident.update({
+    //   where: { id },
+    //   data: { assignedToId: userId },
+    // });
+
+    const updated = await prisma.incident.update({
       where: { id },
-      data: { assignedToId: userId },
+      data: {
+        status,
+        statusNotes: {
+          create: {
+            status,
+            note,
+            changedById: userId, // from your auth context
+          },
+        },
+      },
     });
 
-    return NextResponse.json(incident, { status: 201 });
+    return NextResponse.json(updated, { status: 201 });
   } catch (error) {
     console.log("ERROR", error);
     return NextResponse.json(

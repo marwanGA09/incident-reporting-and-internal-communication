@@ -53,9 +53,22 @@ model Incident {
 
   assignedToId String? // Clerk user ID
   attachments  Attachment[]
+  statusNotes  IncidentStatusNote[]
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
+}
 
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+model IncidentStatusNote {
+  id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  incidentId String   @db.Uuid
+  incident   Incident @relation(fields: [incidentId], references: [id])
+
+  changedById String? // Clerk user ID who made the change
+  status      IncidentStatus
+  note        String
+  changedAt   DateTime       @default(now())
+
+  @@index([incidentId])
 }
 
 model Attachment {
@@ -97,4 +110,3 @@ enum IncidentStatus {
   RESOLVED
   CLOSED
 }
-

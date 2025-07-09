@@ -1,15 +1,4 @@
-import {
-  Calendar,
-  Grid2X2Check,
-  Home,
-  Inbox,
-  InboxIcon,
-  PersonStandingIcon,
-  Search,
-  Settings,
-  ShieldCheckIcon,
-  ShieldPlusIcon,
-} from "lucide-react";
+import { Grid2X2Check, ShieldCheckIcon, ShieldPlusIcon } from "lucide-react";
 
 import {
   Sidebar,
@@ -24,7 +13,6 @@ import {
 } from "@/components/ui/sidebar";
 import { UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
-import Link from "next/link";
 
 // Menu items.
 const incidentsLink = [
@@ -35,7 +23,7 @@ const incidentsLink = [
   },
   {
     title: "Report Incidents",
-    url: "/incidents/new",
+    url: "/incidents/new/step-1",
     icon: ShieldPlusIcon,
   },
 ];
@@ -54,7 +42,6 @@ const groupsDeparmentLink = [
 
 export async function AppSidebar() {
   const User = await currentUser();
-  console.log(User?.publicMetadata);
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>

@@ -77,7 +77,7 @@ function IncidentItem({
               <Dropdown
                 status={incident.status}
                 incidentId={incident.id}
-                onValueChange={handleValueChange}
+                // onValueChange={handleValueChange}
               />
             )}
           </Badge>

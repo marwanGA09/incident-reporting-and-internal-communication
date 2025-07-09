@@ -51,7 +51,6 @@ export default async function IncidentsPage() {
               id: user.id,
             };
           });
-  console.log({ users });
 
   return (
     <div className="container p-8">
