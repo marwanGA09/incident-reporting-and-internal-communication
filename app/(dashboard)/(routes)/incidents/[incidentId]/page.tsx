@@ -54,8 +54,8 @@ export default async function IncidentDetailPage({
   }
 
   return (
-    <div className="container mx-auto py-8">
-      <Link className="flex gap-2 pb-4" href="/incidents">
+    <div className="container py-8">
+      <Link className="flex gap-2 pb-4 pl-8" href="/incidents">
         <MoveLeftIcon /> <span>Back to Incidents</span>
       </Link>
       <IncidentDetail incident={incident} clerkUsersMap={clerkUsersMap} />
