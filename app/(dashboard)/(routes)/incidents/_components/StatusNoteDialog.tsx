@@ -9,13 +9,16 @@ import {
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useState } from "react";
+import { Loader2Icon } from "lucide-react";
 
 export function StatusNoteDialog({
+  isPending,
   open,
   onClose,
   onSubmit,
   status,
 }: {
+  isPending: boolean;
   open: boolean;
   status: string;
   onClose: () => void;
@@ -39,8 +42,24 @@ export function StatusNoteDialog({
           className="min-h-[120px]"
         />
         <DialogFooter>
-          <Button onClick={() => onSubmit(note)} disabled={!note.trim()}>
-            Submit
+          <Button
+            onClick={() => {
+              onSubmit(note);
+              setNote("");
+            }}
+            disabled={!note.trim()}
+          >
+            {isPending ? (
+              <>
+                <span>
+                  {" "}
+                  <Loader2Icon className="animate-spin repeat-infinite" />
+                </span>{" "}
+                <span>Submitting ...</span>{" "}
+              </>
+            ) : (
+              <span>Submit</span>
+            )}
           </Button>
         </DialogFooter>
       </DialogContent>

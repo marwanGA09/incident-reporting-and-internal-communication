@@ -86,6 +86,7 @@ export function Dropdown({
 }) {
   const router = useRouter();
   const { user } = useUser();
+  const [isPending, startTransition] = React.useTransition();
   const [selectedStatus, setSelectedStatus] = React.useState<string | null>(
     null
   );
@@ -93,14 +94,16 @@ export function Dropdown({
 
   const handleSubmitNote = async (note: string) => {
     try {
-      await axios.patch("/api/incidents", {
-        id: incidentId,
-        status: selectedStatus,
-        note,
-        userId: user?.id,
+      startTransition(async () => {
+        await axios.patch("/api/incidents", {
+          id: incidentId,
+          status: selectedStatus,
+          note,
+          userId: user?.id,
+        });
+        setDialogOpen(false);
+        router.refresh();
       });
-      setDialogOpen(false);
-      router.refresh();
     } catch (err) {
       console.error("Status change failed", err);
     }
@@ -145,6 +148,7 @@ export function Dropdown({
 
       {selectedStatus && (
         <StatusNoteDialog
+          isPending={isPending}
           open={dialogOpen}
           status={selectedStatus}
           onClose={() => setDialogOpen(false)}
