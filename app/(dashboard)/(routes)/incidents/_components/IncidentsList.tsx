@@ -17,6 +17,7 @@ import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { Loader2Icon } from "lucide-react";
+import { textShorter } from "@/lib/textShorter";
 
 function getBadgeVariantForStatus(status: string) {
   switch (status) {
@@ -80,7 +81,7 @@ function IncidentItem({
     >
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          {incident.title}
+          {textShorter(incident.title, 25)}
           <Badge
             variant={getBadgeVariantForStatus(incident.status)}
             className="px-4 py-2"
@@ -108,7 +109,7 @@ function IncidentItem({
       </CardHeader>
       <CardContent className="space-y-2">
         {incident.description && (
-          <p className="text-sm">{incident.description}</p>
+          <p className="text-sm">{textShorter(incident.description, 200)}</p>
         )}
         <div className="text-sm text-muted-foreground">
           <strong>Location:</strong> {incident.location || "N/A"}
