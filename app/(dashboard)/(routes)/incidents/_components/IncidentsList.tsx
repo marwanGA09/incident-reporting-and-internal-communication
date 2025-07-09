@@ -16,23 +16,11 @@ import SelectItems from "../new/_components/SelectItems";
 import axios from "axios";
 import { useRouter } from "next/navigation";
 import { useTransition } from "react";
-import { Loader2Icon } from "lucide-react";
+import { EyeIcon, Loader2Icon } from "lucide-react";
 import { textShorter } from "@/lib/textShorter";
-
-function getBadgeVariantForStatus(status: string) {
-  switch (status) {
-    case "REPORTED":
-      return "reported";
-    case "IN_REVIEW":
-      return "inReview";
-    case "RESOLVED":
-      return "resolved";
-    case "CLOSED":
-      return "closed";
-    default:
-      return "default";
-  }
-}
+import { Button } from "@/components/ui/button";
+import Link from "next/link";
+import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 
 function IncidentItem({
   incident,
@@ -77,7 +65,7 @@ function IncidentItem({
   return (
     <Card
       key={incident.id}
-      className="relative rounded-2xl border border-muted bg-background shadow-sm hover:shadow-lg   transition-shadow"
+      className="relative rounded-2xl border border-muted bg-background shadow-sm hover:shadow-lg   transition-shadow pb-8"
     >
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
@@ -140,6 +128,12 @@ function IncidentItem({
             }
           />
         )}
+        <Link
+          href={`/incidents/${incident.id}`}
+          className="absolute bottom-3 right-3 "
+        >
+          <EyeIcon className=" stroke-muted-foreground hover:scale-120 transition-transform" />
+        </Link>
       </CardContent>
       {isPending && (
         <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center bg-slate-200/30">
