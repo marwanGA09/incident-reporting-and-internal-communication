@@ -34,6 +34,9 @@ import { prisma } from "@/app/lib/prisma";
 export async function DepartmentsScroll() {
   const departmentsObj = await prisma.department.findMany({
     select: { name: true },
+    orderBy: {
+      name: "asc", // Sort departments by name in ascending order
+    },
   });
 
   const depArray = departmentsObj.map((dep: { name: string }) => dep.name);
