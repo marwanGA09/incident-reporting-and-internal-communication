@@ -17,3 +17,16 @@ export async function createDepartment(formData: FormData) {
 
   // optionally redirect or revalidate
 }
+export async function createDepartmentTest(name: string, email: string) {
+  if (!name) throw new Error("Department name is required");
+  console.log({ name, email });
+  // console.log("some thing");
+  const testDepartment = await prisma.department.create({
+    data: {
+      name,
+      email: email || null,
+    },
+  });
+  console.log({ testDepartment });
+  // optionally redirect or revalidate
+}

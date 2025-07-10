@@ -45,8 +45,6 @@ const groupsDepartmentLink = [
 export function AppSidebar() {
   // const User = await currentUser();
   const { user, isLoaded } = useUser();
-  console.log({ user });
-  console.log("User", user?.publicMetadata);
   if (!isLoaded) return;
   return (
     <Sidebar collapsible="icon" variant="floating">

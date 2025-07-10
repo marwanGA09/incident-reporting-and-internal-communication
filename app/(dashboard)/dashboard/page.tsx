@@ -1,6 +1,6 @@
 import React from "react";
-import { AdminNavigationBar } from "./_components/AdminNavigationBar";
 import { DepartmentsScroll } from "./_components/DepartmentsScroll";
+import { AdminNavigationBar } from "./_components/AdminNavigationBar";
 
 function page() {
   return (
