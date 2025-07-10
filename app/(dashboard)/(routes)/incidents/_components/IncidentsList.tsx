@@ -78,7 +78,6 @@ function IncidentItem({
             {currentUser?.publicMetadata.position === "higher" && (
               <Dropdown
                 status={incident.status}
-                incidentId={incident.id}
                 handleSubmitNote={(note: string, selectedStatus: string) =>
                   handleSubmitNote(
                     note,

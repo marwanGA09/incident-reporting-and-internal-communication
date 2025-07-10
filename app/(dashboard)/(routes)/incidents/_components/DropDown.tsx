@@ -79,11 +79,9 @@ import { useUser } from "@clerk/nextjs";
 
 export function Dropdown({
   status,
-  incidentId,
   handleSubmitNote,
 }: {
   status: string;
-  incidentId: string;
   handleSubmitNote: (note: string, selectedStatus: string) => void;
 }) {
   const { user } = useUser();

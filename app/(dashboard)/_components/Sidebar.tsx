@@ -1,3 +1,4 @@
+"use client";
 import { Grid2X2Check, ShieldCheckIcon, ShieldPlusIcon } from "lucide-react";
 
 import {
@@ -11,8 +12,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { UserButton } from "@clerk/nextjs";
 import { currentUser } from "@clerk/nextjs/server";
+import SidebarClient from "./SidebarClient";
+import { useUser } from "@clerk/nextjs";
 
 // Menu items.
 const incidentsLink = [
@@ -27,7 +29,7 @@ const incidentsLink = [
     icon: ShieldPlusIcon,
   },
 ];
-const groupsDeparmentLink = [
+const groupsDepartmentLink = [
   {
     title: "Incidents",
     url: "/incidents",
@@ -40,8 +42,12 @@ const groupsDeparmentLink = [
   },
 ];
 
-export async function AppSidebar() {
-  const User = await currentUser();
+export function AppSidebar() {
+  // const User = await currentUser();
+  const { user, isLoaded } = useUser();
+  console.log({ user });
+  console.log("User", user?.publicMetadata);
+  if (!isLoaded) return;
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
@@ -63,10 +69,10 @@ export async function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarGroup>
-          <SidebarGroupLabel>Deparments Groups</SidebarGroupLabel>
+          <SidebarGroupLabel>Departments Groups</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {groupsDeparmentLink.map((item) => (
+              {groupsDepartmentLink.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
@@ -83,7 +89,7 @@ export async function AppSidebar() {
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {groupsDeparmentLink.map((item) => (
+              {groupsDepartmentLink.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
@@ -98,7 +104,7 @@ export async function AppSidebar() {
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        {User?.publicMetadata.role === "admin" && (
+        {user?.publicMetadata.role === "admin" && (
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton asChild>
@@ -110,7 +116,7 @@ export async function AppSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
         )}
-        <UserButton />
+        <SidebarClient />
       </SidebarFooter>
     </Sidebar>
   );

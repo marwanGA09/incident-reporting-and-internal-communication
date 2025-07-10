@@ -1,21 +1,9 @@
-// import { UserButton } from "@clerk/nextjs";
-
+"use client";
 import {
   NavigationMenuItem,
   NavigationMenuLink,
 } from "@/components/ui/navigation-menu";
 import Link from "next/link";
-
-// function Navbar() {
-//   return (
-//     <div className="h-full p-4 border-b flex items-center  shadow-sm">
-//     <p>  Nav bar</p>
-//     <UserButton/>
-//     </div>
-//   );
-// }
-
-// export default Navbar;
 
 import {
   NavigationMenu as NavigationMenuPrimitive,

@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+// import type { Metadata } from "next";
 import { ClerkProvider, SignInButton, SignedOut } from "@clerk/nextjs";
 
 import ToasterProvider from "@/components/Providers/toastProvider";
