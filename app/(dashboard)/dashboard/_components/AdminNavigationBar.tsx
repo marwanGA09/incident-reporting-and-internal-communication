@@ -7,6 +7,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import Link from "next/link";
 import { CreateDepartmentDialog } from "./CreateDepartmentDialog";
+import { CreateCategoryDialog } from "./CreateCategoryDialog";
 
 export function AdminNavigationBar() {
   return (
@@ -16,8 +17,7 @@ export function AdminNavigationBar() {
           <CreateDepartmentDialog />
         </NavigationMenuItem>
         <NavigationMenuItem>
-          {/* <CreateCategoryDialog /> */}
-          <CreateDepartmentDialog />
+          <CreateCategoryDialog />
         </NavigationMenuItem>
         <NavigationMenuItem>
           {/* <CreateSomethingNewDialog /> */}
