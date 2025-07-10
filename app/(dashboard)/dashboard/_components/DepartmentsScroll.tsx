@@ -42,7 +42,7 @@ export async function DepartmentsScroll() {
   const depArray = departmentsObj.map((dep: { name: string }) => dep.name);
 
   return (
-    <ScrollArea className="h-72 w-96 mt-2 rounded-xl border border-gray-200 shadow-sm bg-white">
+    <ScrollArea className="h-72 w-96 mt-2 rounded-xl border shadow-sm">
       <div className="p-4 space-y-3">
         <h4 className="text-lg font-semibold text-amber-700 tracking-wide">
           Departments
@@ -50,13 +50,11 @@ export async function DepartmentsScroll() {
         <Separator className="mb-2" />
 
         {depArray.length === 0 ? (
-          <div className="text-sm text-gray-500 italic">
-            No departments found.
-          </div>
+          <div className="text-sm italic">No departments found.</div>
         ) : (
           depArray.map((name: string) => (
             <React.Fragment key={name}>
-              <div className="text-sm text-gray-800 px-2 py-1 hover:bg-accent rounded transition">
+              <div className="text-sm px-2 py-1 hover:bg-accent rounded transition">
                 {name}
               </div>
               <Separator className="my-1" />

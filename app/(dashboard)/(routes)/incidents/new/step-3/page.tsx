@@ -9,7 +9,7 @@ export default async function Step3() {
   });
 
   return (
-    <div className="max-w-xl mx-auto mt-6 px-6 py-8 bg-white shadow-lg rounded-lg flex flex-col ">
+    <div className="max-w-xl mx-auto mt-6 px-6 py-8 border shadow-lg rounded-lg flex flex-col ">
       <h1 className="text-xl font-bold mb-4">
         Step 3: Department & Assignment
       </h1>

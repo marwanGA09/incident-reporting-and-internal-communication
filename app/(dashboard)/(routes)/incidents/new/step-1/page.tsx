@@ -32,7 +32,7 @@ export default function Step1() {
   };
 
   return (
-    <div className="flex flex-col max-w-xl mx-auto mt-6 px-6 py-8 bg-white shadow-lg rounded-lg">
+    <div className="flex flex-col max-w-xl mx-auto mt-6 px-6 py-8 shadow-xl   rounded-xl border">
       <h1 className="text-xl font-bold mb-4">Step 1: Basic Info</h1>
       {/* <input
         className="border p-2 w-full mb-2"
