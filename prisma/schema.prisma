@@ -87,6 +87,7 @@ model DirectMessage {
   text       String
   senderId   String // Clerk user ID
   receiverId String // Clerk user ID
+  roomName   String
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -97,6 +98,7 @@ model GroupMessage {
   text         String
   senderId     String // Clerk user ID
   departmentId String @db.Uuid
+  roomName     String
 
   department Department @relation(fields: [departmentId], references: [id])
 
