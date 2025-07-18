@@ -37,3 +37,14 @@ export async function createIncidentCategory(
   console.log({ testCategory });
   // optionally redirect or revalidate
 }
+
+export const getDepartments = async (id?: string) => {
+  const filter = id ? { id } : {};
+  const departments = await prisma.department.findMany({
+    where: filter,
+    orderBy: {
+      name: "asc",
+    },
+  });
+  return departments ?? [];
+};

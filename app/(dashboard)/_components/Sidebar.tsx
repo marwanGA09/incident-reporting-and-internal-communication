@@ -1,5 +1,10 @@
-"use client";
-import { Grid2X2Check, ShieldCheckIcon, ShieldPlusIcon } from "lucide-react";
+// "use client";
+import {
+  BlendIcon,
+  Grid2X2Check,
+  ShieldCheckIcon,
+  ShieldPlusIcon,
+} from "lucide-react";
 
 import {
   Sidebar,
@@ -12,9 +17,9 @@ import {
   SidebarMenuButton,
   SidebarMenuItem,
 } from "@/components/ui/sidebar";
-import { currentUser } from "@clerk/nextjs/server";
 import SidebarClient from "./SidebarClient";
-import { useUser } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
+import { getDepartments } from "@/app/lib/actions";
 
 // Menu items.
 const incidentsLink = [
@@ -29,23 +34,54 @@ const incidentsLink = [
     icon: ShieldPlusIcon,
   },
 ];
-const groupsDepartmentLink = [
-  {
-    title: "Incidents",
-    url: "/incidents",
-    icon: ShieldCheckIcon,
-  },
-  {
-    title: "Report Incidents",
-    url: "/incidents/new/step-1",
-    icon: ShieldPlusIcon,
-  },
-];
 
-export function AppSidebar() {
-  // const User = await currentUser();
-  const { user, isLoaded } = useUser();
-  if (!isLoaded) return;
+export async function AppSidebar() {
+  // const { user, isLoaded } = useUser();
+  const user = await currentUser();
+  console.log(`${user?.publicMetadata?.departmentId}`);
+  console.log(
+    "DKLJF",
+    (await getDepartments()).map((dep) => {
+      return {
+        title: dep.name,
+        url: `/group-chat/${dep.id}`,
+        icon: BlendIcon,
+      };
+    })
+  );
+  const groupsDepartmentLink =
+    user?.publicMetadata?.role === "admin"
+      ? (await getDepartments()).map((dep) => {
+          return {
+            title: dep.name,
+            url: `/group-chat/${dep.id}`,
+            icon: BlendIcon,
+          };
+        })
+      : [
+          {
+            title: (
+              await getDepartments(`${user?.publicMetadata?.departmentId}`)
+            )[0].name,
+            url: `/group-chat/${user?.publicMetadata?.departmentId}`,
+            icon: BlendIcon,
+          },
+        ];
+
+  const chatLink = [
+    {
+      title: "chat 1",
+      url: "/incidents",
+      icon: ShieldCheckIcon,
+    },
+    {
+      title: "chat 2",
+      url: "/incidents/new/step-1",
+      icon: ShieldPlusIcon,
+    },
+  ];
+  // if (!isLoaded) return;
+  if (!user) return;
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
@@ -87,7 +123,7 @@ export function AppSidebar() {
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {groupsDepartmentLink.map((item) => (
+              {chatLink.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
