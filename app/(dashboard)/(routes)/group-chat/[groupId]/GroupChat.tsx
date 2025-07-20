@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { getGroupMessages, sendGroupMessage } from "@/app/lib/actions";
+import { ArrowRightToLine, CheckCheckIcon, SendIcon } from "lucide-react";
 // import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({ groupId }: { groupId: string }) {
@@ -32,7 +33,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     });
 
     channel
-      .on("broadcast", { event: "new-message" }, (payload) => {
+      .on("broadcast", { event: "group-message" }, (payload) => {
         console.log("New message received:", payload);
         const newMessage = payload.payload;
         if (newMessage.departmentId === groupId) {
@@ -65,7 +66,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
   //   // 1. Broadcast to other clients immediately
   //   supabase.channel(roomName).send({
   //     type: "broadcast",
-  //     event: "new-message",
+  //     event: "group-message",
   //     payload: tempMessage,
   //   });
 
@@ -107,7 +108,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
       senderId: user.id,
       text: messageText,
       departmentId: groupId,
-      created_at: timestamp,
+      // createdAt: timestamp,
       status: "pending",
     };
 
@@ -127,7 +128,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
       // 3. If saved successfully, broadcast to other clients
       supabase.channel(roomName).send({
         type: "broadcast",
-        event: "new-message",
+        event: "group-message",
         payload: { ...tempMessage, status: "sent" },
       });
 
@@ -155,6 +156,28 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     }
   };
 
+  // function formatDateHeader(dateStr: string) {
+  //   const date = new Date(dateStr);
+  //   const today = new Date();
+
+  //   const isSameDay =
+  //     date.getFullYear() === today.getFullYear() &&
+  //     date.getMonth() === today.getMonth() &&
+  //     date.getDate() === today.getDate();
+
+  //   const options: Intl.DateTimeFormatOptions = {
+  //     month: "long",
+  //     day: "numeric",
+  //   };
+
+  //   // Add year if it's not current year
+  //   if (date.getFullYear() !== today.getFullYear()) {
+  //     options.year = "numeric";
+  //   }
+
+  //   return isSameDay ? null : date.toLocaleDateString(undefined, options);
+  // }
+
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
@@ -164,32 +187,79 @@ export default function GroupChat({ groupId }: { groupId: string }) {
       <CardContent>
         <ScrollArea className="h-96 overflow-y-auto">
           <div className="flex flex-col gap-2">
-            {messages.map((msg) => {
+            {messages.map((msg, idx) => {
               const isOwn = msg.senderId === user?.id;
+              const currentDate = new Date(msg.createdAt);
+              const prevDate =
+                idx > 0 ? new Date(messages[idx - 1].createdAt) : null;
+
+              const showDateSeparator =
+                !prevDate ||
+                currentDate.getDate() !== prevDate.getDate() ||
+                currentDate.getMonth() !== prevDate.getMonth() ||
+                currentDate.getFullYear() !== prevDate.getFullYear();
+
+              const dateOptions: Intl.DateTimeFormatOptions = {
+                month: "long",
+                day: "numeric",
+              };
+
+              if (currentDate.getFullYear() !== new Date().getFullYear()) {
+                dateOptions.year = "numeric";
+              }
+
+              const formattedDate = currentDate.toLocaleDateString(
+                undefined,
+                dateOptions
+              );
+
               return (
-                <div
-                  key={msg.id}
-                  className={`flex flex-col max-w-xs p-2 rounded-lg ${
-                    isOwn
-                      ? "self-end bg-blue-500 text-white"
-                      : "self-start bg-gray-200 text-black"
-                  } border ${
-                    msg.status === "error"
-                      ? "border-red-500"
-                      : "border-transparent"
-                  }`}
-                >
-                  <span className="text-xs opacity-70">
-                    {isOwn ? "You" : msg.senderId}
-                  </span>
-                  <span>{msg.text}</span>
-                  {msg.status === "pending" && (
-                    <span className="text-xs text-yellow-400">Sending...</span>
+                <React.Fragment key={msg.id}>
+                  {showDateSeparator && (
+                    <div className="self-center text-xs text-gray-400 font-semibold py-2">
+                      {formattedDate}
+                    </div>
                   )}
-                  {msg.status === "error" && (
-                    <span className="text-xs text-red-500">Failed to send</span>
-                  )}
-                </div>
+
+                  <div
+                    className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                      isOwn
+                        ? "self-end bg-blue-500 text-white"
+                        : "self-start bg-gray-200 text-black"
+                    } border ${
+                      msg.status === "error"
+                        ? "border-red-500"
+                        : "border-transparent"
+                    }`}
+                  >
+                    <span className="text-xs opacity-70">
+                      {isOwn ? "You" : msg.senderId}
+                    </span>
+                    <span>{msg.text}</span>
+                    {msg.status === "pending" && (
+                      <span className="text-xs text-yellow-400">
+                        Sending...
+                      </span>
+                    )}
+                    {msg.status === "error" && (
+                      <span className="text-xs text-red-500">
+                        Failed to send
+                      </span>
+                    )}
+                    {isOwn && msg.status === "sent" && (
+                      <span className="text-xs text-green-500 ">
+                        <CheckCheckIcon className="w-4 h-4" />
+                      </span>
+                    )}
+                    <span className="text-xs opacity-50 self-end">
+                      {currentDate.toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                        hour12: true,
+                      })}
+                    </span>
+                  </div>
+                </React.Fragment>
               );
             })}
             <div ref={scrollRef} />
@@ -201,7 +271,9 @@ export default function GroupChat({ groupId }: { groupId: string }) {
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
           />
-          <Button onClick={handleSend}>Send</Button>
+          <Button onClick={handleSend}>
+            <SendIcon />
+          </Button>
         </div>
       </CardContent>
     </Card>
