@@ -1,9 +1,13 @@
-import React from 'react';
+// import React from "react";
 
-function page() {
+import GroupChat from "./GroupChat";
+
+async function page({ params }: { params: Promise<{ groupId: string }> }) {
+  console.log("Group ID:", await params);
+  const groupId = (await params).groupId;
   return (
-    <div>
-      <h1>This is groups page</h1>
+    <div className="p-6">
+      <GroupChat groupId={groupId} />
     </div>
   );
 }

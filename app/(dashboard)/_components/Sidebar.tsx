@@ -38,17 +38,17 @@ const incidentsLink = [
 export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
-  console.log(`${user?.publicMetadata?.departmentId}`);
-  console.log(
-    "DKLJF",
-    (await getDepartments()).map((dep) => {
-      return {
-        title: dep.name,
-        url: `/group-chat/${dep.id}`,
-        icon: BlendIcon,
-      };
-    })
-  );
+  // console.log(`${user?.publicMetadata?.departmentId}`);
+  // console.log(
+  //   "DKLJF",
+  //   (await getDepartments()).map((dep) => {
+  //     return {
+  //       title: dep.name,
+  //       url: `/group-chat/${dep.id}`,
+  //       icon: BlendIcon,
+  //     };
+  //   })
+  // );
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
       ? (await getDepartments()).map((dep) => {

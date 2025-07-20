@@ -39,12 +39,41 @@ export async function createIncidentCategory(
 }
 
 export const getDepartments = async (id?: string) => {
-  const filter = id ? { id } : {};
-  const departments = await prisma.department.findMany({
-    where: filter,
-    orderBy: {
-      name: "asc",
-    },
-  });
+  const departments = id
+    ? await prisma.department.findMany({
+        where: { id },
+        orderBy: {
+          name: "asc",
+        },
+      })
+    : await prisma.department.findMany({
+        orderBy: {
+          name: "asc",
+        },
+      });
   return departments ?? [];
 };
+
+export async function getGroupMessages(groupId: string) {
+  return await prisma.groupMessage.findMany({
+    where: { departmentId: groupId },
+    orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function sendGroupMessage({
+  text,
+  departmentId,
+  senderId,
+  roomName,
+}: {
+  text: string;
+  departmentId: string;
+  senderId: string;
+  roomName: string;
+}) {
+  console.log({ text, departmentId, senderId, roomName });
+  return await prisma.groupMessage.create({
+    data: { text, departmentId, senderId, roomName },
+  });
+}
