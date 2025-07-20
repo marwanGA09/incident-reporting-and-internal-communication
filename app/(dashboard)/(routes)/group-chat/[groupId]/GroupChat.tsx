@@ -15,7 +15,10 @@ export default function GroupChat({ groupId }: { groupId: string }) {
   const [messages, setMessages] = useState<any[]>([]);
   const [messageText, setMessageText] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
+  const [isSending, setIsSending] = useState(false);
+
   const router = useRouter();
+
   const roomName = `group-chat:${groupId}`;
   useEffect(() => {
     if (!groupId) return;
@@ -38,12 +41,18 @@ export default function GroupChat({ groupId }: { groupId: string }) {
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "GroupMessage" },
         (payload) => {
+          console.log(
+            "New message received on POSTGRES change **INSERT:",
+            payload
+          );
           if (payload.new.departmentId === groupId) {
             setMessages((prev) => [...prev, payload.new]);
           }
         }
       )
-      .subscribe();
+      .subscribe((status) => {
+        console.log("Subscription status:", status); // Should log "SUBSCRIBED"
+      });
 
     return () => {
       supabase.removeChannel(channel);
@@ -52,14 +61,20 @@ export default function GroupChat({ groupId }: { groupId: string }) {
 
   const handleSend = async () => {
     if (!messageText.trim() || !user) return;
-    await sendGroupMessage({
-      text: messageText,
-      departmentId: groupId,
-      senderId: user.id,
-      roomName,
-    });
-    setMessageText("");
-    router.refresh();
+    setIsSending(true);
+    try {
+      await sendGroupMessage({
+        text: messageText,
+        departmentId: groupId,
+        senderId: user.id,
+        roomName,
+      });
+      setMessageText("");
+    } catch (error) {
+      console.error("Send failed:", error);
+    } finally {
+      setIsSending(false);
+    }
   };
 
   useEffect(() => {
@@ -70,15 +85,29 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
       <CardContent>
         <ScrollArea className="h-96 overflow-y-auto">
-          <div className="space-y-3">
-            {messages.map((msg) => (
-              <div key={msg.id} className="flex flex-col">
-                <span className="text-sm font-semibold">{msg.senderId}</span>
-                <span>{msg.text}</span>
-              </div>
-            ))}
-            <div ref={scrollRef} />
-          </div>
+          <ScrollArea className="h-96 overflow-y-auto">
+            <div className="flex flex-col gap-2">
+              {messages.map((msg) => {
+                const isOwnMessage = msg.senderId === user?.id;
+                return (
+                  <div
+                    key={msg.id}
+                    className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                      isOwnMessage
+                        ? "self-end bg-blue-500 text-white"
+                        : "self-start bg-gray-200 text-black"
+                    }`}
+                  >
+                    <span className="text-xs opacity-70">
+                      {isOwnMessage ? "You" : msg.senderId}
+                    </span>
+                    <span>{msg.text}</span>
+                  </div>
+                );
+              })}
+              <div ref={scrollRef} />
+            </div>
+          </ScrollArea>
         </ScrollArea>
         <div className="mt-4 flex gap-2">
           <Input
@@ -86,7 +115,9 @@ export default function GroupChat({ groupId }: { groupId: string }) {
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
           />
-          <Button onClick={handleSend}>Send</Button>
+          <Button onClick={handleSend} disabled={isSending}>
+            {isSending ? "Sending..." : "Send"}
+          </Button>
         </div>
       </CardContent>
     </Card>
