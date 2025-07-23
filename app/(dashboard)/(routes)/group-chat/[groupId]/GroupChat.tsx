@@ -8,14 +8,17 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { getGroupMessages, sendGroupMessage } from "@/app/lib/actions";
-import { ArrowRightToLine, CheckCheckIcon, SendIcon } from "lucide-react";
+import { CheckCheckIcon, SendIcon } from "lucide-react";
 // import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({ groupId }: { groupId: string }) {
   const { user } = useUser();
   const [messages, setMessages] = useState<any[]>([]);
   const [messageText, setMessageText] = useState("");
+  const [page, setPage] = useState(1);
+
   const scrollRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
 
   const roomName = `group-chat:${groupId}`;
 
@@ -23,8 +26,9 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     if (!groupId || !user?.id) return;
 
     async function loadMessages() {
-      const msgs = await getGroupMessages(groupId);
+      const msgs = await getGroupMessages(groupId, page);
       setMessages(msgs);
+      moreRef.current = null;
     }
     loadMessages();
 
@@ -49,54 +53,6 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     };
   }, [groupId, user?.id]);
 
-  // const handleSend = async () => {
-  //   if (!messageText.trim() || !user) return;
-
-  //   const tempId = crypto.randomUUID();
-
-  //   const tempMessage = {
-  //     id: tempId,
-  //     senderId: user.id,
-  //     text: messageText,
-  //     departmentId: groupId,
-  //     created_at: new Date().toISOString(),
-  //     status: "pending",
-  //   };
-
-  //   // 1. Broadcast to other clients immediately
-  //   supabase.channel(roomName).send({
-  //     type: "broadcast",
-  //     event: "group-message",
-  //     payload: tempMessage,
-  //   });
-
-  //   // 2. Optimistically add to UI
-  //   setMessages((prev) => [...prev, tempMessage]);
-  //   setMessageText("");
-
-  //   // 3. Store in DB
-  //   const { error } = await supabase.from("GroupMessage").insert([
-  //     {
-  //       senderId: tempMessage.senderId,
-  //       departmentId: tempMessage.departmentId,
-  //       text: tempMessage.text,
-  //       created_at: tempMessage.created_at,
-  //     },
-  //   ]);
-
-  //   // 4. Update message status
-  //   setMessages((prev) =>
-  //     prev.map((msg) =>
-  //       msg.id === tempId
-  //         ? {
-  //             ...msg,
-  //             status: error ? "error" : "sent",
-  //             errorMsg: error?.message,
-  //           }
-  //         : msg
-  //     )
-  //   );
-  // };
   const handleSend = async () => {
     if (!messageText.trim() || !user) return;
 
@@ -108,7 +64,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
       senderId: user.id,
       text: messageText,
       departmentId: groupId,
-      // createdAt: timestamp,
+      createdAt: timestamp,
       status: "pending",
     };
 
@@ -156,38 +112,43 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     }
   };
 
-  // function formatDateHeader(dateStr: string) {
-  //   const date = new Date(dateStr);
-  //   const today = new Date();
-
-  //   const isSameDay =
-  //     date.getFullYear() === today.getFullYear() &&
-  //     date.getMonth() === today.getMonth() &&
-  //     date.getDate() === today.getDate();
-
-  //   const options: Intl.DateTimeFormatOptions = {
-  //     month: "long",
-  //     day: "numeric",
-  //   };
-
-  //   // Add year if it's not current year
-  //   if (date.getFullYear() !== today.getFullYear()) {
-  //     options.year = "numeric";
-  //   }
-
-  //   return isSameDay ? null : date.toLocaleDateString(undefined, options);
-  // }
-
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (scrollRef.current) {
+      scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+    if (moreRef.current) {
+      moreRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+
+    console.log("SCROLL REF", scrollRef);
+    console.log("MORE REF", moreRef);
   }, [messages]);
 
+  const totalMessages = messages.length;
+  console.log("Total messages:", totalMessages);
   return (
     <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
       <CardContent>
         <ScrollArea className="h-96 overflow-y-auto">
+          <div className="flex justify-center">
+            <span
+              onClick={() => {
+                setPage((prev) => prev + 1);
+                getGroupMessages(groupId, page + 1).then((newMessages) => {
+                  setMessages((prev) => [...newMessages.reverse(), ...prev]);
+                });
+                moreRef.current = null;
+              }}
+              className="border-0  self-center text-xs text-gray-400 font-semibold py-2 pointer"
+            >
+              more
+            </span>
+          </div>
           <div className="flex flex-col gap-2">
             {messages.map((msg, idx) => {
+              if (idx === totalMessages - 1 && totalMessages > 10) {
+                console.log({ idx });
+              }
               const isOwn = msg.senderId === user?.id;
               const currentDate = new Date(msg.createdAt);
               const prevDate =
@@ -212,7 +173,6 @@ export default function GroupChat({ groupId }: { groupId: string }) {
                 undefined,
                 dateOptions
               );
-
               return (
                 <React.Fragment key={msg.id}>
                   {showDateSeparator && (
@@ -222,6 +182,11 @@ export default function GroupChat({ groupId }: { groupId: string }) {
                   )}
 
                   <div
+                    ref={
+                      idx === totalMessages - 11 && totalMessages > 10
+                        ? moreRef
+                        : null
+                    }
                     className={`flex flex-col max-w-xs p-2 rounded-lg ${
                       isOwn
                         ? "self-end bg-blue-500 text-white"
@@ -262,7 +227,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
                 </React.Fragment>
               );
             })}
-            <div ref={scrollRef} />
+            {totalMessages <= 10 && <div ref={scrollRef} />}
           </div>
         </ScrollArea>
         <div className="mt-4 flex gap-2">
@@ -279,130 +244,3 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     </Card>
   );
 }
-
-// "use client";
-
-// import { useEffect, useRef, useState } from "react";
-// import { useUser } from "@clerk/nextjs";
-// import { Input } from "@/components/ui/input";
-// import { Button } from "@/components/ui/button";
-// import { ScrollArea } from "@/components/ui/scroll-area";
-// import { Card, CardContent } from "@/components/ui/card";
-// import { supabase } from "@/lib/supabaseClient";
-// import { getGroupMessages, sendGroupMessage } from "@/app/lib/actions";
-// import { useRouter } from "next/navigation";
-
-// export default function GroupChat({ groupId }: { groupId: string }) {
-//   const { user } = useUser();
-//   const [messages, setMessages] = useState<any[]>([]);
-//   const [messageText, setMessageText] = useState("");
-//   const scrollRef = useRef<HTMLDivElement>(null);
-//   const [isSending, setIsSending] = useState(false);
-
-//   const router = useRouter();
-
-//   const roomName = `group-chat:${groupId}`;
-//   useEffect(() => {
-//     if (!groupId) return;
-
-//     async function loadMessages() {
-//       const msgs = await getGroupMessages(groupId);
-//       setMessages(msgs);
-//     }
-
-//     loadMessages();
-
-//     const channel = supabase.channel(roomName, {
-//       config: {
-//         presence: { key: user?.id || "anon" },
-//       },
-//     });
-//     console.log("SUPABASE CHANNEL:", supabase);
-//     console.log("Subscribing to channel:", channel);
-//     channel
-//       .on(
-//         "postgres_changes",
-//         { event: "INSERT", schema: "public", table: "GroupMessage" },
-//         (payload) => {
-//           console.log(
-//             "New message received on POSTGRES change **INSERT:",
-//             payload
-//           );
-//           if (payload.new.departmentId === groupId) {
-//             setMessages((prev) => [...prev, payload.new]);
-//           }
-//         }
-//       )
-//       .subscribe((status) => {
-//         console.log("Subscription status:", status); // Should log "SUBSCRIBED"
-//       });
-
-//     return () => {
-//       supabase.removeChannel(channel);
-//     };
-//   }, [groupId, user?.id]);
-
-//   const handleSend = async () => {
-//     if (!messageText.trim() || !user) return;
-//     setIsSending(true);
-//     try {
-//       await sendGroupMessage({
-//         text: messageText,
-//         departmentId: groupId,
-//         senderId: user.id,
-//         roomName,
-//       });
-//       setMessageText("");
-//     } catch (error) {
-//       console.error("Send failed:", error);
-//     } finally {
-//       setIsSending(false);
-//     }
-//   };
-
-//   useEffect(() => {
-//     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-//   }, [messages]);
-
-//   return (
-//     <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
-//       <CardContent>
-//         <ScrollArea className="h-96 overflow-y-auto">
-//           <ScrollArea className="h-96 overflow-y-auto">
-//             <div className="flex flex-col gap-2">
-//               {messages.map((msg) => {
-//                 const isOwnMessage = msg.senderId === user?.id;
-//                 return (
-//                   <div
-//                     key={msg.id}
-//                     className={`flex flex-col max-w-xs p-2 rounded-lg ${
-//                       isOwnMessage
-//                         ? "self-end bg-blue-500 text-white"
-//                         : "self-start bg-gray-200 text-black"
-//                     }`}
-//                   >
-//                     <span className="text-xs opacity-70">
-//                       {isOwnMessage ? "You" : msg.senderId}
-//                     </span>
-//                     <span>{msg.text}</span>
-//                   </div>
-//                 );
-//               })}
-//               <div ref={scrollRef} />
-//             </div>
-//           </ScrollArea>
-//         </ScrollArea>
-//         <div className="mt-4 flex gap-2">
-//           <Input
-//             placeholder="Type a message..."
-//             value={messageText}
-//             onChange={(e) => setMessageText(e.target.value)}
-//           />
-//           <Button onClick={handleSend} disabled={isSending}>
-//             {isSending ? "Sending..." : "Send"}
-//           </Button>
-//         </div>
-//       </CardContent>
-//     </Card>
-//   );
-// }
