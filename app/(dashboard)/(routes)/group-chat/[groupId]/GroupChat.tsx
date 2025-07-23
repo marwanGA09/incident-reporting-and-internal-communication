@@ -11,16 +11,36 @@ import { getGroupMessages, sendGroupMessage } from "@/app/lib/actions";
 import { CheckCheckIcon, SendIcon } from "lucide-react";
 // import { v4 as uuidv4 } from "uuid";
 
-export default function GroupChat({ groupId }: { groupId: string }) {
+export default function GroupChat({
+  groupId,
+  users,
+}: {
+  groupId: string;
+  users: {
+    name: string;
+    id: string;
+    imageUrl?: string;
+    username?: string;
+    email?: string;
+  }[];
+}) {
   const { user } = useUser();
   const [messages, setMessages] = useState<any[]>([]);
   const [messageText, setMessageText] = useState("");
   const [page, setPage] = useState(1);
 
   const scrollRef = useRef<HTMLDivElement>(null);
-  const moreRef = useRef<HTMLDivElement>(null);
 
   const roomName = `group-chat:${groupId}`;
+
+  const findUser = (userId: string) => {
+    return (
+      users.find((u) => u.id === userId) || {
+        name: "Unknown User",
+        imageUrl: "",
+      }
+    );
+  };
 
   useEffect(() => {
     if (!groupId || !user?.id) return;
@@ -28,7 +48,6 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     async function loadMessages() {
       const msgs = await getGroupMessages(groupId, page);
       setMessages(msgs);
-      moreRef.current = null;
     }
     loadMessages();
 
@@ -116,12 +135,8 @@ export default function GroupChat({ groupId }: { groupId: string }) {
     if (scrollRef.current) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-    if (moreRef.current) {
-      moreRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
 
     console.log("SCROLL REF", scrollRef);
-    console.log("MORE REF", moreRef);
   }, [messages]);
 
   const totalMessages = messages.length;
@@ -137,9 +152,8 @@ export default function GroupChat({ groupId }: { groupId: string }) {
                 getGroupMessages(groupId, page + 1).then((newMessages) => {
                   setMessages((prev) => [...newMessages.reverse(), ...prev]);
                 });
-                moreRef.current = null;
               }}
-              className="border-0  self-center text-xs text-gray-400 font-semibold py-2 pointer"
+              className="border-0  self-center text-xs text-gray-400 font-semibold py-2 cursor-pointer"
             >
               more
             </span>
@@ -182,11 +196,6 @@ export default function GroupChat({ groupId }: { groupId: string }) {
                   )}
 
                   <div
-                    ref={
-                      idx === totalMessages - 11 && totalMessages > 10
-                        ? moreRef
-                        : null
-                    }
                     className={`flex flex-col max-w-xs p-2 rounded-lg ${
                       isOwn
                         ? "self-end bg-blue-500 text-white"
@@ -198,7 +207,7 @@ export default function GroupChat({ groupId }: { groupId: string }) {
                     }`}
                   >
                     <span className="text-xs opacity-70">
-                      {isOwn ? "You" : msg.senderId}
+                      {isOwn ? "You" : findUser(msg.senderId).name}
                     </span>
                     <span>{msg.text}</span>
                     {msg.status === "pending" && (
