@@ -1,6 +1,7 @@
 // app/lib/actions.ts
 "use server";
 import { prisma } from "@/app/lib/prisma"; // assumes prisma client is set up
+import { clerkClient } from "@/lib/clerkClient";
 import { json } from "stream/consumers";
 
 export async function createDepartment(name: string, email: string) {
@@ -65,9 +66,17 @@ export async function getGroupMessages(groupId: string, page: number = 1) {
     skip,
   });
 
-  console.log(JSON.stringify(sssss, null, 2));
   return sssss.reverse();
 }
+
+export const getUser = async (userId: string) => {
+  return (
+    (await clerkClient.users.getUser(userId)) || {
+      name: "Unknown",
+      url: "",
+    }
+  );
+};
 
 export async function sendGroupMessage({
   text,

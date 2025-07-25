@@ -32,8 +32,9 @@ async function page({ params }: { params: Promise<{ groupId: string }> }) {
     .filter((user) => user.publicMetadata.departmentId === groupId)
     .map((user) => {
       // console.log({ user });
+
       return {
-        name: user?.fullName || "",
+        name: user?.firstName || "",
         id: user.id,
         imageUrl: user.imageUrl || "",
         username: user.username || "",

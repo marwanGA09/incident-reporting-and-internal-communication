@@ -9,6 +9,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import { getGroupMessages, sendGroupMessage } from "@/app/lib/actions";
 import { CheckCheckIcon, SendIcon } from "lucide-react";
+import { clerkClient } from "@/lib/clerkClient";
+import { Textarea } from "@/components/ui/textarea";
 // import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({
@@ -73,6 +75,7 @@ export default function GroupChat({
   }, [groupId, user?.id]);
 
   const handleSend = async () => {
+    console.log("Sending message:", messageText);
     if (!messageText.trim() || !user) return;
 
     const tempId = crypto.randomUUID();
@@ -195,7 +198,7 @@ export default function GroupChat({
                     </div>
                   )}
 
-                  <div
+                  {/* <div
                     className={`flex flex-col max-w-xs p-2 rounded-lg ${
                       isOwn
                         ? "self-end bg-blue-500 text-white"
@@ -232,15 +235,78 @@ export default function GroupChat({
                         hour12: true,
                       })}
                     </span>
+                  </div> */}
+
+                  <div
+                    className={`flex items-end gap-2 ${
+                      isOwn ? "self-end flex-row-reverse" : "self-start"
+                    }`}
+                  >
+                    {!isOwn && (
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
+                        {findUser(msg.senderId).imageUrl ? (
+                          <img
+                            src={findUser(msg.senderId).imageUrl}
+                            alt={findUser(msg.senderId).name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
+                            {findUser(msg.senderId)
+                              .name?.charAt(0)
+                              .toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div
+                      className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                        isOwn
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-black"
+                      } border ${
+                        msg.status === "error"
+                          ? "border-red-500"
+                          : "border-transparent"
+                      }`}
+                    >
+                      <span className="text-xs opacity-70">
+                        {isOwn ? "You" : findUser(msg.senderId).name}
+                      </span>
+                      <span className="whitespace-pre-wrap">{msg.text}</span>
+
+                      {msg.status === "pending" && (
+                        <span className="text-xs text-yellow-400">
+                          Sending...
+                        </span>
+                      )}
+                      {msg.status === "error" && (
+                        <span className="text-xs text-red-500">
+                          Failed to send
+                        </span>
+                      )}
+                      {isOwn && msg.status === "sent" && (
+                        <span className="text-xs text-green-500">
+                          <CheckCheckIcon className="w-4 h-4" />
+                        </span>
+                      )}
+                      <span className="text-xs opacity-50 self-end">
+                        {currentDate.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
                   </div>
                 </React.Fragment>
               );
             })}
-            {totalMessages <= 10 && <div ref={scrollRef} />}
+            <div ref={scrollRef} />
           </div>
         </ScrollArea>
         <div className="mt-4 flex gap-2">
-          <Input
+          <Textarea
             placeholder="Type a message..."
             value={messageText}
             onChange={(e) => setMessageText(e.target.value)}
