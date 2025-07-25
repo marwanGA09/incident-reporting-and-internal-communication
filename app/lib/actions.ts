@@ -94,3 +94,22 @@ export async function sendGroupMessage({
     data: { text, departmentId, senderId, roomName },
   });
 }
+
+export async function deleteGroupMessage(messageId: string, senderId: string) {
+  return await prisma.groupMessage.delete({
+    where: {
+      id: messageId,
+      senderId,
+    },
+  });
+}
+export async function updateGroupMessage(
+  messageId: string,
+  newText: string,
+  senderId: string
+) {
+  return await prisma.groupMessage.update({
+    where: { id: messageId, senderId },
+    data: { text: newText },
+  });
+}

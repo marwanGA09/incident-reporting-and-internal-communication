@@ -2,15 +2,29 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
-import { getGroupMessages, sendGroupMessage } from "@/app/lib/actions";
-import { CheckCheckIcon, SendIcon } from "lucide-react";
-import { clerkClient } from "@/lib/clerkClient";
+import {
+  deleteGroupMessage,
+  getGroupMessages,
+  sendGroupMessage,
+  updateGroupMessage,
+} from "@/app/lib/actions";
+import {
+  CheckCheckIcon,
+  Edit3Icon,
+  MoreHorizontalIcon,
+  SendIcon,
+} from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 // import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({
@@ -30,19 +44,12 @@ export default function GroupChat({
   const [messages, setMessages] = useState<any[]>([]);
   const [messageText, setMessageText] = useState("");
   const [page, setPage] = useState(1);
+  const [editingMessage, setEditingMessage] = useState<any | null>(null);
+  const [editedText, setEditedText] = useState("");
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const roomName = `group-chat:${groupId}`;
-
-  const findUser = (userId: string) => {
-    return (
-      users.find((u) => u.id === userId) || {
-        name: "Unknown User",
-        imageUrl: "",
-      }
-    );
-  };
 
   useEffect(() => {
     if (!groupId || !user?.id) return;
@@ -73,6 +80,15 @@ export default function GroupChat({
       supabase.removeChannel(channel);
     };
   }, [groupId, user?.id]);
+
+  const findUser = (userId: string) => {
+    return (
+      users.find((u) => u.id === userId) || {
+        name: "Unknown User",
+        imageUrl: "",
+      }
+    );
+  };
 
   const handleSend = async () => {
     console.log("Sending message:", messageText);
@@ -134,6 +150,42 @@ export default function GroupChat({
     }
   };
 
+  const handleEdit = (msg: any) => {
+    setEditingMessage(msg);
+    setEditedText(msg.text);
+  };
+
+  const handleDelete = async (id: string, senderId: string) => {
+    try {
+      // You need to implement this backend logic
+      const deletedThing = await deleteGroupMessage(id, senderId); // Your API
+      console.log({ deletedThing });
+      setMessages((prev) => prev.filter((m) => m.id !== id));
+    } catch (err) {
+      console.error("Failed to delete message", err);
+    }
+  };
+
+  const handleUpdateMessage = async () => {
+    if (!editingMessage) return;
+    try {
+      await updateGroupMessage(
+        editingMessage.id,
+        editedText,
+        editingMessage.senderId
+      );
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === editingMessage.id ? { ...msg, text: editedText } : msg
+        )
+      );
+      setEditingMessage(null);
+      setEditedText("");
+    } catch (err) {
+      console.error("Update failed", err);
+    }
+  };
+
   useEffect(() => {
     if (scrollRef.current) {
       scrollRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -190,6 +242,8 @@ export default function GroupChat({
                 undefined,
                 dateOptions
               );
+
+              const currentUser = findUser(msg.senderId);
               return (
                 <React.Fragment key={msg.id}>
                   {showDateSeparator && (
@@ -198,7 +252,162 @@ export default function GroupChat({
                     </div>
                   )}
 
-                  {/* <div
+                  <div
+                    className={`flex items-end gap-2 px-6 ${
+                      isOwn ? "self-end flex-row-reverse" : "self-start"
+                    }`}
+                  >
+                    {!isOwn && (
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
+                        {currentUser.imageUrl ? (
+                          <img
+                            src={currentUser.imageUrl}
+                            alt={currentUser.name}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
+                            {currentUser.name?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div
+                      className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                        isOwn
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-black"
+                      } border ${
+                        msg.status === "error"
+                          ? "border-red-500"
+                          : "border-transparent"
+                      }`}
+                    >
+                      <span className="text-xs opacity-70">
+                        {isOwn ? "You" : currentUser.name}
+                      </span>
+
+                      {isOwn ? (
+                        <div className="relative">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                              >
+                                <MoreHorizontalIcon className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem onClick={() => handleEdit(msg)}>
+                                Edit
+                              </DropdownMenuItem>
+                              <DropdownMenuItem
+                                onClick={() =>
+                                  handleDelete(msg.id, msg.senderId)
+                                }
+                                className="text-red-500"
+                              >
+                                Delete
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+
+                          <span className="whitespace-pre-wrap">
+                            {msg.text}
+                          </span>
+                        </div>
+                      ) : (
+                        <span className="whitespace-pre-wrap">{msg.text}</span>
+                      )}
+
+                      {msg.status === "pending" && (
+                        <span className="text-xs text-yellow-400">
+                          Sending...
+                        </span>
+                      )}
+                      {msg.status === "error" && (
+                        <span className="text-xs text-red-500">
+                          Failed to send
+                        </span>
+                      )}
+                      {isOwn && msg.status === "sent" && (
+                        <span className="text-xs text-green-500">
+                          <CheckCheckIcon className="w-4 h-4" />
+                        </span>
+                      )}
+                      <span className="text-xs opacity-50 self-end">
+                        {currentDate.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })}
+                      </span>
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
+            <div ref={scrollRef} />
+          </div>
+        </ScrollArea>
+        <div className="mt-4 flex gap-2">
+          {!editingMessage ? (
+            <>
+              {" "}
+              <Textarea
+                placeholder="Type a message..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+              />
+              <Button onClick={handleSend}>
+                <SendIcon />
+              </Button>
+            </>
+          ) : (
+            <>
+              {" "}
+              <Edit3Icon />
+              <Textarea
+                placeholder="Type a message..."
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+              />
+              <Button onClick={handleUpdateMessage}>
+                <SendIcon />
+              </Button>
+            </>
+          )}
+        </div>
+
+        {/* {editingMessage && (
+          <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
+            <div className=" p-4 rounded-lg w-80">
+              <textarea
+                className="w-full h-24 border rounded p-2"
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+              />
+              <div className="flex justify-end mt-2 gap-2">
+                <Button
+                  variant="secondary"
+                  onClick={() => setEditingMessage(null)}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateMessage}>Update</Button>
+              </div>
+            </div>
+          </div>
+        )} */}
+      </CardContent>
+    </Card>
+  );
+}
+
+{
+  /* <div
                     className={`flex flex-col max-w-xs p-2 rounded-lg ${
                       isOwn
                         ? "self-end bg-blue-500 text-white"
@@ -235,87 +444,5 @@ export default function GroupChat({
                         hour12: true,
                       })}
                     </span>
-                  </div> */}
-
-                  <div
-                    className={`flex items-end gap-2 ${
-                      isOwn ? "self-end flex-row-reverse" : "self-start"
-                    }`}
-                  >
-                    {!isOwn && (
-                      <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
-                        {findUser(msg.senderId).imageUrl ? (
-                          <img
-                            src={findUser(msg.senderId).imageUrl}
-                            alt={findUser(msg.senderId).name}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
-                            {findUser(msg.senderId)
-                              .name?.charAt(0)
-                              .toUpperCase()}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    <div
-                      className={`flex flex-col max-w-xs p-2 rounded-lg ${
-                        isOwn
-                          ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-black"
-                      } border ${
-                        msg.status === "error"
-                          ? "border-red-500"
-                          : "border-transparent"
-                      }`}
-                    >
-                      <span className="text-xs opacity-70">
-                        {isOwn ? "You" : findUser(msg.senderId).name}
-                      </span>
-                      <span className="whitespace-pre-wrap">{msg.text}</span>
-
-                      {msg.status === "pending" && (
-                        <span className="text-xs text-yellow-400">
-                          Sending...
-                        </span>
-                      )}
-                      {msg.status === "error" && (
-                        <span className="text-xs text-red-500">
-                          Failed to send
-                        </span>
-                      )}
-                      {isOwn && msg.status === "sent" && (
-                        <span className="text-xs text-green-500">
-                          <CheckCheckIcon className="w-4 h-4" />
-                        </span>
-                      )}
-                      <span className="text-xs opacity-50 self-end">
-                        {currentDate.toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                          hour12: true,
-                        })}
-                      </span>
-                    </div>
-                  </div>
-                </React.Fragment>
-              );
-            })}
-            <div ref={scrollRef} />
-          </div>
-        </ScrollArea>
-        <div className="mt-4 flex gap-2">
-          <Textarea
-            placeholder="Type a message..."
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-          />
-          <Button onClick={handleSend}>
-            <SendIcon />
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
-  );
+                  </div> */
 }
