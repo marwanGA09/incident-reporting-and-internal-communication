@@ -17,6 +17,7 @@ import {
   Edit3Icon,
   MoreHorizontalIcon,
   SendIcon,
+  XIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -434,11 +435,24 @@ export default function GroupChat({
           {!editingMessage ? (
             <>
               {" "}
-              <Textarea
+              {/* <Textarea
                 rows={1}
                 placeholder="Type a message..."
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
+              /> */}
+              <Textarea
+                rows={1}
+                placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
               />
               <Button onClick={handleSend}>
                 <SendIcon />
@@ -447,12 +461,28 @@ export default function GroupChat({
           ) : (
             <>
               {" "}
-              <Edit3Icon />
+              <div className="flex flex-col justify-between items-center py-1">
+                <Edit3Icon />
+                <XIcon
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingMessage(false);
+                    setEditedText("");
+                  }}
+                />
+              </div>
               <Textarea
                 rows={1}
                 placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUpdateMessage();
+                  }
+                }}
               />
               <Button onClick={handleUpdateMessage}>
                 <SendIcon />
