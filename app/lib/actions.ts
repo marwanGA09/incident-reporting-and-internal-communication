@@ -96,6 +96,7 @@ export async function sendGroupMessage({
 }
 
 export async function deleteGroupMessage(messageId: string, senderId: string) {
+  console.log({ messageId, senderId });
   return await prisma.groupMessage.delete({
     where: {
       id: messageId,

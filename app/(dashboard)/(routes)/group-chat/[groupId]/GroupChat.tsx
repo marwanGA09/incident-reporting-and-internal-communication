@@ -81,6 +81,11 @@ export default function GroupChat({
           );
         }
       })
+      .on("broadcast", { event: "DeleteGroupMessage" }, (payload) => {
+        const { id } = payload.payload;
+        console.log({ id });
+        setMessages((prev) => prev.filter((msg) => msg.id !== id));
+      })
       .subscribe((status) => {
         console.log("Subscription status:", status);
       });
@@ -170,8 +175,27 @@ export default function GroupChat({
       const deletedThing = await deleteGroupMessage(id, senderId); // Your API
       console.log({ deletedThing });
       setMessages((prev) => prev.filter((m) => m.id !== id));
-    } catch (err) {
-      console.error("Failed to delete message", err);
+
+      //  If deleted successfully, broadcast to other clients
+      supabase.channel(roomName).send({
+        type: "broadcast",
+        event: "DeleteGroupMessage",
+        payload: { id: id },
+      });
+    } catch (error: any) {
+      console.error("Failed to delete message", error);
+
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === id
+            ? {
+                ...msg,
+                status: "error ",
+                errorMsg: error?.message || "DELETED failed",
+              }
+            : msg
+        )
+      );
     }
   };
 
