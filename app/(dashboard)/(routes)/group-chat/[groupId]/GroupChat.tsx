@@ -25,6 +25,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { any } from "zod";
 // import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({
@@ -47,12 +48,6 @@ export default function GroupChat({
   const [editingMessage, setEditingMessage] = useState<any | null>(null);
   const [editedText, setEditedText] = useState("");
 
-  console.log(
-    "EDITED MESSAGE",
-    editingMessage?.id,
-    editingMessage?.text,
-    editedText
-  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const roomName = `group-chat:${groupId}`;
@@ -79,6 +74,11 @@ export default function GroupChat({
       })
       .on("broadcast", { event: "UpdateGroupMessage" }, (payload) => {
         const updatedMessage = payload.payload;
+        console.log(
+          "FROM BROADCAST",
+          updatedMessage.updatedAt,
+          updatedMessage.createdAt
+        );
         if (updatedMessage.departmentId === groupId) {
           setMessages((prev) =>
             prev.map((msg) =>
@@ -209,7 +209,11 @@ export default function GroupChat({
 
   const handleUpdateMessage = async () => {
     if (!editingMessage) return;
-    const updatedMessage = { ...editingMessage, text: editedText };
+    const updatedMessage = {
+      ...editingMessage,
+      text: editedText,
+      updatedAt: new Date(),
+    };
     // console.log({ editingMessage, updatedMessage });
     // 1. Optimistically show in UI as pending
     setMessages((prev) =>
@@ -225,7 +229,11 @@ export default function GroupChat({
         editingMessage.id,
         editedText
       );
-
+      console.log(
+        "DB Updated Message",
+        dbUpdatedMessage.updatedAt,
+        dbUpdatedMessage.createdAt
+      );
       // 3. If saved successfully, broadcast to other clients
       supabase.channel(roomName).send({
         type: "broadcast",
@@ -277,7 +285,12 @@ export default function GroupChat({
           <div className="flex flex-col gap-2">
             {messages.map((msg, idx) => {
               const isOwn = msg.senderId === user?.id;
-              const currentDate = new Date(msg.createdAt);
+              const isUpdated =
+                new Date(msg.updatedAt).getTime() >
+                new Date(msg.createdAt).getTime();
+              const currentDate = isUpdated
+                ? new Date(msg.updatedAt)
+                : new Date(msg.createdAt);
               const prevDate =
                 idx > 0 ? new Date(messages[idx - 1].createdAt) : null;
 
@@ -352,7 +365,7 @@ export default function GroupChat({
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="absolute -top-2 -right-2 h-6 w-6 p-0"
+                                className="absolute -top-6 -right-2 h-6 w-6 p-0"
                               >
                                 <MoreHorizontalIcon className="h-4 w-4" />
                               </Button>
@@ -393,12 +406,21 @@ export default function GroupChat({
                           <CheckCheckIcon className="w-4 h-4" />
                         </span>
                       )}
-                      <span className="text-xs opacity-50 self-end">
-                        {currentDate.toLocaleTimeString([], {
+                      {/* <span className="text-xs opacity-50 self-end">
+                        {`${
+                          isUpdated ? "edited" : ""
+                        } ${currentDate.toLocaleTimeString([], {
                           hour: "2-digit",
                           minute: "2-digit",
                           hour12: true,
-                        })}
+                        })}`}
+                      </span> */}
+                      <span className="text-xs opacity-50 self-end">
+                        {`${currentDate.toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                          hour12: true,
+                        })} ${isUpdated ? "(edited)" : ""}`}
                       </span>
                     </div>
                   </div>

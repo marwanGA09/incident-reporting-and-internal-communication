@@ -57,7 +57,7 @@ export const getDepartments = async (id?: string) => {
 };
 
 export async function getGroupMessages(groupId: string, page: number = 1) {
-  const take = 10;
+  const take = 50;
   const skip = (page - 1) * take;
   const sssss = await prisma.groupMessage.findMany({
     where: { departmentId: groupId },
