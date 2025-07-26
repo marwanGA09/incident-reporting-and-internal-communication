@@ -66,10 +66,19 @@ export default function GroupChat({
 
     channel
       .on("broadcast", { event: "group-message" }, (payload) => {
-        console.log("New message received:", payload);
         const newMessage = payload.payload;
         if (newMessage.departmentId === groupId) {
           setMessages((prev) => [...prev, { ...newMessage, status: "sent" }]);
+        }
+      })
+      .on("broadcast", { event: "UpdateGroupMessage" }, (payload) => {
+        const updatedMessage = payload.payload;
+        if (updatedMessage.departmentId === groupId) {
+          setMessages((prev) =>
+            prev.map((msg) =>
+              msg.id === updatedMessage.id ? updatedMessage : msg
+            )
+          );
         }
       })
       .subscribe((status) => {
@@ -168,21 +177,44 @@ export default function GroupChat({
 
   const handleUpdateMessage = async () => {
     if (!editingMessage) return;
+    const updatedMessage = { ...editingMessage, text: editedText };
+    console.log({ editingMessage, updatedMessage });
+    // 1. Optimistically show in UI as pending
+    setMessages((prev) =>
+      prev.map((msg) => (msg.id === editingMessage.id ? updatedMessage : msg))
+    );
+    setEditingMessage(null);
+    setEditedText("");
+
     try {
+      // 2. Store in DB using your existing backend function
+
       await updateGroupMessage(
         editingMessage.id,
         editedText,
         editingMessage.senderId
       );
+
+      // 3. If saved successfully, broadcast to other clients
+      supabase.channel(roomName).send({
+        type: "broadcast",
+        event: "UpdateGroupMessage",
+        payload: updatedMessage,
+      });
+    } catch (error: any) {
+      console.error("Update failed", error);
+      // 5. Update message with error
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === editingMessage.id ? { ...msg, text: editedText } : msg
+          msg.id === editingMessage.id
+            ? {
+                ...msg,
+                status: "error",
+                errorMsg: error?.message || "Updated failed",
+              }
+            : msg
         )
       );
-      setEditingMessage(null);
-      setEditedText("");
-    } catch (err) {
-      console.error("Update failed", err);
     }
   };
 
@@ -195,7 +227,6 @@ export default function GroupChat({
   }, [messages]);
 
   const totalMessages = messages.length;
-  console.log("Total messages:", totalMessages);
   return (
     <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
       <CardContent>
@@ -215,9 +246,6 @@ export default function GroupChat({
           </div>
           <div className="flex flex-col gap-2">
             {messages.map((msg, idx) => {
-              if (idx === totalMessages - 1 && totalMessages > 10) {
-                console.log({ idx });
-              }
               const isOwn = msg.senderId === user?.id;
               const currentDate = new Date(msg.createdAt);
               const prevDate =
@@ -357,6 +385,7 @@ export default function GroupChat({
             <>
               {" "}
               <Textarea
+                rows={1}
                 placeholder="Type a message..."
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
@@ -370,6 +399,7 @@ export default function GroupChat({
               {" "}
               <Edit3Icon />
               <Textarea
+                rows={1}
                 placeholder="Type a message..."
                 value={editedText}
                 onChange={(e) => setEditedText(e.target.value)}
@@ -380,69 +410,7 @@ export default function GroupChat({
             </>
           )}
         </div>
-
-        {/* {editingMessage && (
-          <div className="fixed inset-0 bg-opacity-50 flex justify-center items-center z-50">
-            <div className=" p-4 rounded-lg w-80">
-              <textarea
-                className="w-full h-24 border rounded p-2"
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-              />
-              <div className="flex justify-end mt-2 gap-2">
-                <Button
-                  variant="secondary"
-                  onClick={() => setEditingMessage(null)}
-                >
-                  Cancel
-                </Button>
-                <Button onClick={handleUpdateMessage}>Update</Button>
-              </div>
-            </div>
-          </div>
-        )} */}
       </CardContent>
     </Card>
   );
-}
-
-{
-  /* <div
-                    className={`flex flex-col max-w-xs p-2 rounded-lg ${
-                      isOwn
-                        ? "self-end bg-blue-500 text-white"
-                        : "self-start bg-gray-200 text-black"
-                    } border ${
-                      msg.status === "error"
-                        ? "border-red-500"
-                        : "border-transparent"
-                    }`}
-                  >
-                    <span className="text-xs opacity-70">
-                      {isOwn ? "You" : findUser(msg.senderId).name}
-                    </span>
-                    <span>{msg.text}</span>
-                    {msg.status === "pending" && (
-                      <span className="text-xs text-yellow-400">
-                        Sending...
-                      </span>
-                    )}
-                    {msg.status === "error" && (
-                      <span className="text-xs text-red-500">
-                        Failed to send
-                      </span>
-                    )}
-                    {isOwn && msg.status === "sent" && (
-                      <span className="text-xs text-green-500 ">
-                        <CheckCheckIcon className="w-4 h-4" />
-                      </span>
-                    )}
-                    <span className="text-xs opacity-50 self-end">
-                      {currentDate.toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                        hour12: true,
-                      })}
-                    </span>
-                  </div> */
 }

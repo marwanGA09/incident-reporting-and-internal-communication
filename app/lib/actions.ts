@@ -108,6 +108,7 @@ export async function updateGroupMessage(
   newText: string,
   senderId: string
 ) {
+  console.log({ messageId, newText, senderId });
   return await prisma.groupMessage.update({
     where: { id: messageId, senderId },
     data: { text: newText },
