@@ -47,6 +47,12 @@ export default function GroupChat({
   const [editingMessage, setEditingMessage] = useState<any | null>(null);
   const [editedText, setEditedText] = useState("");
 
+  console.log(
+    "EDITED MESSAGE",
+    editingMessage?.id,
+    editingMessage?.text,
+    editedText
+  );
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const roomName = `group-chat:${groupId}`;
@@ -126,7 +132,7 @@ export default function GroupChat({
 
     try {
       // 2. Store in DB using your existing backend function
-      await sendGroupMessage({
+      const newMessage = await sendGroupMessage({
         text: messageText,
         departmentId: groupId,
         senderId: user.id,
@@ -137,13 +143,15 @@ export default function GroupChat({
       supabase.channel(roomName).send({
         type: "broadcast",
         event: "group-message",
-        payload: { ...tempMessage, status: "sent" },
+        payload: { ...newMessage, status: "sent" },
       });
 
       // 4. Update message status to sent
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === tempId ? { ...msg, status: "sent" } : msg
+          msg.id === tempId
+            ? { ...msg, status: "sent", id: newMessage.id }
+            : msg
         )
       );
     } catch (error: any) {
@@ -169,10 +177,10 @@ export default function GroupChat({
     setEditedText(msg.text);
   };
 
-  const handleDelete = async (id: string, senderId: string) => {
+  const handleDelete = async (id: string) => {
     try {
       // You need to implement this backend logic
-      const deletedThing = await deleteGroupMessage(id, senderId); // Your API
+      const deletedThing = await deleteGroupMessage(id); // Your API
       console.log({ deletedThing });
       setMessages((prev) => prev.filter((m) => m.id !== id));
 
@@ -202,7 +210,7 @@ export default function GroupChat({
   const handleUpdateMessage = async () => {
     if (!editingMessage) return;
     const updatedMessage = { ...editingMessage, text: editedText };
-    console.log({ editingMessage, updatedMessage });
+    // console.log({ editingMessage, updatedMessage });
     // 1. Optimistically show in UI as pending
     setMessages((prev) =>
       prev.map((msg) => (msg.id === editingMessage.id ? updatedMessage : msg))
@@ -213,17 +221,16 @@ export default function GroupChat({
     try {
       // 2. Store in DB using your existing backend function
 
-      await updateGroupMessage(
+      const dbUpdatedMessage = await updateGroupMessage(
         editingMessage.id,
-        editedText,
-        editingMessage.senderId
+        editedText
       );
 
       // 3. If saved successfully, broadcast to other clients
       supabase.channel(roomName).send({
         type: "broadcast",
         event: "UpdateGroupMessage",
-        payload: updatedMessage,
+        payload: dbUpdatedMessage,
       });
     } catch (error: any) {
       console.error("Update failed", error);
@@ -250,7 +257,6 @@ export default function GroupChat({
     console.log("SCROLL REF", scrollRef);
   }, [messages]);
 
-  const totalMessages = messages.length;
   return (
     <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
       <CardContent>
@@ -356,9 +362,7 @@ export default function GroupChat({
                                 Edit
                               </DropdownMenuItem>
                               <DropdownMenuItem
-                                onClick={() =>
-                                  handleDelete(msg.id, msg.senderId)
-                                }
+                                onClick={() => handleDelete(msg.id)}
                                 className="text-red-500"
                               >
                                 Delete

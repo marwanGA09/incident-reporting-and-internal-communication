@@ -95,23 +95,18 @@ export async function sendGroupMessage({
   });
 }
 
-export async function deleteGroupMessage(messageId: string, senderId: string) {
-  console.log({ messageId, senderId });
+export async function deleteGroupMessage(messageId: string) {
+  console.log({ messageId });
   return await prisma.groupMessage.delete({
     where: {
       id: messageId,
-      senderId,
     },
   });
 }
-export async function updateGroupMessage(
-  messageId: string,
-  newText: string,
-  senderId: string
-) {
-  console.log({ messageId, newText, senderId });
+export async function updateGroupMessage(messageId: string, newText: string) {
+  console.log({ messageId, newText });
   return await prisma.groupMessage.update({
-    where: { id: messageId, senderId },
+    where: { id: messageId },
     data: { text: newText },
   });
 }
