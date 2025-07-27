@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState, useTransition } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
@@ -15,12 +15,11 @@ import {
 import { setUserMetadata } from "@/app/(dashboard)/complete-profile/action";
 import toast from "react-hot-toast";
 import { Position } from "@/types/globals";
-import { Department } from "@prisma/client";
 
 export default function CompleteMetadataForm({
   departments,
 }: {
-  departments: Department[];
+  departments: { id: string; name: string }[];
 }) {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -1,5 +1,6 @@
 "use server";
 
+import logger from "@/app/lib/logger";
 import { clerkClient } from "@/lib/clerkClient";
 import { auth } from "@clerk/nextjs/server";
 
@@ -21,7 +22,7 @@ export async function setUserMetadata({
       publicMetadata: { role, position, departmentId },
     });
   } catch (error) {
-    console.error("Error updating user metadata:", error);
+    logger.error({ error }, "Error updating user metadata:");
     throw new Error("Failed to update user metadata");
   }
 }

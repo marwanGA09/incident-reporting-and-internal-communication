@@ -17,6 +17,7 @@ import { Label } from "@/components/ui/label";
 import { createDepartment } from "@/app/lib/actions";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
+import logger from "@/app/lib/logger";
 
 export function CreateDepartmentDialog() {
   const [open, setOpen] = useState(false);
@@ -38,7 +39,7 @@ export function CreateDepartmentDialog() {
         setEmail("");
         setOpen(false);
       } catch (error) {
-        console.error("Error creating department:", error);
+        logger.error({ error }, "Error creating department:");
         toast.error("Failed to create department");
         // Optionally show a toast or error state
       }

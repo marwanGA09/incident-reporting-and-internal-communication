@@ -38,9 +38,6 @@ function PageThreeForm({
     });
   };
 
-  if (errors.length > 0) {
-    console.log("ERRORS ", errors);
-  }
   return (
     <>
       {/* <InputForm

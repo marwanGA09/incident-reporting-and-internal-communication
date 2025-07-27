@@ -18,6 +18,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { createIncidentCategory } from "@/app/lib/actions";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
+import logger from "@/app/lib/logger";
 
 export function CreateCategoryDialog() {
   const [open, setOpen] = useState(false);
@@ -38,7 +39,7 @@ export function CreateCategoryDialog() {
         setDescription("");
         setOpen(false);
       } catch (error) {
-        console.error("Error creating incident category:", error);
+        logger.error({ error }, "Error creating incident category:");
         toast.error("Failed to create incident category");
         // Optionally show a toast or error state
       }

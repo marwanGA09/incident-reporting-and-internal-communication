@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { GroupMessage } from "@prisma/client";
 import Image from "next/image";
+import logger from "@/app/lib/logger";
 // import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({
@@ -121,7 +122,7 @@ export default function GroupChat({
     const tempId = crypto.randomUUID();
     const timestamp = new Date();
 
-    const tempMessage: GroupMessage = {
+    const tempMessage: GroupMessage & { status: string } = {
       id: tempId,
       senderId: user.id,
       text: messageText,
@@ -129,7 +130,6 @@ export default function GroupChat({
       roomName,
       createdAt: timestamp,
       updatedAt: timestamp,
-      // @ts-ignore
       status: "pending",
     };
 
@@ -162,7 +162,7 @@ export default function GroupChat({
         )
       );
     } catch (error) {
-      console.error("Send failed:", error);
+      logger.error({ error }, "Send failed:");
       const errorMessage =
         error instanceof Error ? error.message : "Send failed";
 
@@ -200,7 +200,7 @@ export default function GroupChat({
         payload: { id: id },
       });
     } catch (error) {
-      console.error("Failed to delete message", error);
+      logger.error({ error }, "Failed to delete message");
       const errorMessage =
         error instanceof Error ? error.message : "Delete failed";
       setMessages((prev) =>
@@ -251,7 +251,7 @@ export default function GroupChat({
         payload: dbUpdatedMessage,
       });
     } catch (error) {
-      console.error("Update failed", error);
+      logger.error({ error }, "Update failed");
       const errorMessage =
         error instanceof Error ? error.message : "Update failed";
       // 5. Update message with error

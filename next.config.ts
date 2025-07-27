@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   images: {
     domains: ["img.clerk.com"],
   },
+  // experimental: {
+  //   serverComponentsExternalPackages: ["pino", "pino-pretty"], // If using App Router & server components
+  // },
 };
 
 export default nextConfig;

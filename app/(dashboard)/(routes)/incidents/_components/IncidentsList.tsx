@@ -22,6 +22,7 @@ import Link from "next/link";
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 import { Department, Incident, IncidentCategory } from "@prisma/client";
 import { UserResource } from "@clerk/types";
+import logger from "@/app/lib/logger";
 
 function IncidentItem({
   incident,
@@ -57,8 +58,8 @@ function IncidentItem({
         });
         router.refresh();
       });
-    } catch (err) {
-      console.error("Status change failed", err);
+    } catch (error) {
+      logger.error({ error }, "Status change failed");
     }
   };
 

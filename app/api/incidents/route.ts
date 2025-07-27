@@ -1,3 +1,4 @@
+import logger from "@/app/lib/logger";
 import { prisma } from "@/app/lib/prisma";
 import { IncidentFormSchema } from "@/lib/validation/incidents";
 import { NextResponse } from "next/server";
@@ -16,7 +17,7 @@ export async function POST(req: Request) {
 
     return NextResponse.json(incident, { status: 201 });
   } catch (error) {
-    console.error("ERROR", error);
+    logger.error({ error }, "ERROR");
     return NextResponse.json(
       { error: "internal server error" },
       { status: 500 }
@@ -48,7 +49,7 @@ export async function PATCH(req: Request) {
 
     return NextResponse.json(updated, { status: 201 });
   } catch (error) {
-    console.error("ERROR", error);
+    logger.error({ error }, "ERROR");
     return NextResponse.json(
       { error: "internal server error" },
       { status: 500 }

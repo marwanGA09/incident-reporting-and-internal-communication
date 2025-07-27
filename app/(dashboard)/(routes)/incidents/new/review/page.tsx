@@ -9,6 +9,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import toast from "react-hot-toast";
+import logger from "@/app/lib/logger";
 
 export default function Review() {
   const router = useRouter();
@@ -40,8 +41,8 @@ export default function Review() {
         router.push("/incidents");
       });
       toast.success(" Incident submitted successfully!");
-    } catch (e) {
-      console.error("Submission Error", e);
+    } catch (error) {
+      logger.error({ error }, "Submission Error");
       setError("Failed to submit incident");
     }
   };

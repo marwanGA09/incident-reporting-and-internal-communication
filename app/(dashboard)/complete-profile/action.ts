@@ -17,9 +17,7 @@ export async function setUserMetadata({
   const { userId } = await auth();
   if (!userId) throw new Error("Not authenticated");
 
-  const something = await clerkClient.users.updateUser(userId, {
+  await clerkClient.users.updateUser(userId, {
     publicMetadata: { role, position, departmentId },
   });
-
-  console.log("something ", { something });
 }
