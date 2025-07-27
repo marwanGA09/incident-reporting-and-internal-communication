@@ -2,19 +2,18 @@
 "use server";
 import { prisma } from "@/app/lib/prisma"; // assumes prisma client is set up
 import { clerkClient } from "@/lib/clerkClient";
-import { json } from "stream/consumers";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
-  console.log({ name, email });
+  // console.log({ name, email });
   // console.log("some thing");
-  const testDepartment = await prisma.department.create({
+  await prisma.department.create({
     data: {
       name,
       email: email || null,
     },
   });
-  console.log({ testDepartment });
+  // console.log({ testDepartment });
   // optionally redirect or revalidate
 }
 export async function createIncidentCategory(
@@ -22,9 +21,9 @@ export async function createIncidentCategory(
   description: string
 ) {
   if (!name) throw new Error("Department name is required");
-  console.log({ name, description });
+  // console.log({ name, description });
   // console.log("some thing");
-  const testCategory = await prisma.incidentCategory.create({
+  await prisma.incidentCategory.create({
     data: {
       name,
       description,
@@ -36,7 +35,7 @@ export async function createIncidentCategory(
   //     email: email || null,
   //   },
   // });
-  console.log({ testCategory });
+  // console.log({ testCategory });
   // optionally redirect or revalidate
 }
 
@@ -89,14 +88,14 @@ export async function sendGroupMessage({
   senderId: string;
   roomName: string;
 }) {
-  console.log({ text, departmentId, senderId, roomName });
+  // console.log({ text, departmentId, senderId, roomName });
   return await prisma.groupMessage.create({
     data: { text, departmentId, senderId, roomName },
   });
 }
 
 export async function deleteGroupMessage(messageId: string) {
-  console.log({ messageId });
+  // console.log({ messageId });
   return await prisma.groupMessage.delete({
     where: {
       id: messageId,
@@ -104,7 +103,7 @@ export async function deleteGroupMessage(messageId: string) {
   });
 }
 export async function updateGroupMessage(messageId: string, newText: string) {
-  console.log({ messageId, newText });
+  // console.log({ messageId, newText });
   return await prisma.groupMessage.update({
     where: { id: messageId },
     data: { text: newText },

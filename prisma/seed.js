@@ -30,7 +30,7 @@ async function main() {
     ],
   });
 
-  console.log({ departments });
+  // console.log({ departments });
   // console.log("✅ Seed complete");
 }
 

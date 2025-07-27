@@ -2,7 +2,7 @@
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 async function main() {
-  console.log("🌱 Seeding incidents...");
+  // console.log("🌱 Seeding incidents...");
 
   // 1️⃣ Fetch available departments and categories
   const departments = await prisma.department.findMany();
@@ -19,8 +19,8 @@ async function main() {
     );
   }
 
-  console.log(`✅ Found ${departments.length} departments`);
-  console.log(`✅ Found ${categories.length} active categories`);
+  // console.log(`✅ Found ${departments.length} departments`);
+  // console.log(`✅ Found ${categories.length} active categories`);
 
   // 2️⃣ Generate 20 incidents
   const incidentsData = Array.from({ length: 20 }, (_, i) => {
@@ -42,7 +42,7 @@ async function main() {
     data: incidentsData,
   });
 
-  console.log(`✅ Seeded ${incidentsData.length} incidents`);
+  // console.log(`✅ Seeded ${incidentsData.length} incidents`);
 }
 
 main()

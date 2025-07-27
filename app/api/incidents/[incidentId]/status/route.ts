@@ -8,8 +8,8 @@ export async function PATCH(
   const body = await req.json();
   const { status } = body;
   const { incidentId } = await params;
-  console.log("PPPP", { incidentId, status });
-  const updated = await prisma.incident.update({
+  // console.log("PPPP", { incidentId, status });
+  await prisma.incident.update({
     where: { id: incidentId },
     data: { status },
   });

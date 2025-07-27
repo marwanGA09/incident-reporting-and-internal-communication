@@ -12,12 +12,22 @@ import { format } from "date-fns";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
+import {
+  Department,
+  Incident,
+  IncidentCategory,
+  IncidentStatusNote,
+} from "@prisma/client";
 
 export default function IncidentDetail({
   incident,
   clerkUsersMap,
 }: {
-  incident: any;
+  incident: Incident & {
+    statusNotes: IncidentStatusNote[];
+    category: IncidentCategory;
+    department: Department;
+  };
   clerkUsersMap: Record<string, { name: string; email: string }>;
 }) {
   return (
@@ -79,7 +89,7 @@ export default function IncidentDetail({
           ) : (
             <ScrollArea className="h-80 pr-2">
               <div className="space-y-4">
-                {incident.statusNotes.map((note: any) => (
+                {incident.statusNotes.map((note: IncidentStatusNote) => (
                   <div
                     key={note.id}
                     className="border rounded-lg p-4 space-y-2"

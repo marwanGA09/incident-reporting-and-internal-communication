@@ -15,10 +15,14 @@ import {
 import { setUserMetadata } from "@/app/(dashboard)/complete-profile/action";
 import toast from "react-hot-toast";
 import { Position } from "@/types/globals";
+import { Department } from "@prisma/client";
 
-export default function CompleteMetadataForm({ departments }: any) {
+export default function CompleteMetadataForm({
+  departments,
+}: {
+  departments: Department[];
+}) {
   const router = useRouter();
-  const pathname = usePathname();
   const searchParams = useSearchParams();
   const returnTo = searchParams.get("returnTo") || "/";
 
@@ -61,7 +65,7 @@ export default function CompleteMetadataForm({ departments }: any) {
                 <SelectValue placeholder="Select your department" />
               </SelectTrigger>
               <SelectContent>
-                {departments.map((dept: any) => (
+                {departments.map((dept) => (
                   <SelectItem key={dept.id} value={dept.id}>
                     {dept.name}
                   </SelectItem>
@@ -96,5 +100,5 @@ export default function CompleteMetadataForm({ departments }: any) {
         </div>
       </div>
     </div>
-  )
+  );
 }

@@ -18,36 +18,36 @@ import { useRouter } from "next/navigation";
 import { useTransition } from "react";
 import { EyeIcon, Loader2Icon } from "lucide-react";
 import { textShorter } from "@/lib/textShorter";
-import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
+import { Department, Incident, IncidentCategory } from "@prisma/client";
+import { UserResource } from "@clerk/types";
 
 function IncidentItem({
   incident,
   currentUser,
   users,
 }: {
-  // incident: Incident & { department: Department; category: IncidentCategory };
-  incident: any;
-  currentUser: any;
+  incident: Incident & { department: Department; category: IncidentCategory };
+  currentUser: UserResource;
   users: { name: string; id: string }[];
 }) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const handleAssign = async (userId: string, id: string) => {
-    const assign = startTransition(async () => {
+    startTransition(async () => {
       await axios.patch("api/incidents", { userId, id });
       router.refresh();
     });
   };
   const handleSubmitNote = async (
     note: string,
-    incidentId: any,
-    selectedStatus: any,
-    userId: any
+    incidentId: string,
+    selectedStatus: string,
+    userId: string
   ) => {
     try {
-      console.log({ note, incidentId, selectedStatus, userId });
+      // console.log({ note, incidentId, selectedStatus, userId });
       startTransition(async () => {
         await axios.patch("/api/incidents", {
           id: incidentId,
@@ -148,22 +148,24 @@ export default function IncidentsList({
   incidents,
   users,
 }: {
-  incidents: any;
+  incidents: (Incident & {
+    department: Department;
+    category: IncidentCategory;
+  })[];
   users: { name: string; id: string }[];
 }) {
   const { isLoaded, user: currentUser } = useUser();
   // const [userId, setUserId] = useState(incident.department?.AssignedToId);
-
-  if (!isLoaded) {
+  if (!isLoaded || !currentUser) {
     return <IncidentSkeleton />;
   }
 
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-x-auto">
-      {incidents.map((incident: any) => (
+      {incidents.map((incident) => (
         <IncidentItem
           key={`${incident.id}-${incident.assignedToId}`}
-          incident={incident}
+          incident={incident || []}
           currentUser={currentUser}
           users={users}
         />
