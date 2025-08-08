@@ -20,6 +20,7 @@ import {
   CheckCheckIcon,
   Edit3Icon,
   MoreHorizontalIcon,
+  MoveLeftIcon,
   SendIcon,
   XIcon,
 } from "lucide-react";
@@ -256,6 +257,47 @@ export default function DirectChat({
   return (
     <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
       <CardContent>
+        <div className="flex items-center justify-start gap-4 mb-4">
+          <MoveLeftIcon />
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-300">
+              {targetUser.imageUrl ? (
+                <Image
+                  src={targetUser.imageUrl}
+                  alt={targetUser.name}
+                  width={40}
+                  height={40}
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                  {targetUser.name?.charAt(0).toUpperCase()}
+                </div>
+              )}
+            </div>
+            <div className="flex flex-col">
+              <span className="font-semibold text-sm">{targetUser.name}</span>
+              <span className="text-xs text-gray-500">last seen recently</span>
+              {/* You can make this dynamic later if you implement online presence tracking */}
+            </div>
+          </div>
+          <div className="ml-auto ">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button size="icon" variant="ghost">
+                  <MoreHorizontalIcon className="h-5 w-5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem>View Profile</DropdownMenuItem>
+                <DropdownMenuItem>Block</DropdownMenuItem>
+                <DropdownMenuItem className="text-red-500">
+                  Report
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
         <ScrollArea className="h-96 overflow-y-auto">
           <div className="flex flex-col gap-2">
             {messages.map(
@@ -309,7 +351,7 @@ export default function DirectChat({
                         isOwn ? "self-end flex-row-reverse" : "self-start"
                       }`}
                     >
-                      {!isOwn && (
+                      {/* {!isOwn && (
                         <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
                           {targetUser.imageUrl ? (
                             <Image
@@ -325,7 +367,7 @@ export default function DirectChat({
                             </div>
                           )}
                         </div>
-                      )}
+                      )} */}
 
                       {/* <div
                         className={`flex flex-col max-w-xs p-2 rounded-lg ${
@@ -347,9 +389,9 @@ export default function DirectChat({
                             : "border-transparent"
                         }`}
                       >
-                        <span className="text-xs opacity-70">
+                        {/* <span className="text-xs opacity-70">
                           {isOwn ? "You" : targetUser.name}
-                        </span>
+                        </span> */}
 
                         {isOwn ? (
                           <div className="relative">
@@ -358,7 +400,7 @@ export default function DirectChat({
                                 <Button
                                   size="icon"
                                   variant="ghost"
-                                  className="absolute -top-6 -right-2 h-6 w-6 p-0"
+                                  className="absolute -top-2-right-2 h-6 w-6 p-0"
                                 >
                                   <MoreHorizontalIcon className="h-4 w-4" />
                                 </Button>
