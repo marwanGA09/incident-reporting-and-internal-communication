@@ -109,3 +109,38 @@ export async function updateGroupMessage(messageId: string, newText: string) {
     data: { text: newText },
   });
 }
+
+// ******
+
+export async function sendDirectMessage({
+  senderId,
+  recipientId,
+  text,
+  roomName,
+}: {
+  senderId: string;
+  recipientId: string;
+  text: string;
+  roomName: string;
+}) {
+  return await prisma.directMessage.create({
+    data: {
+      senderId,
+      receiverId: recipientId,
+      text,
+      roomName,
+    },
+  });
+}
+
+export async function getDirectMessages(userId1: string, userId2: string) {
+  return await prisma.directMessage.findMany({
+    where: {
+      OR: [
+        { senderId: userId1, receiverId: userId2 },
+        { senderId: userId2, receiverId: userId1 },
+      ],
+    },
+    orderBy: { createdAt: "asc" },
+  });
+}
