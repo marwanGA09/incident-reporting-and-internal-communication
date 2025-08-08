@@ -3,7 +3,7 @@
 "use client";
 
 import { useUser } from "@clerk/nextjs";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
 import { getDirectMessages, sendDirectMessage } from "@/app/lib/actions";
 import { Textarea } from "@/components/ui/textarea";
@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectMessage } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
+import { SendIcon } from "lucide-react";
 
 export default function DirectChat({
   targetUser,
@@ -85,30 +86,88 @@ export default function DirectChat({
       <CardContent>
         <ScrollArea className="h-96 overflow-y-auto">
           <div className="flex flex-col gap-2">
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`self-${
-                  msg.senderId === currentUserId ? "end" : "start"
-                }`}
-              >
-                <div className="bg-gray-200 p-2 rounded-lg max-w-xs">
-                  <span className="text-sm">{msg.text}</span>
-                </div>
-              </div>
-            ))}
+            {messages.map((msg, idx) => {
+              // console.log({ msg });
+              const isOwn = msg.senderId === currentUserId;
+              const isUpdated =
+                new Date(msg.updatedAt).getTime() >
+                new Date(msg.createdAt).getTime();
+              const currentDate = isUpdated
+                ? new Date(msg.updatedAt)
+                : new Date(msg.createdAt);
+              const prevDate =
+                idx > 0 ? new Date(messages[idx - 1].createdAt) : null;
+
+              const showDateSeparator =
+                !prevDate ||
+                currentDate.getDate() !== prevDate.getDate() ||
+                currentDate.getMonth() !== prevDate.getMonth() ||
+                currentDate.getFullYear() !== prevDate.getFullYear();
+
+              const dateOptions: Intl.DateTimeFormatOptions = {
+                month: "long",
+                day: "numeric",
+              };
+
+              if (currentDate.getFullYear() !== new Date().getFullYear()) {
+                dateOptions.year = "numeric";
+              }
+
+              const formattedDate = currentDate.toLocaleDateString(
+                undefined,
+                dateOptions
+              );
+
+              return (
+                <React.Fragment key={msg.id}>
+                  {showDateSeparator && (
+                    <div className="self-center text-xs text-gray-400 font-semibold py-2">
+                      {formattedDate}
+                    </div>
+                  )}
+                  <div
+                    key={msg.id}
+                    className={`flex items-end gap-2 px-6 ${
+                      isOwn ? "self-end flex-row-reverse" : "self-start"
+                    }`}
+                  >
+                    <div
+                      className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                        isOwn
+                          ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-black"
+                      } `}
+                    >
+                      <span className="text-sm">{msg.text}</span>
+                    </div>
+
+                    {/* <div className="bg-gray-200 p-2 rounded-lg max-w-xs">
+                  </div> */}
+                  </div>
+                </React.Fragment>
+              );
+            })}
             <div ref={scrollRef} />
           </div>
-          <div className="mt-4 flex gap-2">
-            <Textarea
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              rows={1}
-              placeholder="Type a message..."
-            />
-            <Button onClick={handleSend}>Send</Button>
-          </div>
-        </ScrollArea>
+        </ScrollArea>{" "}
+        <div className="mt-4 flex gap-2">
+          <Textarea
+            rows={1}
+            placeholder="Type a message..."
+            className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
+            value={messageText}
+            onChange={(e) => setMessageText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                handleSend();
+              }
+            }}
+          />{" "}
+          <Button onClick={handleSend}>
+            <SendIcon />
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
