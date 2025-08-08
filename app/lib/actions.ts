@@ -114,19 +114,19 @@ export async function updateGroupMessage(messageId: string, newText: string) {
 
 export async function sendDirectMessage({
   senderId,
-  recipientId,
+  receiverId,
   text,
   roomName,
 }: {
   senderId: string;
-  recipientId: string;
+  receiverId: string;
   text: string;
   roomName: string;
 }) {
   return await prisma.directMessage.create({
     data: {
       senderId,
-      receiverId: recipientId,
+      receiverId,
       text,
       roomName,
     },
@@ -142,5 +142,22 @@ export async function getDirectMessages(userId1: string, userId2: string) {
       ],
     },
     orderBy: { createdAt: "asc" },
+  });
+}
+
+export async function deleteDirectMessage(messageId: string) {
+  // console.log({ messageId });
+  return await prisma.directMessage.delete({
+    where: {
+      id: messageId,
+    },
+  });
+}
+
+export async function updateDirectMessage(messageId: string, newText: string) {
+  // console.log({ messageId, newText });
+  return await prisma.directMessage.update({
+    where: { id: messageId },
+    data: { text: newText },
   });
 }

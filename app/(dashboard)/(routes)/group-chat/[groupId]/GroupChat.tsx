@@ -29,7 +29,6 @@ import {
 import { GroupMessage } from "@prisma/client";
 import Image from "next/image";
 import logger from "@/app/lib/logger";
-// import { v4 as uuidv4 } from "uuid";
 
 export default function GroupChat({
   groupId,
@@ -463,13 +462,6 @@ export default function GroupChat({
         <div className="mt-4 flex gap-2">
           {!editingMessage ? (
             <>
-              {" "}
-              {/* <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-              /> */}
               <Textarea
                 rows={1}
                 placeholder="Type a message..."
