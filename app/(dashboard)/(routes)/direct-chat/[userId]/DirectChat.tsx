@@ -12,6 +12,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectMessage } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { SendIcon } from "lucide-react";
+import Image from "next/image";
 
 export default function DirectChat({
   targetUser,
@@ -27,6 +28,12 @@ export default function DirectChat({
   const { user } = useUser();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [messageText, setMessageText] = useState("");
+
+  const [editingMessage, setEditingMessage] = useState<DirectMessage | null>(
+    null
+  );
+  const [editedText, setEditedText] = useState("");
+
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const currentUserId = user?.id;
@@ -47,7 +54,22 @@ export default function DirectChat({
 
     channel
       .on("broadcast", { event: "direct-message" }, (payload) => {
-        setMessages((prev) => [...prev, payload.payload]);
+        const newMessage = payload.payload;
+        setMessages((prev) => [...prev, { ...newMessage, status: "sent" }]);
+      })
+      .on("broadcast", { event: "UpdateDirectMessage" }, (payload) => {
+        const updatedMessage = payload.payload;
+
+        setMessages((prev) =>
+          prev.map((msg) =>
+            msg.id === updatedMessage.id ? updatedMessage : msg
+          )
+        );
+      })
+      .on("broadcast", { event: "DeleteDirectMessage" }, (payload) => {
+        const { id } = payload.payload;
+        // console.log({ id });
+        setMessages((prev) => prev.filter((msg) => msg.id !== id));
       })
       .subscribe();
 
@@ -126,11 +148,28 @@ export default function DirectChat({
                     </div>
                   )}
                   <div
-                    key={msg.id}
                     className={`flex items-end gap-2 px-6 ${
                       isOwn ? "self-end flex-row-reverse" : "self-start"
                     }`}
                   >
+                    {!isOwn && (
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
+                        {targetUser.imageUrl ? (
+                          <Image
+                            src={targetUser.imageUrl}
+                            alt={targetUser.name}
+                            width={40}
+                            height={40}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
+                            {targetUser.name?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
                     <div
                       className={`flex flex-col max-w-xs p-2 rounded-lg ${
                         isOwn
