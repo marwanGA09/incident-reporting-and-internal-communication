@@ -20,6 +20,9 @@ import {
 import SidebarClient from "./SidebarClient";
 import { currentUser } from "@clerk/nextjs/server";
 import { getDepartments } from "@/app/lib/actions";
+import { prisma } from "@/app/lib/prisma";
+import { clerkClient } from "@/lib/clerkClient";
+import Image from "next/image";
 
 // Menu items.
 const incidentsLink = [
@@ -49,6 +52,7 @@ export async function AppSidebar() {
   //     };
   //   })
   // );
+
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
       ? (await getDepartments()).map((dep) => {
@@ -80,6 +84,58 @@ export async function AppSidebar() {
       icon: ShieldPlusIcon,
     },
   ];
+
+  // const DmUsers = await prisma.directMessage.findMany({
+  //   select: {
+  //     receiverId: true,
+  //     senderId: true,
+  //   },
+  //   where: {
+  //     roomName: {
+  //       contains: user?.id,
+  //     },
+  //   },
+  // });
+
+  const DmUsers = await prisma.directMessage.findMany({
+    select: {
+      senderId: true,
+      receiverId: true,
+    },
+    where: {
+      roomName: {
+        contains: user?.id,
+      },
+    },
+  });
+
+  const uniqueUserIds = [
+    ...new Set(DmUsers.flatMap((dm) => [dm.senderId, dm.receiverId])),
+  ].filter((id) => id !== user?.id);
+  // console.log({ User: user?.id });
+  // console.log(uniqueUserIds);
+
+  const { data } = await clerkClient.users.getUserList({
+    userId: uniqueUserIds,
+    orderBy: "-created_at",
+    limit: 500,
+  });
+
+  const listOfUsers = data.map((user) => {
+    // console.log({ user });
+
+    return {
+      name: user?.firstName || "",
+      id: user.id,
+      imageUrl: user.imageUrl || "",
+      // username: user.username || "",
+      // email: user.primaryEmailAddress?.emailAddress || "",
+    };
+  });
+
+  console.log({ listOfUsers });
+  // await prisma.directMessage.findUnique
+  // console.log({ DmUsers });
   // if (!isLoaded) return;
   if (!user) return;
   return (
@@ -123,7 +179,32 @@ export async function AppSidebar() {
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {chatLink.map((item) => (
+              {listOfUsers.map((user) => (
+                <SidebarMenuItem key={user.name}>
+                  <SidebarMenuButton asChild>
+                    <a href={`/direct-chat/${user.id}`}>
+                      {/* <item.icon /> */}{" "}
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
+                        {user.imageUrl ? (
+                          <Image
+                            src={user.imageUrl}
+                            alt={user.name}
+                            width={20}
+                            height={20}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                            {user.name?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <span>{user.name}</span>
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              ))}
+              {/* {chatLink.map((item) => (
                 <SidebarMenuItem key={item.title}>
                   <SidebarMenuButton asChild>
                     <a href={item.url}>
@@ -132,7 +213,7 @@ export async function AppSidebar() {
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-              ))}
+              ))} */}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
