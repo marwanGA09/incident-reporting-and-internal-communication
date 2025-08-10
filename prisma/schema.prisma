@@ -23,6 +23,8 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+
+
 model Department {
   id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name  String
@@ -30,6 +32,23 @@ model Department {
 
   incidents     Incident[]
   groupMessages GroupMessage[]
+  users User[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User { 
+  id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clerkId  String? @unique 
+  firstName String? 
+  lastName  String? 
+  username String? @unique
+  imageUrl  String? 
+  email     String?  
+  role     String? 
+  position String? 
+  departmentId String? @db.Uuid
+  department   Department? @relation(fields: [departmentId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

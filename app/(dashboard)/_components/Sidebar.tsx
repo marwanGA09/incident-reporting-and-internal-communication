@@ -23,6 +23,7 @@ import { getDepartments } from "@/app/lib/actions";
 import { prisma } from "@/app/lib/prisma";
 import { clerkClient } from "@/lib/clerkClient";
 import Image from "next/image";
+import { Input } from "@/components/ui/input";
 
 // Menu items.
 const incidentsLink = [
@@ -41,17 +42,6 @@ const incidentsLink = [
 export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
-  // console.log(`${user?.publicMetadata?.departmentId}`);
-  // console.log(
-  //   "DKLJF",
-  //   (await getDepartments()).map((dep) => {
-  //     return {
-  //       title: dep.name,
-  //       url: `/group-chat/${dep.id}`,
-  //       icon: BlendIcon,
-  //     };
-  //   })
-  // );
 
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
@@ -105,6 +95,7 @@ export async function AppSidebar() {
     where: {
       roomName: {
         contains: user?.id,
+        mode: "insensitive",
       },
     },
   });
@@ -133,7 +124,6 @@ export async function AppSidebar() {
     };
   });
 
-  console.log({ listOfUsers });
   // await prisma.directMessage.findUnique
   // console.log({ DmUsers });
   // if (!isLoaded) return;
@@ -175,12 +165,12 @@ export async function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>{" "}
-        <SidebarGroup>
+        <SidebarGroup className=" h-full">
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {listOfUsers.map((user) => (
-                <SidebarMenuItem key={user.name}>
+                <SidebarMenuItem key={user.id}>
                   <SidebarMenuButton asChild>
                     <a href={`/direct-chat/${user.id}`}>
                       {/* <item.icon /> */}{" "}
@@ -204,18 +194,12 @@ export async function AppSidebar() {
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               ))}
-              {/* {chatLink.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))} */}
             </SidebarMenu>
           </SidebarGroupContent>
+          <div className="mt-auto">
+            <SidebarGroupLabel>Search Users</SidebarGroupLabel>
+            <Input placeholder="Search users..." />
+          </div>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
