@@ -40,6 +40,7 @@ export async function createIncidentCategory(
 }
 
 export const getDepartments = async (id?: string) => {
+  console.log("Fetching departments", { id });
   const departments = id
     ? await prisma.department.findMany({
         where: { id },
@@ -52,6 +53,7 @@ export const getDepartments = async (id?: string) => {
           name: "asc",
         },
       });
+  console.log({ departments });
   return departments ?? [];
 };
 

@@ -42,7 +42,9 @@ const incidentsLink = [
 export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
-
+  console.log({ user });
+  console.log(`${user?.publicMetadata?.departmentId}`);
+  if (!user) return;
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
       ? (await getDepartments()).map((dep) => {

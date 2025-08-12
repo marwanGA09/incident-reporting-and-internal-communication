@@ -31,6 +31,7 @@ import { NextRequest } from "next/server";
 //   }
 // }
 import { prisma } from "@/app/lib/prisma";
+import { isValidUUID } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
   try {
@@ -42,7 +43,6 @@ export async function POST(req: NextRequest) {
       const u = evt.data as any; // Clerk's UserJSON — shape varies; be defensive
 
       const clerkId = u.id;
-
       const firstName = u.first_name ?? u.firstName ?? null;
       const lastName = u.last_name ?? u.lastName ?? null;
       const imageUrl = u.image_url ?? u.imageUrl ?? null;
@@ -58,6 +58,7 @@ export async function POST(req: NextRequest) {
           u.email_addresses[0]?.email_address) ||
         null;
 
+      console.log({ clerkId, departmentId });
       //   console.log({
       //     id,
       //     firstName,
@@ -80,7 +81,7 @@ export async function POST(req: NextRequest) {
           email: primaryEmail,
           position,
           role,
-          departmentId,
+          departmentId: isValidUUID(departmentId) ? departmentId : null,
           username,
         },
         update: {
@@ -90,7 +91,7 @@ export async function POST(req: NextRequest) {
           email: primaryEmail,
           position,
           role,
-          departmentId,
+          departmentId: isValidUUID(departmentId) ? departmentId : null,
           username,
         },
       });
