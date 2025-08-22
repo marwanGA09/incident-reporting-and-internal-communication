@@ -163,3 +163,23 @@ export async function updateDirectMessage(messageId: string, newText: string) {
     data: { text: newText },
   });
 }
+
+export async function searchUsers(searchTerm: string) {
+  if (!searchTerm) return [];
+  try {
+    const users = await prisma.user.findMany({
+      where: {
+        OR: [
+          { firstName: { contains: searchTerm, mode: "insensitive" } },
+          { lastName: { contains: searchTerm, mode: "insensitive" } },
+          { email: { contains: searchTerm, mode: "insensitive" } },
+          { username: { contains: searchTerm, mode: "insensitive" } },
+        ],
+      },
+    });
+    return users;
+  } catch (error) {
+    console.error("Error searching users:", error);
+    return [];
+  }
+}

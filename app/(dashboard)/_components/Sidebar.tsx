@@ -24,6 +24,7 @@ import { prisma } from "@/app/lib/prisma";
 import { clerkClient } from "@/lib/clerkClient";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
+import SearchUsers from "./SearchUser";
 
 // Menu items.
 const incidentsLink = [
@@ -42,6 +43,7 @@ const incidentsLink = [
 export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
+  if (!user) return;
   console.log({ user });
   console.log(`${user?.publicMetadata?.departmentId}`);
   if (!user) return;
@@ -76,18 +78,6 @@ export async function AppSidebar() {
       icon: ShieldPlusIcon,
     },
   ];
-
-  // const DmUsers = await prisma.directMessage.findMany({
-  //   select: {
-  //     receiverId: true,
-  //     senderId: true,
-  //   },
-  //   where: {
-  //     roomName: {
-  //       contains: user?.id,
-  //     },
-  //   },
-  // });
 
   const DmUsers = await prisma.directMessage.findMany({
     select: {
@@ -126,10 +116,19 @@ export async function AppSidebar() {
     };
   });
 
+  const usersFromDB = await prisma.user.findMany({
+    where: {
+      clerkId: { in: uniqueUserIds },
+    },
+    include: {
+      department: true,
+    },
+  });
+  console.log({ usersFromDB });
   // await prisma.directMessage.findUnique
   // console.log({ DmUsers });
   // if (!isLoaded) return;
-  if (!user) return;
+
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
@@ -171,27 +170,27 @@ export async function AppSidebar() {
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {listOfUsers.map((user) => (
+              {usersFromDB.map((user) => (
                 <SidebarMenuItem key={user.id}>
                   <SidebarMenuButton asChild>
-                    <a href={`/direct-chat/${user.id}`}>
+                    <a href={`/direct-chat/${user.clerkId}`}>
                       {/* <item.icon /> */}{" "}
                       <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
                         {user.imageUrl ? (
                           <Image
                             src={user.imageUrl}
-                            alt={user.name}
+                            alt={user.firstName || "user"}
                             width={20}
                             height={20}
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                            {user.name?.charAt(0).toUpperCase()}
+                            {user.firstName?.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
-                      <span>{user.name}</span>
+                      <span>{user.firstName}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
@@ -199,8 +198,9 @@ export async function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
           <div className="mt-auto">
-            <SidebarGroupLabel>Search Users</SidebarGroupLabel>
-            <Input placeholder="Search users..." />
+            {/* <SidebarGroupLabel>Search Users</SidebarGroupLabel>
+            <Input placeholder="Search users..." /> */}
+            <SearchUsers />
           </div>
         </SidebarGroup>
       </SidebarContent>
