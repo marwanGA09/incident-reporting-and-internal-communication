@@ -1,5 +1,3 @@
-// app/(dashboard)/chat/[userId]/DirectChat.tsx
-
 "use client";
 
 import { useUser } from "@clerk/nextjs";
@@ -21,6 +19,7 @@ import {
   Edit3Icon,
   MoreHorizontalIcon,
   MoveLeftIcon,
+  NotebookIcon,
   SendIcon,
   XIcon,
 } from "lucide-react";
@@ -45,6 +44,7 @@ export default function DirectChat({
   };
 }) {
   const { user } = useUser();
+  console.log("DirectChat user:", user);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [messageText, setMessageText] = useState("");
 
@@ -260,26 +260,44 @@ export default function DirectChat({
         <div className="flex items-center justify-start gap-4 mb-4">
           <MoveLeftIcon />
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-300">
-              {targetUser.imageUrl ? (
-                <Image
-                  src={targetUser.imageUrl}
-                  alt={targetUser.name}
-                  width={40}
-                  height={40}
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                  {targetUser.name?.charAt(0).toUpperCase()}
+            {user?.id === targetUserId ? (
+              <>
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-300 flex justify-center items-center">
+                  <NotebookIcon />
                 </div>
-              )}
-            </div>
-            <div className="flex flex-col">
-              <span className="font-semibold text-sm">{targetUser.name}</span>
-              <span className="text-xs text-gray-500">last seen recently</span>
-              {/* You can make this dynamic later if you implement online presence tracking */}
-            </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">Saved Message</span>
+                </div>
+              </>
+            ) : (
+              <>
+                {" "}
+                <div className="w-10 h-10 rounded-full overflow-hidden border border-gray-300">
+                  {targetUser.imageUrl ? (
+                    <Image
+                      src={targetUser.imageUrl}
+                      alt={targetUser.name}
+                      width={40}
+                      height={40}
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                      {targetUser.name?.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-semibold text-sm">
+                    {targetUser.name || "Unknown User"}
+                  </span>
+                  <span className="text-xs text-gray-500">
+                    last seen recently
+                  </span>
+                  {/* You can make this dynamic later if you implement online presence tracking */}
+                </div>
+              </>
+            )}
           </div>
           <div className="ml-auto ">
             <DropdownMenu>

@@ -33,8 +33,6 @@ export default function SearchUsers() {
 
     const fetchUsers = async () => {
       const users = await searchUsers(debouncedTerm);
-      console.log({ debouncedTerm });
-      console.log("Users:", users);
       setUsersFromDB(users);
     };
 

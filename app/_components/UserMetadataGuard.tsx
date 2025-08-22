@@ -12,7 +12,6 @@ export default function UserMetadataGuard({
   const { user, isLoaded } = useUser();
   const router = useRouter();
   const pathname = usePathname();
-  console.log("they came here");
   // useEffect(() => {
   //   console.log("userMetadataGuard", { user, isLoaded, pathname });
 
@@ -38,9 +37,6 @@ export default function UserMetadataGuard({
   // }, [isLoaded, user, pathname, router]);
   useEffect(() => {
     if (!isLoaded) return; // Wait for Clerk to finish loading
-
-    console.log("UserMetadataGuard", { user, isLoaded, pathname });
-    console.log("user public data", user?.publicMetadata);
 
     if (!user) {
       // Maybe redirect to sign in

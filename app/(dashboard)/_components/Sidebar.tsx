@@ -2,6 +2,7 @@
 import {
   BlendIcon,
   Grid2X2Check,
+  NotebookIcon,
   ShieldCheckIcon,
   ShieldPlusIcon,
 } from "lucide-react";
@@ -44,8 +45,6 @@ export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
   if (!user) return;
-  console.log({ user });
-  console.log(`${user?.publicMetadata?.departmentId}`);
   if (!user) return;
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
@@ -124,10 +123,6 @@ export async function AppSidebar() {
       department: true,
     },
   });
-  console.log({ usersFromDB });
-  // await prisma.directMessage.findUnique
-  // console.log({ DmUsers });
-  // if (!isLoaded) return;
 
   return (
     <Sidebar collapsible="icon" variant="floating">
@@ -170,6 +165,17 @@ export async function AppSidebar() {
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
+              <SidebarMenuItem key={user.id}>
+                <SidebarMenuButton asChild>
+                  <a href={`/direct-chat/${user.id}`}>
+                    {/* <item.icon /> */}{" "}
+                    <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 flex justify-center items-center">
+                      {<NotebookIcon className="w-5 h-5" />}
+                    </div>
+                    <span>Saved Message</span>
+                  </a>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
               {usersFromDB.map((user) => (
                 <SidebarMenuItem key={user.id}>
                   <SidebarMenuButton asChild>

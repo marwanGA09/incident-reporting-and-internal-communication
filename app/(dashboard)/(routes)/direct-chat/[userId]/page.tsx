@@ -9,7 +9,6 @@ export default async function Page({
   params: Promise<{ userId: string }>;
 }) {
   logger.info("Direct chat page loaded", (await params).userId);
-  console.log("Direct chat page loaded", (await params).userId);
 
   let targetUser;
   try {
@@ -21,7 +20,6 @@ export default async function Page({
       username: responseObj.username || "",
       email: responseObj.primaryEmailAddress?.emailAddress || "",
     };
-    console.log({ targetUser });
   } catch (error) {
     console.error("Error fetching target user:", error);
   }

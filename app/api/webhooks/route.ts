@@ -58,7 +58,6 @@ export async function POST(req: NextRequest) {
           u.email_addresses[0]?.email_address) ||
         null;
 
-      console.log({ clerkId, departmentId });
       //   console.log({
       //     id,
       //     firstName,
