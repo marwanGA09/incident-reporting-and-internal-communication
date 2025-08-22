@@ -2,6 +2,7 @@
 "use server";
 import { prisma } from "@/app/lib/prisma"; // assumes prisma client is set up
 import { clerkClient } from "@/lib/clerkClient";
+import logger from "./logger";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
@@ -177,7 +178,7 @@ export async function searchUsers(searchTerm: string) {
     });
     return users;
   } catch (error) {
-    console.error("Error searching users:", error);
+    logger.error({ error }, "Error searching users:");
     return [];
   }
 }

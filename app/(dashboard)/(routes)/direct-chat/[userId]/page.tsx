@@ -21,7 +21,7 @@ export default async function Page({
       email: responseObj.primaryEmailAddress?.emailAddress || "",
     };
   } catch (error) {
-    console.error("Error fetching target user:", error);
+    logger.error({ error }, "Error fetching target user:");
   }
   if (!targetUser) {
     return <div className="p-6">User not found</div>;

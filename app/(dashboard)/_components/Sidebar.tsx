@@ -22,9 +22,7 @@ import SidebarClient from "./SidebarClient";
 import { currentUser } from "@clerk/nextjs/server";
 import { getDepartments } from "@/app/lib/actions";
 import { prisma } from "@/app/lib/prisma";
-import { clerkClient } from "@/lib/clerkClient";
 import Image from "next/image";
-import { Input } from "@/components/ui/input";
 import SearchUsers from "./SearchUser";
 
 // Menu items.
@@ -65,19 +63,6 @@ export async function AppSidebar() {
           },
         ];
 
-  const chatLink = [
-    {
-      title: "chat 1",
-      url: "/incidents",
-      icon: ShieldCheckIcon,
-    },
-    {
-      title: "chat 2",
-      url: "/incidents/new/step-1",
-      icon: ShieldPlusIcon,
-    },
-  ];
-
   const DmUsers = await prisma.directMessage.findMany({
     select: {
       senderId: true,
@@ -96,24 +81,6 @@ export async function AppSidebar() {
   ].filter((id) => id !== user?.id);
   // console.log({ User: user?.id });
   // console.log(uniqueUserIds);
-
-  const { data } = await clerkClient.users.getUserList({
-    userId: uniqueUserIds,
-    orderBy: "-created_at",
-    limit: 500,
-  });
-
-  const listOfUsers = data.map((user) => {
-    // console.log({ user });
-
-    return {
-      name: user?.firstName || "",
-      id: user.id,
-      imageUrl: user.imageUrl || "",
-      // username: user.username || "",
-      // email: user.primaryEmailAddress?.emailAddress || "",
-    };
-  });
 
   const usersFromDB = await prisma.user.findMany({
     where: {

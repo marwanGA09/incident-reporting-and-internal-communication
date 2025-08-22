@@ -44,7 +44,6 @@ export default function DirectChat({
   };
 }) {
   const { user } = useUser();
-  console.log("DirectChat user:", user);
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [messageText, setMessageText] = useState("");
 
@@ -95,7 +94,7 @@ export default function DirectChat({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [currentUserId, targetUserId]);
+  }, [currentUserId, targetUserId, roomName]);
 
   const handleSend = async () => {
     if (!messageText.trim() || !currentUserId) return;
