@@ -3,8 +3,11 @@ import { NavigationMenu } from "./_components/Navbar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./_components/Sidebar";
 import UserMetadataGuard from "../_components/UserMetadataGuard";
+import { currentUser } from "@clerk/nextjs/server";
 
-function DashboardLayout({ children }: { children: React.ReactNode }) {
+async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const user = await currentUser();
+  if (!user) return null;
   return (
     <UserMetadataGuard>
       <SidebarProvider defaultOpen={true}>

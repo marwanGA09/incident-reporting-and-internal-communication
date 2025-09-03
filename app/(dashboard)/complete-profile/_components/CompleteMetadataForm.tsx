@@ -51,14 +51,16 @@ export default function CompleteMetadataForm({
 
   return (
     <div className=" ">
-      <div className="bg-white shadow-md rounded-2xl p-8 max-w-md w-full space-y-6">
-        <h2 className="text-2xl font-semibold text-center">
+      <div className="shadow-md rounded-2xl p-8 max-w-md w-full space-y-6">
+        <h2 className="text-2xl font-semibold text-center mb-4">
           Complete Your Profile
         </h2>
 
         <div className="space-y-4">
           <div>
-            <Label htmlFor="department">Department</Label>
+            <Label htmlFor="department" className="mb-4">
+              Department
+            </Label>
             <Select onValueChange={setDepartmentId}>
               <SelectTrigger id="department">
                 <SelectValue placeholder="Select your department" />
@@ -74,7 +76,9 @@ export default function CompleteMetadataForm({
           </div>
 
           <div>
-            <Label htmlFor="position">Position</Label>
+            <Label htmlFor="position" className="mb-4">
+              Position
+            </Label>
             <Select onValueChange={(v: Position) => setPosition(v)}>
               <SelectTrigger id="position">
                 <SelectValue placeholder="Select your position" />

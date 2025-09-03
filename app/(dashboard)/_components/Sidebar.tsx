@@ -43,7 +43,6 @@ export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
   if (!user) return;
-  if (!user) return;
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
       ? (await getDepartments()).map((dep) => {
