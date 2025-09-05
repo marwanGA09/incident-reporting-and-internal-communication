@@ -139,7 +139,7 @@ export default function UserMetadataGuard({
     const missing = !departmentId || !position;
     if (missing) {
       const encoded = encodeURIComponent(pathname);
-      router.replace(`/complete-profile?returnTo=${encoded}`);
+      router.push(`/complete-profile?returnTo=${encoded}`);
     }
   }, [router, pathname, user]);
   return <>{children}</>;

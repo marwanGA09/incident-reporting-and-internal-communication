@@ -282,13 +282,13 @@ export default function DirectChat({
                     />
                   ) : (
                     <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                      {targetUser.name?.charAt(0).toUpperCase()}
+                      {targetUser.username?.charAt(0).toUpperCase()}
                     </div>
                   )}
                 </div>
                 <div className="flex flex-col">
                   <span className="font-semibold text-sm">
-                    {targetUser.name || "Unknown User"}
+                    {targetUser.username || "Unknown User"}
                   </span>
                   <span className="text-xs text-gray-500">
                     last seen recently

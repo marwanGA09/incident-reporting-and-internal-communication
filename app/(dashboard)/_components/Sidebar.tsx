@@ -43,6 +43,7 @@ export async function AppSidebar() {
   // const { user, isLoaded } = useUser();
   const user = await currentUser();
   if (!user) return;
+  console.log("user in sidebar", user?.publicMetadata?.role);
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
       ? (await getDepartments()).map((dep) => {
@@ -151,18 +152,18 @@ export async function AppSidebar() {
                         {user.imageUrl ? (
                           <Image
                             src={user.imageUrl}
-                            alt={user.firstName || "user"}
+                            alt={user.username || "user"}
                             width={20}
                             height={20}
                             className="w-full h-full object-cover"
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                            {user.firstName?.charAt(0).toUpperCase()}
+                            {user.username?.charAt(0).toUpperCase()}
                           </div>
                         )}
                       </div>
-                      <span>{user.firstName}</span>
+                      <span>{user.username}</span>
                     </a>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
