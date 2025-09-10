@@ -35,6 +35,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { uploadFile } from "@/lib/uploadFile";
 import { Input } from "@/components/ui/input";
+import { PendingAttachment } from "@/lib/defination";
 
 export default function DirectChat({
   targetUser,
@@ -175,28 +176,32 @@ export default function DirectChat({
     const timestamp = new Date();
 
     // 1. Upload attachments
-    let attachments = [];
+    let attachments: PendingAttachment[] = [];
     try {
       attachments = await Promise.all(
-        selectedFiles.map((f) => uploadFile(f, currentUserId))
+        selectedFiles.map((f) =>
+          uploadFile("direct-messages", f, currentUserId)
+        )
       );
     } catch (err) {
       logger.error(err, "File upload failed");
       return;
     }
 
-    const tempMessage: DirectMessage & { status: string; attachments?: any[] } =
-      {
-        id: tempId,
-        senderId: currentUserId,
-        text: messageText || null,
-        receiverId: targetUserId,
-        roomName,
-        createdAt: timestamp,
-        updatedAt: timestamp,
-        status: "pending",
-        attachments,
-      };
+    const tempMessage: DirectMessage & {
+      status: string;
+      attachments?: PendingAttachment[];
+    } = {
+      id: tempId,
+      senderId: currentUserId,
+      text: messageText || null,
+      receiverId: targetUserId,
+      roomName,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      status: "pending",
+      attachments,
+    };
 
     setMessages((prev) => [...prev, tempMessage]);
     setMessageText("");

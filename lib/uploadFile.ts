@@ -16,9 +16,9 @@
 
 import { supabase } from "@/lib/supabaseClient";
 
-export async function uploadFile(file: File, userId: string) {
+export async function uploadFile(folder: string, file: File, userId: string) {
   const ext = file.name.split(".").pop();
-  const path = `direct-messages/${userId}/${crypto.randomUUID()}.${ext}`;
+  const path = `${folder}/${userId}/${crypto.randomUUID()}.${ext}`;
 
   const { data, error } = await supabase.storage
     .from("chat-uploads")
