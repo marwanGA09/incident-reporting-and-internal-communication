@@ -1,6 +1,5 @@
 // prisma/seed.ts
 
-const { default: logger } = require("@/app/lib/logger");
 const { PrismaClient } = require("@prisma/client");
 const prisma = new PrismaClient();
 
@@ -30,14 +29,11 @@ async function main() {
       { name: "other", description: "" },
     ],
   });
-
-  // console.log({ departments });
-  // console.log("✅ Seed complete");
 }
 
 main()
   .catch((error) => {
-    logger.error({ error }, "❌ Error during seed:");
+    console.error(error, "❌ Error during seed:");
     process.exit(1);
   })
   .finally(() => {

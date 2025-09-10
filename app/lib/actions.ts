@@ -115,16 +115,42 @@ export async function updateGroupMessage(messageId: string, newText: string) {
 
 // ******
 
+// export async function sendDirectMessage({
+//   senderId,
+//   receiverId,
+//   text,
+//   roomName,
+// }: {
+//   senderId: string;
+//   receiverId: string;
+//   text: string;
+//   roomName: string;
+// }) {
+//   return await prisma.directMessage.create({
+//     data: {
+//       senderId,
+//       receiverId,
+//       text,
+//       roomName,
+//     },
+//   });
+// }
 export async function sendDirectMessage({
   senderId,
   receiverId,
   text,
   roomName,
+  attachments = [],
 }: {
   senderId: string;
   receiverId: string;
-  text: string;
+  text?: string;
   roomName: string;
+  attachments?: {
+    url: string;
+    type: "IMAGE" | "VIDEO" | "FILE";
+    fileName?: string;
+  }[];
 }) {
   return await prisma.directMessage.create({
     data: {
@@ -132,7 +158,15 @@ export async function sendDirectMessage({
       receiverId,
       text,
       roomName,
+      attachments: {
+        create: attachments.map((a) => ({
+          url: a.url,
+          type: a.type,
+          fileName: a.fileName,
+        })),
+      },
     },
+    include: { attachments: true },
   });
 }
 
@@ -143,6 +177,9 @@ export async function getDirectMessages(userId1: string, userId2: string) {
         { senderId: userId1, receiverId: userId2 },
         { senderId: userId2, receiverId: userId1 },
       ],
+    },
+    include: {
+      attachments: true,
     },
     orderBy: { createdAt: "asc" },
   });

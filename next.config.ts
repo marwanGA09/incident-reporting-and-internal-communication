@@ -10,8 +10,14 @@ const nextConfig: NextConfig = {
         port: "",
         pathname: "/**",
       },
+      {
+        protocol: "https",
+        hostname: "pompmxmkeogtjzivnumt.supabase.co",
+        pathname: "/storage/v1/object/public/**",
+      },
     ],
   },
+
   // experimental: {
   //   serverComponentsExternalPackages: ["pino", "pino-pretty"], // If using App Router & server components
   // },
