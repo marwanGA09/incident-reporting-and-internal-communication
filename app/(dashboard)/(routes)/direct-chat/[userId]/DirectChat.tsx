@@ -17,6 +17,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import {
   CheckCheckIcon,
   Edit3Icon,
+  FileIcon,
   MoreHorizontalIcon,
   MoveLeftIcon,
   NotebookIcon,
@@ -557,26 +558,10 @@ export default function DirectChat({
             <div ref={scrollRef} />
           </div>
         </ScrollArea>{" "}
-        <div className="mt-4 flex gap-2">
+        {/* <div className="mt-4 flex gap-2">
           {!editingMessage ? (
             <>
-              {/* <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-              <Button onClick={handleSend}>
-                <SendIcon />
-              </Button> */}
-
+             
               <label htmlFor="file-upload">
                 <Button variant="ghost" size="icon" asChild>
                   <PaperclipIcon className="w-5 h-5" />
@@ -634,6 +619,103 @@ export default function DirectChat({
                 <SendIcon />
               </Button>
             </>
+          )}
+        </div> */}
+        <div className="mt-4 flex flex-col gap-2">
+          {/* File preview row */}
+          {selectedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 rounded-lg border p-2 bg-muted">
+              {selectedFiles.map((file, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-1 rounded-md shadow px-2 py-1"
+                >
+                  <FileIcon className="h-4 w-4" />
+                  <span className="text-xs truncate max-w-[120px]">
+                    {file.name}
+                  </span>
+                  <XIcon
+                    className="h-4 w-4 cursor-pointer"
+                    onClick={() =>
+                      setSelectedFiles((prev) =>
+                        prev.filter((_, idx) => idx !== i)
+                      )
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Input row */}
+          {!editingMessage ? (
+            <div className="flex items-end gap-2">
+              <Textarea
+                rows={1}
+                placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+
+              {/* File picker button */}
+              <label htmlFor="file-upload">
+                <Button variant="ghost" size="icon" asChild>
+                  <PaperclipIcon className="w-5 h-5" />
+                </Button>
+
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+                    setSelectedFiles(Array.from(e.target.files));
+                  }}
+                />
+              </label>
+
+              {/* Send button */}
+              <Button onClick={handleSend} size="icon">
+                <SendIcon />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col justify-between items-center py-1">
+                <Edit3Icon />
+                <XIcon
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setEditedText("");
+                  }}
+                />
+              </div>
+              <Textarea
+                rows={1}
+                placeholder="Edit message..."
+                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUpdateMessage();
+                  }
+                }}
+              />
+              <Button onClick={handleUpdateMessage} size="icon">
+                <SendIcon />
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>
