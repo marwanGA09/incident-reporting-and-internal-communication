@@ -15,7 +15,9 @@ import {
 import {
   CheckCheckIcon,
   Edit3Icon,
+  FileIcon,
   MoreHorizontalIcon,
+  PaperclipIcon,
   SendIcon,
   XIcon,
 } from "lucide-react";
@@ -26,9 +28,12 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { GroupMessage } from "@prisma/client";
+import { GroupMessage, GroupMessageAttachment } from "@prisma/client";
 import Image from "next/image";
 import logger from "@/app/lib/logger";
+import { uploadFile } from "@/lib/uploadFile";
+import { PendingAttachment } from "@/lib/defination";
+import { Input } from "@/components/ui/input";
 
 export default function GroupChat({
   groupId,
@@ -51,6 +56,7 @@ export default function GroupChat({
     null
   );
   const [editedText, setEditedText] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -116,12 +122,26 @@ export default function GroupChat({
 
   const handleSend = async () => {
     // console.log("Sending message:", messageText);
-    if (!messageText.trim() || !user) return;
+    if ((!messageText.trim() && selectedFiles.length === 0) || !user) return;
 
     const tempId = crypto.randomUUID();
     const timestamp = new Date();
 
-    const tempMessage: GroupMessage & { status: string } = {
+    // 1. Upload attachments
+    let attachments: PendingAttachment[] = [];
+    try {
+      attachments = await Promise.all(
+        selectedFiles.map((f) => uploadFile("group-messages", f, user.id))
+      );
+    } catch (err) {
+      logger.error(err, "File upload failed");
+      return;
+    }
+
+    const tempMessage: GroupMessage & {
+      status: string;
+      attachments: PendingAttachment[];
+    } = {
       id: tempId,
       senderId: user.id,
       text: messageText,
@@ -130,11 +150,13 @@ export default function GroupChat({
       createdAt: timestamp,
       updatedAt: timestamp,
       status: "pending",
+      attachments,
     };
 
     // 1. Optimistically show in UI as pending
     setMessages((prev) => [...prev, tempMessage]);
     setMessageText("");
+    setSelectedFiles([]);
 
     try {
       // 2. Store in DB using your existing backend function
@@ -143,6 +165,7 @@ export default function GroupChat({
         departmentId: groupId,
         senderId: user.id,
         roomName,
+        attachments,
       });
 
       // 3. If saved successfully, broadcast to other clients
@@ -182,7 +205,7 @@ export default function GroupChat({
 
   const handleEdit = (msg: GroupMessage) => {
     setEditingMessage(msg);
-    setEditedText(msg.text);
+    setEditedText(msg?.text || "");
   };
 
   const handleDelete = async (id: string) => {
@@ -303,6 +326,7 @@ export default function GroupChat({
                 msg: GroupMessage & {
                   status?: "pending" | "sent" | "error";
                   errorMsg?: string;
+                  attachments?: GroupMessageAttachment[];
                 },
                 idx
               ) => {
@@ -450,6 +474,41 @@ export default function GroupChat({
                             hour12: true,
                           })} ${isUpdated ? "(edited)" : ""}`}
                         </span>
+                        <div>
+                          {msg.attachments?.map((att: any) => {
+                            return (
+                              <div key={att.id} className="mt-2">
+                                {att.type === "IMAGE" && (
+                                  <Image
+                                    src={att.url}
+                                    alt={att.fileName || "image"}
+                                    width={200}
+                                    height={200}
+                                    className="rounded-lg"
+                                  />
+                                )}
+                                {att.type === "VIDEO" && (
+                                  <video
+                                    controls
+                                    className="rounded-lg max-w-xs"
+                                  >
+                                    <source src={att.url} />
+                                  </video>
+                                )}
+                                {att.type === "FILE" && (
+                                  <a
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-500 underline text-sm"
+                                  >
+                                    {att.fileName || "Download file"}
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </React.Fragment>
@@ -459,7 +518,7 @@ export default function GroupChat({
             <div ref={scrollRef} />
           </div>
         </ScrollArea>
-        <div className="mt-4 flex gap-2">
+        {/* <div className="mt-4 flex gap-2">
           {!editingMessage ? (
             <>
               <Textarea
@@ -509,6 +568,103 @@ export default function GroupChat({
                 <SendIcon />
               </Button>
             </>
+          )}
+        </div> */}{" "}
+        <div className="mt-4 flex flex-col gap-2">
+          {/* File preview row */}
+          {selectedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 rounded-lg border p-2 bg-muted">
+              {selectedFiles.map((file, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-1 rounded-md shadow px-2 py-1"
+                >
+                  <FileIcon className="h-4 w-4" />
+                  <span className="text-xs truncate max-w-[120px]">
+                    {file.name}
+                  </span>
+                  <XIcon
+                    className="h-4 w-4 cursor-pointer"
+                    onClick={() =>
+                      setSelectedFiles((prev) =>
+                        prev.filter((_, idx) => idx !== i)
+                      )
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Input row */}
+          {!editingMessage ? (
+            <div className="flex items-end gap-2">
+              <Textarea
+                rows={1}
+                placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+
+              {/* File picker button */}
+              <label htmlFor="file-upload">
+                <Button variant="ghost" size="icon" asChild>
+                  <PaperclipIcon className="w-5 h-5" />
+                </Button>
+
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+                    setSelectedFiles(Array.from(e.target.files));
+                  }}
+                />
+              </label>
+
+              {/* Send button */}
+              <Button onClick={handleSend} size="icon">
+                <SendIcon />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col justify-between items-center py-1">
+                <Edit3Icon />
+                <XIcon
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setEditedText("");
+                  }}
+                />
+              </div>
+              <Textarea
+                rows={1}
+                placeholder="Edit message..."
+                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUpdateMessage();
+                  }
+                }}
+              />
+              <Button onClick={handleUpdateMessage} size="icon">
+                <SendIcon />
+              </Button>
+            </div>
           )}
         </div>
       </CardContent>

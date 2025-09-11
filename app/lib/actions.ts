@@ -3,6 +3,11 @@
 import { prisma } from "@/app/lib/prisma"; // assumes prisma client is set up
 import { clerkClient } from "@/lib/clerkClient";
 import logger from "./logger";
+import {
+  DirectMessageAttachment,
+  GroupMessageAttachment,
+} from "@prisma/client";
+import { PendingAttachment } from "@/lib/defination";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
@@ -63,6 +68,9 @@ export async function getGroupMessages(groupId: string, page: number = 1) {
   const skip = (page - 1) * take;
   const sssss = await prisma.groupMessage.findMany({
     where: { departmentId: groupId },
+    include: {
+      attachments: true,
+    },
     orderBy: { createdAt: "desc" },
     take,
     skip,
@@ -85,15 +93,29 @@ export async function sendGroupMessage({
   departmentId,
   senderId,
   roomName,
+  attachments = [],
 }: {
   text: string;
   departmentId: string;
   senderId: string;
   roomName: string;
+  attachments?: PendingAttachment[];
 }) {
   // console.log({ text, departmentId, senderId, roomName });
   return await prisma.groupMessage.create({
-    data: { text, departmentId, senderId, roomName },
+    data: {
+      text,
+      departmentId,
+      senderId,
+      roomName,
+      attachments: {
+        create: attachments.map((a) => ({
+          url: a.url,
+          type: a.type,
+          fileName: a.fileName,
+        })),
+      },
+    },
   });
 }
 
@@ -146,11 +168,7 @@ export async function sendDirectMessage({
   receiverId: string;
   text?: string;
   roomName: string;
-  attachments?: {
-    url: string;
-    type: "IMAGE" | "VIDEO" | "FILE";
-    fileName?: string;
-  }[];
+  attachments?: PendingAttachment[];
 }) {
   return await prisma.directMessage.create({
     data: {
