@@ -12,14 +12,16 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { DirectMessage } from "@prisma/client";
+import { DirectMessage, DirectMessageAttachment } from "@prisma/client";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   CheckCheckIcon,
   Edit3Icon,
+  FileIcon,
   MoreHorizontalIcon,
   MoveLeftIcon,
   NotebookIcon,
+  PaperclipIcon,
   SendIcon,
   XIcon,
 } from "lucide-react";
@@ -31,6 +33,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { uploadFile } from "@/lib/uploadFile";
+import { Input } from "@/components/ui/input";
+import { PendingAttachment } from "@/lib/defination";
 
 export default function DirectChat({
   targetUser,
@@ -51,6 +56,7 @@ export default function DirectChat({
     null
   );
   const [editedText, setEditedText] = useState("");
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -58,6 +64,7 @@ export default function DirectChat({
   const targetUserId = targetUser.id;
 
   const roomName = `direct-chat:${[currentUserId, targetUserId]
+
     .sort()
     .join("-")}`;
 
@@ -96,44 +103,125 @@ export default function DirectChat({
     };
   }, [currentUserId, targetUserId, roomName]);
 
+  // const handleSend = async () => {
+  //   if (!messageText.trim() || !currentUserId) return;
+
+  //   const tempId = crypto.randomUUID();
+  //   const timestamp = new Date();
+
+  //   const tempMessage: DirectMessage & { status: string } = {
+  //     id: tempId,
+  //     senderId: currentUserId,
+  //     text: messageText,
+  //     receiverId: targetUserId,
+  //     roomName,
+  //     createdAt: timestamp,
+  //     updatedAt: timestamp,
+  //     status: "pending",
+  //   };
+
+  //   // 1. Optimistically show in UI as pending
+  //   setMessages((prev) => [...prev, tempMessage]);
+  //   setMessageText("");
+  //   try {
+  //     // 2. Store in DB using your existing backend function
+
+  //     const newMessage = await sendDirectMessage({
+  //       senderId: currentUserId,
+  //       receiverId: targetUserId,
+  //       text: messageText,
+  //       roomName,
+  //     });
+
+  //     // 3. If saved successfully, broadcast to other clients
+  //     supabase.channel(roomName).send({
+  //       type: "broadcast",
+  //       event: "direct-message",
+  //       payload: { ...newMessage, status: "sent" },
+  //     });
+
+  //     // 4. Update message status to sent
+  //     setMessages((prev) =>
+  //       prev.map((msg) =>
+  //         msg.id === tempId
+  //           ? { ...msg, status: "sent", id: newMessage.id }
+  //           : msg
+  //       )
+  //     );
+  //   } catch (error) {
+  //     logger.error({ error }, "Send failed:");
+  //     const errorMessage =
+  //       error instanceof Error ? error.message : "Send failed";
+
+  //     // 5. Update message with error
+  //     setMessages((prev) =>
+  //       prev.map((msg) =>
+  //         msg.id === tempId
+  //           ? {
+  //               ...msg,
+  //               status: "error",
+  //               errorMsg: errorMessage,
+  //             }
+  //           : msg
+  //       )
+  //     );
+  //   }
+  // };
+
   const handleSend = async () => {
-    if (!messageText.trim() || !currentUserId) return;
+    if ((!messageText.trim() && selectedFiles.length === 0) || !currentUserId)
+      return;
 
     const tempId = crypto.randomUUID();
     const timestamp = new Date();
 
-    const tempMessage: DirectMessage & { status: string } = {
+    // 1. Upload attachments
+    let attachments: PendingAttachment[] = [];
+    try {
+      attachments = await Promise.all(
+        selectedFiles.map((f) =>
+          uploadFile("direct-messages", f, currentUserId)
+        )
+      );
+    } catch (err) {
+      logger.error(err, "File upload failed");
+      return;
+    }
+
+    const tempMessage: DirectMessage & {
+      status: string;
+      attachments?: PendingAttachment[];
+    } = {
       id: tempId,
       senderId: currentUserId,
-      text: messageText,
+      text: messageText || null,
       receiverId: targetUserId,
       roomName,
       createdAt: timestamp,
       updatedAt: timestamp,
       status: "pending",
+      attachments,
     };
 
-    // 1. Optimistically show in UI as pending
     setMessages((prev) => [...prev, tempMessage]);
     setMessageText("");
-    try {
-      // 2. Store in DB using your existing backend function
+    setSelectedFiles([]);
 
+    try {
       const newMessage = await sendDirectMessage({
         senderId: currentUserId,
         receiverId: targetUserId,
-        text: messageText,
+        text: messageText || undefined,
         roomName,
+        attachments,
       });
 
-      // 3. If saved successfully, broadcast to other clients
       supabase.channel(roomName).send({
         type: "broadcast",
         event: "direct-message",
         payload: { ...newMessage, status: "sent" },
       });
 
-      // 4. Update message status to sent
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
@@ -143,19 +231,9 @@ export default function DirectChat({
       );
     } catch (error) {
       logger.error({ error }, "Send failed:");
-      const errorMessage =
-        error instanceof Error ? error.message : "Send failed";
-
-      // 5. Update message with error
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === tempId
-            ? {
-                ...msg,
-                status: "error",
-                errorMsg: errorMessage,
-              }
-            : msg
+          msg.id === tempId ? { ...msg, status: "error" } : msg
         )
       );
     }
@@ -163,7 +241,7 @@ export default function DirectChat({
 
   const handleEdit = (msg: DirectMessage) => {
     setEditingMessage(msg);
-    setEditedText(msg.text);
+    setEditedText(msg.text || "");
   };
 
   const handleDelete = async (id: string) => {
@@ -322,6 +400,7 @@ export default function DirectChat({
                 msg: DirectMessage & {
                   status?: "pending" | "sent" | "error";
                   errorMsg?: string;
+                  attachments?: DirectMessageAttachment[];
                 },
                 idx
               ) => {
@@ -368,33 +447,6 @@ export default function DirectChat({
                         isOwn ? "self-end flex-row-reverse" : "self-start"
                       }`}
                     >
-                      {/* {!isOwn && (
-                        <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
-                          {targetUser.imageUrl ? (
-                            <Image
-                              src={targetUser.imageUrl}
-                              alt={targetUser.name}
-                              width={40}
-                              height={40}
-                              className="w-full h-full object-cover"
-                            />
-                          ) : (
-                            <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
-                              {targetUser.name?.charAt(0).toUpperCase()}
-                            </div>
-                          )}
-                        </div>
-                      )} */}
-
-                      {/* <div
-                        className={`flex flex-col max-w-xs p-2 rounded-lg ${
-                          isOwn
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 text-black"
-                        } `}
-                      >
-                        <span className="text-sm">{msg.text}</span>
-                      </div> */}
                       <div
                         className={`flex flex-col max-w-xs p-2 rounded-lg ${
                           isOwn
@@ -406,10 +458,6 @@ export default function DirectChat({
                             : "border-transparent"
                         }`}
                       >
-                        {/* <span className="text-xs opacity-70">
-                          {isOwn ? "You" : targetUser.name}
-                        </span> */}
-
                         {isOwn ? (
                           <div className="relative">
                             <DropdownMenu>
@@ -470,6 +518,42 @@ export default function DirectChat({
                             hour12: true,
                           })} ${isUpdated ? "(edited)" : ""}`}
                         </span>
+
+                        <div>
+                          {msg.attachments?.map((att) => {
+                            return (
+                              <div key={att.id} className="mt-2">
+                                {att.type === "IMAGE" && (
+                                  <Image
+                                    src={att.url}
+                                    alt={att.fileName || "image"}
+                                    width={200}
+                                    height={200}
+                                    className="rounded-lg"
+                                  />
+                                )}
+                                {att.type === "VIDEO" && (
+                                  <video
+                                    controls
+                                    className="rounded-lg max-w-xs"
+                                  >
+                                    <source src={att.url} />
+                                  </video>
+                                )}
+                                {att.type === "FILE" && (
+                                  <a
+                                    href={att.url}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-blue-500 underline text-sm"
+                                  >
+                                    {att.fileName || "Download file"}
+                                  </a>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
                   </React.Fragment>
@@ -480,38 +564,31 @@ export default function DirectChat({
           </div>
         </ScrollArea>{" "}
         {/* <div className="mt-4 flex gap-2">
-          <Textarea
-            rows={1}
-            placeholder="Type a message..."
-            className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
-            value={messageText}
-            onChange={(e) => setMessageText(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-          />{" "}
-          <Button onClick={handleSend}>
-            <SendIcon />
-          </Button>
-        </div> */}
-        <div className="mt-4 flex gap-2">
           {!editingMessage ? (
             <>
+             
+              <label htmlFor="file-upload">
+                <Button variant="ghost" size="icon" asChild>
+                  <PaperclipIcon className="w-5 h-5" />
+                </Button>
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+                    setSelectedFiles(Array.from(e.target.files));
+                  }}
+                />
+              </label>
+
               <Textarea
                 rows={1}
                 placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
+                className="flex-1 resize-none rounded-xl border"
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
               />
               <Button onClick={handleSend}>
                 <SendIcon />
@@ -548,8 +625,210 @@ export default function DirectChat({
               </Button>
             </>
           )}
+        </div> */}
+        <div className="mt-4 flex flex-col gap-2">
+          {/* File preview row */}
+          {selectedFiles.length > 0 && (
+            <div className="flex flex-wrap gap-2 rounded-lg border p-2 bg-muted">
+              {selectedFiles.map((file, i) => (
+                <div
+                  key={i}
+                  className="flex items-center gap-1 rounded-md shadow px-2 py-1"
+                >
+                  <FileIcon className="h-4 w-4" />
+                  <span className="text-xs truncate max-w-[120px]">
+                    {file.name}
+                  </span>
+                  <XIcon
+                    className="h-4 w-4 cursor-pointer"
+                    onClick={() =>
+                      setSelectedFiles((prev) =>
+                        prev.filter((_, idx) => idx !== i)
+                      )
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Input row */}
+          {!editingMessage ? (
+            <div className="flex items-end gap-2">
+              <Textarea
+                rows={1}
+                placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+
+              {/* File picker button */}
+              <label htmlFor="file-upload">
+                <Button variant="ghost" size="icon" asChild>
+                  <PaperclipIcon className="w-5 h-5" />
+                </Button>
+
+                <Input
+                  id="file-upload"
+                  type="file"
+                  multiple
+                  className="hidden"
+                  onChange={(e) => {
+                    if (!e.target.files) return;
+                    setSelectedFiles(Array.from(e.target.files));
+                  }}
+                />
+              </label>
+
+              {/* Send button */}
+              <Button onClick={handleSend} size="icon">
+                <SendIcon />
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-end gap-2">
+              <div className="flex flex-col justify-between items-center py-1">
+                <Edit3Icon />
+                <XIcon
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setEditedText("");
+                  }}
+                />
+              </div>
+              <Textarea
+                rows={1}
+                placeholder="Edit message..."
+                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUpdateMessage();
+                  }
+                }}
+              />
+              <Button onClick={handleUpdateMessage} size="icon">
+                <SendIcon />
+              </Button>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
   );
+}
+
+{
+  /* <div className="mt-4 flex gap-2">
+          {!editingMessage ? (
+            <>
+              <Textarea
+                rows={1}
+                placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+              <div className="flex gap-2 items-center">
+                <label htmlFor="file-upload">
+                  <Button variant="ghost" size="icon" asChild>
+                    <PaperclipIcon className="w-5 h-5" />
+                  </Button>
+                </label>
+
+                <Textarea
+                  rows={1}
+                  placeholder="Type a message..."
+                  className="flex-1 resize-none rounded-xl border"
+                  value={messageText}
+                  onChange={(e) => setMessageText(e.target.value)}
+                />
+                <Button onClick={handleSend}>
+                  <SendIcon />
+                </Button>
+              </div>
+              <Button onClick={handleSend}>
+                <SendIcon />
+              </Button>
+              <Input
+                type="file"
+                accept="image/*,video/*"
+                onChange={async (e) => {
+                  const file = e.target.files?.[0];
+                  if (!file || !currentUserId) return;
+
+                  try {
+                    const url = await uploadFile(file, currentUserId);
+                    const type = file.type.startsWith("video")
+                      ? "VIDEO"
+                      : "IMAGE";
+
+                    const newMessage = await sendDirectMessage({
+                      senderId: currentUserId,
+                      receiverId: targetUserId,
+                      roomName,
+                      attachments: [{ url, type, fileName: file.name }],
+                    });
+
+                    supabase.channel(roomName).send({
+                      type: "broadcast",
+                      event: "direct-message",
+                      payload: newMessage,
+                    });
+
+                    setMessages((prev) => [...prev, newMessage]);
+                  } catch (err) {
+                    console.error("Upload failed", err);
+                  }
+                }}
+              />
+            </>
+          ) : (
+            <>
+              {" "}
+              <div className="flex flex-col justify-between items-center py-1">
+                <Edit3Icon />
+                <XIcon
+                  className="cursor-pointer"
+                  onClick={() => {
+                    setEditingMessage(null);
+                    setEditedText("");
+                  }}
+                />
+              </div>
+              <Textarea
+                rows={1}
+                placeholder="Type a message..."
+                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUpdateMessage();
+                  }
+                }}
+              />
+              <Button onClick={handleUpdateMessage}>
+                <SendIcon />
+              </Button>
+            </>
+          )}
+        </div> */
 }
