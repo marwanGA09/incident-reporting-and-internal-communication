@@ -57,6 +57,9 @@ export default function DirectChat({
   );
   const [editedText, setEditedText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [selectedId, setSelectedId] = useState<string | null>(
+    "message-bb9553e7-ecc2-4581-b8d7-c86c28e54009"
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -102,71 +105,6 @@ export default function DirectChat({
       supabase.removeChannel(channel);
     };
   }, [currentUserId, targetUserId, roomName]);
-
-  // const handleSend = async () => {
-  //   if (!messageText.trim() || !currentUserId) return;
-
-  //   const tempId = crypto.randomUUID();
-  //   const timestamp = new Date();
-
-  //   const tempMessage: DirectMessage & { status: string } = {
-  //     id: tempId,
-  //     senderId: currentUserId,
-  //     text: messageText,
-  //     receiverId: targetUserId,
-  //     roomName,
-  //     createdAt: timestamp,
-  //     updatedAt: timestamp,
-  //     status: "pending",
-  //   };
-
-  //   // 1. Optimistically show in UI as pending
-  //   setMessages((prev) => [...prev, tempMessage]);
-  //   setMessageText("");
-  //   try {
-  //     // 2. Store in DB using your existing backend function
-
-  //     const newMessage = await sendDirectMessage({
-  //       senderId: currentUserId,
-  //       receiverId: targetUserId,
-  //       text: messageText,
-  //       roomName,
-  //     });
-
-  //     // 3. If saved successfully, broadcast to other clients
-  //     supabase.channel(roomName).send({
-  //       type: "broadcast",
-  //       event: "direct-message",
-  //       payload: { ...newMessage, status: "sent" },
-  //     });
-
-  //     // 4. Update message status to sent
-  //     setMessages((prev) =>
-  //       prev.map((msg) =>
-  //         msg.id === tempId
-  //           ? { ...msg, status: "sent", id: newMessage.id }
-  //           : msg
-  //       )
-  //     );
-  //   } catch (error) {
-  //     logger.error({ error }, "Send failed:");
-  //     const errorMessage =
-  //       error instanceof Error ? error.message : "Send failed";
-
-  //     // 5. Update message with error
-  //     setMessages((prev) =>
-  //       prev.map((msg) =>
-  //         msg.id === tempId
-  //           ? {
-  //               ...msg,
-  //               status: "error",
-  //               errorMsg: errorMessage,
-  //             }
-  //           : msg
-  //       )
-  //     );
-  //   }
-  // };
 
   const handleSend = async () => {
     if ((!messageText.trim() && selectedFiles.length === 0) || !currentUserId)
@@ -328,6 +266,21 @@ export default function DirectChat({
   };
 
   useEffect(() => {
+    if (typeof window !== "undefined" && window.location.hash) {
+      const el = document.querySelector(window.location.hash);
+      if (el) {
+        el.scrollIntoView({ behavior: "smooth", block: "end" });
+      }
+    }
+  }, [selectedId]);
+
+  // useEffect(() => {
+  //   if (window.location.hash) {
+  //     setSelectedId(window.location.hash.replace("#", ""));
+  //   }
+  // }, []);
+
+  useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
@@ -404,7 +357,7 @@ export default function DirectChat({
                 },
                 idx
               ) => {
-                // console.log({ msg });
+                console.log(`message-${msg.id}`);
                 const isOwn = msg.senderId === currentUserId;
                 const isUpdated =
                   new Date(msg.updatedAt).getTime() >
@@ -445,9 +398,21 @@ export default function DirectChat({
                     <div
                       className={`flex items-end gap-2 px-6 ${
                         isOwn ? "self-end flex-row-reverse" : "self-start"
-                      }`}
+                      } `}
                     >
+                      {/* <div
+                      className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                        isOwn
+                        ? "bg-blue-500 text-white"
+                          : "bg-gray-200 text-black"
+                      } ${
+                        selectedId === `message-${msg.id}`
+                          ? "ring-2 ring-yellow-400"
+                          : ""
+                      }`}
+                    > */}
                       <div
+                        id={`message-${msg.id}`}
                         className={`flex flex-col max-w-xs p-2 rounded-lg ${
                           isOwn
                             ? "bg-blue-500 text-white"
@@ -456,7 +421,28 @@ export default function DirectChat({
                           msg.status === "error"
                             ? "border-red-500"
                             : "border-transparent"
+                        } ${
+                          selectedId === `message-${msg.id}`
+                            ? "ring-2 ring-yellow-400"
+                            : ""
                         }`}
+                        onClick={() => {
+                          window.history.replaceState(
+                            null,
+                            "",
+                            `#message-${msg.id}`
+                          );
+                          // document
+                          //   .getElementById(`message-${msg.id}`)
+                          //   ?.scrollIntoView({
+                          //     behavior: "smooth",
+                          //     block: "end",
+                          //   });
+                          // document
+                          //   .getElementById(`message-${msg.id}`)
+                          //   ?.style.setProperty("background-color", "#fbbf24"); // yellow-400
+                          setSelectedId(`message-${msg.id}`);
+                        }}
                       >
                         {isOwn ? (
                           <div className="relative">
