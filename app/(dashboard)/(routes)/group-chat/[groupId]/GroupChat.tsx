@@ -9,6 +9,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   deleteGroupMessage,
   getGroupMessages,
+  markNotificationsAsRead,
   sendGroupMessage,
   updateGroupMessage,
 } from "@/app/lib/actions";
@@ -64,6 +65,8 @@ export default function GroupChat({
 
   useEffect(() => {
     if (!groupId || !user?.id) return;
+
+    markNotificationsAsRead(`/group-chat/${groupId}`);
 
     async function loadMessages() {
       const msgs = await getGroupMessages(groupId, page);

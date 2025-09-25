@@ -8,6 +8,7 @@ import {
   GroupMessageAttachment,
 } from "@prisma/client";
 import { PendingAttachment } from "@/lib/defination";
+import { auth } from "@clerk/nextjs/server";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
@@ -101,8 +102,7 @@ export async function sendGroupMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
-  // console.log({ text, departmentId, senderId, roomName });
-  return await prisma.groupMessage.create({
+  const newGroupMessage = await prisma.groupMessage.create({
     data: {
       text,
       departmentId,
@@ -117,6 +117,42 @@ export async function sendGroupMessage({
       },
     },
   });
+
+  try {
+    const sender = await prisma.user.findUnique({
+      where: { clerkId: senderId },
+      select: { id: true, username: true },
+    });
+
+    const department = await prisma.department.findUnique({
+      where: { id: departmentId },
+      select: { name: true, users: { select: { id: true } } },
+    });
+
+    if (department && sender) {
+      const recipients = department.users.filter(
+        (user) => user.id !== sender.id
+      );
+      if (recipients.length > 0) {
+        const notificationsData = recipients.map((user) => ({
+          type: "GROUP_MESSAGE" as const,
+          message: `New message in #${department.name} from ${
+            sender.username || "a user"
+          }`,
+          url: `/group-chat/${departmentId}`,
+          recipientId: user.id,
+        }));
+
+        await prisma.notification.createMany({
+          data: notificationsData,
+        });
+      }
+    }
+  } catch (error) {
+    logger.error(error, "Failed to create group message notifications");
+  }
+
+  return newGroupMessage;
 }
 
 export async function deleteGroupMessage(messageId: string) {
@@ -170,7 +206,7 @@ export async function sendDirectMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
-  return await prisma.directMessage.create({
+  const newMessage = await prisma.directMessage.create({
     data: {
       senderId,
       receiverId,
@@ -186,6 +222,32 @@ export async function sendDirectMessage({
     },
     include: { attachments: true },
   });
+
+  try {
+    const sender = await prisma.user.findUnique({
+      where: { clerkId: senderId },
+      select: { username: true },
+    });
+    const receiver = await prisma.user.findUnique({
+      where: { clerkId: receiverId },
+      select: { id: true },
+    });
+
+    if (receiver && sender) {
+      await prisma.notification.create({
+        data: {
+          type: "DIRECT_MESSAGE",
+          message: `New message from ${sender.username || "a user"}`,
+          url: `/direct-chat/${senderId}`,
+          recipientId: receiver.id,
+        },
+      });
+    }
+  } catch (error) {
+    logger.error(error, "Failed to create direct message notification");
+  }
+
+  return newMessage;
 }
 
 export async function getDirectMessages(userId1: string, userId2: string) {
@@ -237,5 +299,52 @@ export async function searchUsers(searchTerm: string) {
   } catch (error) {
     logger.error({ error }, "Error searching users:");
     return [];
+  }
+}
+
+export async function markNotificationsAsRead(url: string) {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return;
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+
+    if (!user) return;
+
+    await prisma.notification.updateMany({
+      where: {
+        recipientId: user.id,
+        url: url,
+        isRead: false,
+      },
+      data: {
+        isRead: true,
+        readAt: new Date(),
+      },
+    });
+  } catch (error) {
+    logger.error(error, `Failed to mark notifications as read for url: ${url}`);
+  }
+}
+
+export async function deleteOldReadNotifications() {
+  try {
+    const fiveDaysAgo = new Date(Date.now() - 5 * 24 * 60 * 60 * 1000);
+    const result = await prisma.notification.deleteMany({
+      where: {
+        isRead: true,
+        readAt: {
+          lt: fiveDaysAgo, // less than 5 days ago
+        },
+      },
+    });
+    logger.info(`Deleted ${result.count} old read notifications.`);
+    return result;
+  } catch (error) {
+    logger.error(error, "Failed to delete old read notifications");
+    throw error; // Re-throw so the cron job service knows it failed
   }
 }

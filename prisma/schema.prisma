@@ -174,21 +174,18 @@ model Notification {
   id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   type        NotificationType
   message     String
-  fullMessage String?
   url         String?
-  
   recipientId String           @db.Uuid
-  recipient   User             @relation(fields: [recipientId], references: [id])
-
+  recipient   User             @relation(fields: [recipientId], references: [id], onDelete: Cascade)
   isRead      Boolean          @default(false)
   createdAt   DateTime         @default(now())
+  readAt      DateTime?
 }
-
 
 enum NotificationType {
   DIRECT_MESSAGE
   GROUP_MESSAGE
-  INCIDENT_CREATED
+  INCIDENT
 }
 
 enum IncidentStatus {

@@ -14,6 +14,35 @@ export async function POST(req: Request) {
     const incident = await prisma.incident.create({
       data: result.data,
     });
+    console.log("NEW INCIDENT is created", incident);
+    // --- Start Notification Logic ---
+    try {
+      const usersInDepartment = await prisma.user.findMany({
+        where: { departmentId: incident.departmentId },
+        select: { id: true },
+      });
+      console.log("usersInDepartment of created incident", usersInDepartment);
+      if (usersInDepartment.length > 0) {
+        const notificationsData = usersInDepartment.map((user) => ({
+          type: "INCIDENT" as const,
+          message: `New incident reported: "${incident.title}"`,
+          url: `/incidents/${incident.id}`,
+          recipientId: user.id,
+        }));
+
+        console.log("notificationsData of created incident", notificationsData);
+        await prisma.notification.createMany({
+          data: notificationsData,
+        });
+      }
+    } catch (notificationError) {
+      logger.error(
+        notificationError,
+        "Failed to create incident notifications"
+      );
+      // Do not re-throw; the incident was created successfully.
+    }
+    // --- End Notification Logic ---
 
     return NextResponse.json(incident, { status: 201 });
   } catch (error) {

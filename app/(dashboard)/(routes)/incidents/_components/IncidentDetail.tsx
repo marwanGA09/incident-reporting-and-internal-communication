@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import {
   Card,
   CardContent,
@@ -18,6 +19,7 @@ import {
   IncidentCategory,
   IncidentStatusNote,
 } from "@prisma/client";
+import { markNotificationsAsRead } from "@/app/lib/actions";
 
 export default function IncidentDetail({
   incident,
@@ -30,6 +32,12 @@ export default function IncidentDetail({
   };
   clerkUsersMap: Record<string, { name: string; email: string }>;
 }) {
+  useEffect(() => {
+    if (incident) {
+      markNotificationsAsRead(`/incidents/${incident.id}`);
+    }
+  }, [incident]);
+
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       <Card className="rounded-xl shadow-sm">

@@ -6,6 +6,7 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   deleteDirectMessage,
   getDirectMessages,
+  markNotificationsAsRead,
   sendDirectMessage,
   updateDirectMessage,
 } from "@/app/lib/actions";
@@ -74,6 +75,7 @@ export default function DirectChat({
   useEffect(() => {
     if (!currentUserId || !targetUserId) return;
 
+    markNotificationsAsRead(`/direct-chat/${targetUserId}`);
     getDirectMessages(currentUserId, targetUserId).then(setMessages);
 
     const channel = supabase.channel(roomName, {

@@ -124,7 +124,7 @@ function IncidentItem({
             }}
             disabled={
               currentUser.publicMetadata.role === "admin" ||
-              currentUser.publicMetadata.position !== "lower"
+              currentUser.publicMetadata.position === "lower"
             }
           />
         )}

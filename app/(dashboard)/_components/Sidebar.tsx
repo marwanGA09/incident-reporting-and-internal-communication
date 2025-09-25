@@ -1,4 +1,3 @@
-// "use client";
 import {
   BlendIcon,
   Grid2X2Check,
@@ -24,6 +23,7 @@ import { getDepartments } from "@/app/lib/actions";
 import { prisma } from "@/app/lib/prisma";
 import Image from "next/image";
 import SearchUsers from "./SearchUser";
+import { Badge } from "@/components/ui/badge";
 
 // Menu items.
 const incidentsLink = [
@@ -40,19 +40,41 @@ const incidentsLink = [
 ];
 
 export async function AppSidebar() {
-  // const { user, isLoaded } = useUser();
   const user = await currentUser();
-  if (!user) return;
-  console.log("user in sidebar", user?.publicMetadata?.role);
+  if (!user) return null;
+
+  const dbUser = await prisma.user.findUnique({
+    where: { clerkId: user.id },
+    select: { id: true },
+  });
+
+  if (!dbUser) return null;
+
+  console.log({ user, dbUser });
+  const unreadNotifications = await prisma.notification.findMany({
+    where: {
+      recipientId: dbUser.id,
+      isRead: false,
+    },
+    select: { url: true },
+  });
+
+  console.log({ unreadNotifications });
+  const notificationCounts = unreadNotifications.reduce((acc, notification) => {
+    if (notification.url) {
+      acc[notification.url] = (acc[notification.url] || 0) + 1;
+    }
+    return acc;
+  }, {} as Record<string, number>);
+
+  console.log({ notificationCounts });
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
-      ? (await getDepartments()).map((dep) => {
-          return {
-            title: dep.name,
-            url: `/group-chat/${dep.id}`,
-            icon: BlendIcon,
-          };
-        })
+      ? (await getDepartments()).map((dep) => ({
+          title: dep.name,
+          url: `/group-chat/${dep.id}`,
+          icon: BlendIcon,
+        }))
       : [
           {
             title: (
@@ -79,8 +101,6 @@ export async function AppSidebar() {
   const uniqueUserIds = [
     ...new Set(DmUsers.flatMap((dm) => [dm.senderId, dm.receiverId])),
   ].filter((id) => id !== user?.id);
-  // console.log({ User: user?.id });
-  // console.log(uniqueUserIds);
 
   const usersFromDB = await prisma.user.findMany({
     where: {
@@ -115,16 +135,30 @@ export async function AppSidebar() {
           <SidebarGroupLabel>Departments Groups</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {groupsDepartmentLink.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {groupsDepartmentLink.map((item) => {
+                const count = notificationCounts[item.url] || 0;
+                console.log({ item, count });
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a
+                        href={item.url}
+                        className="flex justify-between items-center w-full"
+                      >
+                        <div className="flex items-center gap-2">
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </div>
+                        {count > 0 && (
+                          <Badge className="h-5 w-5 flex items-center justify-center p-0">
+                            {count}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>{" "}
@@ -135,7 +169,6 @@ export async function AppSidebar() {
               <SidebarMenuItem key={user.id}>
                 <SidebarMenuButton asChild>
                   <a href={`/direct-chat/${user.id}`}>
-                    {/* <item.icon /> */}{" "}
                     <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 flex justify-center items-center">
                       {<NotebookIcon className="w-5 h-5" />}
                     </div>
@@ -143,36 +176,47 @@ export async function AppSidebar() {
                   </a>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {usersFromDB.map((user) => (
-                <SidebarMenuItem key={user.id}>
-                  <SidebarMenuButton asChild>
-                    <a href={`/direct-chat/${user.clerkId}`}>
-                      {/* <item.icon /> */}{" "}
-                      <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
-                        {user.imageUrl ? (
-                          <Image
-                            src={user.imageUrl}
-                            alt={user.username || "user"}
-                            width={20}
-                            height={20}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                            {user.username?.charAt(0).toUpperCase()}
+              {usersFromDB.map((dbUser) => {
+                const url = `/direct-chat/${dbUser.clerkId}`;
+                const count = notificationCounts[url] || 0;
+                return (
+                  <SidebarMenuItem key={dbUser.id}>
+                    <SidebarMenuButton asChild>
+                      <a
+                        href={url}
+                        className="flex justify-between items-center w-full"
+                      >
+                        <div className="flex items-center gap-2">
+                          <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
+                            {dbUser.imageUrl ? (
+                              <Image
+                                src={dbUser.imageUrl}
+                                alt={dbUser.username || "user"}
+                                width={20}
+                                height={20}
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                                {dbUser.username?.charAt(0).toUpperCase()}
+                              </div>
+                            )}
                           </div>
+                          <span>{dbUser.username}</span>
+                        </div>
+                        {count > 0 && (
+                          <Badge className="h-5 w-5 flex items-center justify-center p-0">
+                            {count}
+                          </Badge>
                         )}
-                      </div>
-                      <span>{user.username}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
           <div className="mt-auto">
-            {/* <SidebarGroupLabel>Search Users</SidebarGroupLabel>
-            <Input placeholder="Search users..." /> */}
             <SearchUsers />
           </div>
         </SidebarGroup>
@@ -190,7 +234,7 @@ export async function AppSidebar() {
             </SidebarMenuItem>
           </SidebarMenu>
         )}
-        <SidebarClient />
+        <SidebarClient userId={dbUser.id} />
       </SidebarFooter>
     </Sidebar>
   );
