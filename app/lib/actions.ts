@@ -348,3 +348,47 @@ export async function deleteOldReadNotifications() {
     throw error; // Re-throw so the cron job service knows it failed
   }
 }
+
+export async function getNotifications() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return {
+      error: "User not authenticated",
+      notifications: [],
+      unreadCount: 0,
+    };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return { error: "User not found", notifications: [], unreadCount: 0 };
+    }
+
+    const notifications = await prisma.notification.findMany({
+      where: { recipientId: user.id },
+      orderBy: { createdAt: "desc" },
+      take: 20,
+    });
+
+    const unreadCount = await prisma.notification.count({
+      where: {
+        recipientId: user.id,
+        isRead: false,
+      },
+    });
+
+    return { notifications, unreadCount };
+  } catch (error) {
+    logger.error(error, "Failed to get notifications");
+    return {
+      error: "Failed to fetch notifications",
+      notifications: [],
+      unreadCount: 0,
+    };
+  }
+}
