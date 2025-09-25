@@ -20,6 +20,7 @@ model User {
   position String? 
   departmentId String? @db.Uuid 
   department Department? @relation(fields: [departmentId], references: [id]) 
+  notification Notification[]
   createdAt DateTime @default(now()) 
   updatedAt DateTime @updatedAt 
 }
@@ -168,6 +169,27 @@ enum AttachmentType {
 //   updatedAt    DateTime   @updatedAt
 //   department   Department @relation(fields: [departmentId], references: [id])
 // }
+
+model Notification {
+  id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        NotificationType
+  message     String
+  fullMessage String?
+  url         String?
+  
+  recipientId String           @db.Uuid
+  recipient   User             @relation(fields: [recipientId], references: [id])
+
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+}
+
+
+enum NotificationType {
+  DIRECT_MESSAGE
+  GROUP_MESSAGE
+  INCIDENT_CREATED
+}
 
 enum IncidentStatus {
   REPORTED

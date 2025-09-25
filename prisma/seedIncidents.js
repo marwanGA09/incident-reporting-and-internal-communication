@@ -47,7 +47,7 @@ async function main() {
 
 main()
   .catch((error) => {
-    logger.error({ error }, "❌ Error during seed:");
+    // logger.error({ error }, "❌ Error during seed:");
     process.exit(1);
   })
   .finally(() => {

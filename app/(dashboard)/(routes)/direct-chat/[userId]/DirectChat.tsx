@@ -357,7 +357,7 @@ export default function DirectChat({
                 },
                 idx
               ) => {
-                console.log(`message-${msg.id}`);
+                // console.log(`message-${msg.id}`);
                 const isOwn = msg.senderId === currentUserId;
                 const isUpdated =
                   new Date(msg.updatedAt).getTime() >
