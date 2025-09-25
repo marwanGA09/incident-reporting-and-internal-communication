@@ -85,6 +85,16 @@ export async function AppSidebar() {
           },
         ];
 
+  const incidentNotificationCount = Object.entries(notificationCounts).reduce(
+    (acc, [url, count]) => {
+      if (url.startsWith("/incidents")) {
+        return acc + count;
+      }
+      return acc;
+    },
+    0
+  );
+
   const DmUsers = await prisma.directMessage.findMany({
     select: {
       senderId: true,
@@ -118,16 +128,31 @@ export async function AppSidebar() {
           <SidebarGroupLabel>Incidents</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {incidentsLink.map((item) => (
-                <SidebarMenuItem key={item.title}>
-                  <SidebarMenuButton asChild>
-                    <a href={item.url}>
-                      <item.icon />
-                      <span>{item.title}</span>
-                    </a>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-              ))}
+              {incidentsLink.map((item) => {
+                const isIncidentParent = item.url === "/incidents";
+                const count = isIncidentParent ? incidentNotificationCount : 0;
+
+                return (
+                  <SidebarMenuItem key={item.title}>
+                    <SidebarMenuButton asChild>
+                      <a
+                        href={item.url}
+                        className="flex justify-between items-center w-full"
+                      >
+                        <div className="flex items-center gap-2">
+                          <item.icon />
+                          <span>{item.title}</span>
+                        </div>
+                        {count > 0 && (
+                          <Badge className="h-5 w-5 flex items-center justify-center p-0">
+                            {count}
+                          </Badge>
+                        )}
+                      </a>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                );
+              })}
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
