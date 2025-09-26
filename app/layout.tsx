@@ -1,4 +1,3 @@
-// import type { Metadata } from "next";
 import { ClerkProvider, SignInButton, SignedOut } from "@clerk/nextjs";
 
 import ToasterProvider from "@/components/Providers/toastProvider";
@@ -6,6 +5,7 @@ import ToasterProvider from "@/components/Providers/toastProvider";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/Providers/theme-provider";
+import { ServiceWorkerRegistrar } from "./_components/ServiceWorkerRegistrar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -36,17 +36,12 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} antialiased`}
         >
-          {" "}
+          <ServiceWorkerRegistrar />
           <ToasterProvider />
-          {/* <header className="flex justify-end items-center p-4 gap-4 h-16"> */}
           <header>
             <SignedOut>
               <SignInButton />
-              {/* <SignUpButton /> */}
             </SignedOut>
-            {/* <SignedIn>
-              <UserButton />
-            </SignedIn> */}
           </header>
           <ThemeProvider
             attribute="class"

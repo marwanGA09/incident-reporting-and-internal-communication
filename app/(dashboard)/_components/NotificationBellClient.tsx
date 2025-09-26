@@ -15,6 +15,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 import { Notification } from '@prisma/client';
 import { formatDistanceToNow } from 'date-fns';
+import { PushManager } from './PushManager';
 
 export function NotificationBellClient({
   initialNotifications,
@@ -82,6 +83,8 @@ export function NotificationBellClient({
             View all notifications
           </Link>
         </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <PushManager />
       </DropdownMenuContent>
     </DropdownMenu>
   );

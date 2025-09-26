@@ -21,6 +21,7 @@ model User {
   departmentId String? @db.Uuid 
   department Department? @relation(fields: [departmentId], references: [id]) 
   notification Notification[]
+  pushSubscriptions PushSubscription[]
   createdAt DateTime @default(now()) 
   updatedAt DateTime @updatedAt 
 }
@@ -195,20 +196,14 @@ enum IncidentStatus {
   CLOSED
 }
 
+model PushSubscription {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+  @@index([userId])
+}
