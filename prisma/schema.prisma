@@ -27,15 +27,7 @@ model User {
 
 
 
-// model Department {
-//   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//   name          String
-//   email         String?        @unique
-//   createdAt     DateTime       @default(now())
-//   updatedAt     DateTime       @updatedAt
-//   groupMessages GroupMessage[]
-//   incidents     Incident[]
-// }
+
 
 model Department {
   id    String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -95,14 +87,7 @@ model Attachment {
 }
 
 
-// model DirectMessage {
-//   id         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//   text       String
-//   senderId   String
-//   receiverId String
-//   createdAt  DateTime @default(now())
-//   updatedAt  DateTime @updatedAt
-// }
+
 
 
 model DirectMessage {
@@ -160,15 +145,6 @@ enum AttachmentType {
   FILE
 }
 
-// model GroupMessage {
-//   id           String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-//   text         String
-//   senderId     String
-//   departmentId String     @db.Uuid
-//   createdAt    DateTime   @default(now())
-//   updatedAt    DateTime   @updatedAt
-//   department   Department @relation(fields: [departmentId], references: [id])
-// }
 
 model Notification {
   id          String           @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid

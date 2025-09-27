@@ -3,10 +3,7 @@
 import { prisma } from "@/app/lib/prisma"; // assumes prisma client is set up
 import { clerkClient } from "@/lib/clerkClient";
 import logger from "./logger";
-import {
-  DirectMessageAttachment,
-  GroupMessageAttachment,
-} from "@prisma/client";
+
 import { PendingAttachment } from "@/lib/defination";
 import { auth } from "@clerk/nextjs/server";
 
@@ -102,6 +99,13 @@ export async function sendGroupMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
+  console.log("we are sending group message", {
+    text,
+    departmentId,
+    senderId,
+    roomName,
+    attachments,
+  });
   const newGroupMessage = await prisma.groupMessage.create({
     data: {
       text,
@@ -131,10 +135,10 @@ export async function sendGroupMessage({
 
     if (department && sender) {
       const recipients = department.users.filter(
-        (user) => user.id !== sender.id
+        (user: { id: string }) => user.id !== sender.id
       );
       if (recipients.length > 0) {
-        const notificationsData = recipients.map((user) => ({
+        const notificationsData = recipients.map((user: { id: string }) => ({
           type: "GROUP_MESSAGE" as const,
           message: `New message in #${department.name} from ${
             sender.username || "a user"
@@ -206,6 +210,13 @@ export async function sendDirectMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
+  console.log("we are sending direct message", {
+    text,
+    senderId,
+    receiverId,
+    roomName,
+    attachments,
+  });
   const newMessage = await prisma.directMessage.create({
     data: {
       senderId,

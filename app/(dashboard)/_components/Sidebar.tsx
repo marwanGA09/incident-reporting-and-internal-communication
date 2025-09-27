@@ -50,7 +50,7 @@ export async function AppSidebar() {
 
   if (!dbUser) return null;
 
-  console.log({ user, dbUser });
+  // console.log({ user, dbUser });
   const unreadNotifications = await prisma.notification.findMany({
     where: {
       recipientId: dbUser.id,
@@ -59,7 +59,7 @@ export async function AppSidebar() {
     select: { url: true },
   });
 
-  console.log({ unreadNotifications });
+  // console.log({ unreadNotifications });
   const notificationCounts = unreadNotifications.reduce((acc, notification) => {
     if (notification.url) {
       acc[notification.url] = (acc[notification.url] || 0) + 1;
@@ -67,7 +67,7 @@ export async function AppSidebar() {
     return acc;
   }, {} as Record<string, number>);
 
-  console.log({ notificationCounts });
+  // console.log({ notificationCounts });
   const groupsDepartmentLink =
     user?.publicMetadata?.role === "admin"
       ? (await getDepartments()).map((dep) => ({
@@ -162,7 +162,7 @@ export async function AppSidebar() {
             <SidebarMenu>
               {groupsDepartmentLink.map((item) => {
                 const count = notificationCounts[item.url] || 0;
-                console.log({ item, count });
+                // console.log({ item, count });
                 return (
                   <SidebarMenuItem key={item.title}>
                     <SidebarMenuButton asChild>
