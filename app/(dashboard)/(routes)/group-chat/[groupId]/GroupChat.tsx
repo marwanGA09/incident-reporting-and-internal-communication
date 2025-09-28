@@ -6,13 +6,8 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
-import {
-  deleteGroupMessage,
-  getGroupMessages,
-  markNotificationsAsRead,
-  sendGroupMessage,
-  updateGroupMessage,
-} from "@/app/lib/actions";
+import { useNotificationStore } from "@/hooks/use-notification-store";
+import { markNotificationsAsRead } from "@/app/lib/actions";
 import {
   CheckCheckIcon,
   Edit3Icon,
@@ -50,6 +45,7 @@ export default function GroupChat({
   }[];
 }) {
   const { user } = useUser();
+  const { markAsRead } = useNotificationStore();
   const [messages, setMessages] = useState<GroupMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [page, setPage] = useState(1);
@@ -66,7 +62,9 @@ export default function GroupChat({
   useEffect(() => {
     if (!groupId || !user?.id) return;
 
-    markNotificationsAsRead(`/group-chat/${groupId}`);
+    const url = `/group-chat/${groupId}`;
+    markNotificationsAsRead(url);
+    markAsRead(url);
 
     async function loadMessages() {
       const msgs = await getGroupMessages(groupId, page);

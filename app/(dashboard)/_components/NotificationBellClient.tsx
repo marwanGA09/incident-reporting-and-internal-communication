@@ -15,6 +15,9 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 import { Notification } from '@prisma/client';
 import { formatDistanceToNow } from 'date-fns';
+import { useNotificationStore } from '@/hooks/use-notification-store';
+import { useEffect } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 export function NotificationBellClient({
   initialNotifications,
@@ -23,17 +26,46 @@ export function NotificationBellClient({
   initialNotifications: Notification[];
   initialUnreadCount: number;
 }) {
+  const {
+    notifications,
+    unreadCount,
+    setNotifications,
+    addNotification,
+    markAsRead,
+  } = useNotificationStore();
+
+  useEffect(() => {
+    setNotifications(initialNotifications);
+  }, [initialNotifications, setNotifications]);
+
+  useEffect(() => {
+    const channel = supabase
+      .channel('realtime-notifications')
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'Notification' },
+        (payload) => {
+          addNotification(payload.new as Notification);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [addNotification]);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <BellIcon className="h-5 w-5" />
-          {initialUnreadCount > 0 && (
+          {unreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {initialUnreadCount}
+              {unreadCount}
             </Badge>
           )}
         </Button>
@@ -42,16 +74,17 @@ export function NotificationBellClient({
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <ScrollArea className="h-96">
-          {initialNotifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">
               You have no new notifications.
             </p>
           ) : (
-            initialNotifications.map((notif) => (
+            notifications.map((notif) => (
               <DropdownMenuItem key={notif.id} asChild>
                 <Link
                   href={notif.url || '#'}
                   className="flex items-start gap-3 p-2"
+                  onClick={() => markAsRead(notif.url || '')}
                 >
                   {notif.isRead ? (
                     <CheckCircle className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />

@@ -145,15 +145,21 @@ function IncidentItem({
   );
 }
 
+import { Circle } from "lucide-react";
+import { Notification } from "@prisma/client";
+
+// export default function IncidentsList({ unreadNotifications }: { unreadNotifications: Notification[] }) {
 export default function IncidentsList({
   incidents,
   users,
+  unreadNotifications,
 }: {
   incidents: (Incident & {
     department: Department;
     category: IncidentCategory;
   })[];
   users: { name: string; id: string }[];
+  unreadNotifications: Notification[];
 }) {
   const { isLoaded, user: currentUser } = useUser();
   // const [userId, setUserId] = useState(incident.department?.AssignedToId);
@@ -161,6 +167,34 @@ export default function IncidentsList({
     return <IncidentSkeleton />;
   }
 
+  const unreadIncidentIds = new Set(
+    unreadNotifications.map((n) => n.url?.split("/").pop())
+  );
+
+  // return (
+  //   <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-x-auto">
+  //     {incidents.map((incident) => (
+  //       <Link href={`/incidents/${incident.id}`} key={incident.id}>
+  //         <div className="flex items-center justify-between p-4 border-b">
+  //           <div className="flex items-center gap-4">
+  //             {unreadIncidentIds.has(incident.id) && (
+  //               <Circle className="h-4 w-4 text-blue-500" />
+  //             )}
+  //             <div>
+  //               <h3 className="font-semibold">{incident.title}</h3>
+  //               <p className="text-sm text-gray-500">
+  //                 {incident.department.name}
+  //               </p>
+  //             </div>
+  //           </div>
+  //           <Badge variant={getBadgeVariantForStatus(incident.status)}>
+  //             {incident.status}
+  //           </Badge>
+  //         </div>
+  //       </Link>
+  //     ))}
+  //   </div>
+  // );
   return (
     <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-x-auto">
       {incidents.map((incident) => (

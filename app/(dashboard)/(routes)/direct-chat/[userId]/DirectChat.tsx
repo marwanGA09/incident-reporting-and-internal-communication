@@ -3,6 +3,7 @@
 import { useUser } from "@clerk/nextjs";
 import React, { useEffect, useRef, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
+import { useNotificationStore } from "@/hooks/use-notification-store";
 import {
   deleteDirectMessage,
   getDirectMessages,
@@ -50,6 +51,7 @@ export default function DirectChat({
   };
 }) {
   const { user } = useUser();
+  const { markAsRead } = useNotificationStore();
   const [messages, setMessages] = useState<DirectMessage[]>([]);
   const [messageText, setMessageText] = useState("");
 
@@ -75,7 +77,9 @@ export default function DirectChat({
   useEffect(() => {
     if (!currentUserId || !targetUserId) return;
 
-    markNotificationsAsRead(`/direct-chat/${targetUserId}`);
+    const url = `/direct-chat/${targetUserId}`;
+    markNotificationsAsRead(url);
+    markAsRead(url);
     getDirectMessages(currentUserId, targetUserId).then(setMessages);
 
     const channel = supabase.channel(roomName, {
