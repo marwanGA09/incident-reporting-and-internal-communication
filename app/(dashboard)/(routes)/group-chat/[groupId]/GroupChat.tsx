@@ -163,7 +163,7 @@ export default function GroupChat({
 
     try {
       // 2. Store in DB using your existing backend function
-      const newMessage = await sendGroupMessage({
+      const { newGroupMessage, notifications } = await sendGroupMessage({
         text: messageText,
         departmentId: groupId,
         senderId: user.id,
@@ -175,14 +175,25 @@ export default function GroupChat({
       supabase.channel(roomName).send({
         type: "broadcast",
         event: "group-message",
-        payload: { ...newMessage, status: "sent" },
+        payload: { ...newGroupMessage, status: "sent" },
       });
+
+      // Broadcast notifications to relevant recipients
+      if (notifications && notifications.length > 0) {
+        for (const notification of notifications) {
+          supabase.channel("NOTIFICATION").send({
+            type: "broadcast",
+            event: "new-notification",
+            payload: notification,
+          });
+        }
+      }
 
       // 4. Update message status to sent
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
-            ? { ...msg, status: "sent", id: newMessage.id }
+            ? { ...msg, status: "sent", id: newGroupMessage.id }
             : msg
         )
       );

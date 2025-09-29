@@ -122,6 +122,7 @@ export async function sendGroupMessage({
     },
   });
 
+  let notifications: any[] = [];
   try {
     const sender = await prisma.user.findUnique({
       where: { clerkId: senderId },
@@ -130,13 +131,14 @@ export async function sendGroupMessage({
 
     const department = await prisma.department.findUnique({
       where: { id: departmentId },
-      select: { name: true, users: { select: { id: true } } },
+      select: { name: true, users: { select: { id: true, clerkId: true } } },
     });
-
+    console.log({ sender, department });
     if (department && sender) {
-      const recipients = department.users.filter(
+      const recipients: any = department.users.filter(
         (user: { id: string }) => user.id !== sender.id
       );
+      console.log({ recipients });
       if (recipients.length > 0) {
         const notificationsData = recipients.map((user: { id: string }) => ({
           type: "GROUP_MESSAGE" as const,
@@ -146,17 +148,21 @@ export async function sendGroupMessage({
           url: `/group-chat/${departmentId}`,
           recipientId: user.id,
         }));
-
-        await prisma.notification.createMany({
-          data: notificationsData,
-        });
+        console.log(notificationsData);
+        // Create notifications one by one to get the created notification objects
+        for (const notificationData of notificationsData) {
+          const notification = await prisma.notification.create({
+            data: notificationData,
+          });
+          notifications.push(notification);
+        }
       }
     }
   } catch (error) {
     logger.error(error, "Failed to create group message notifications");
   }
-
-  return newGroupMessage;
+  console.log("from send group message", { newGroupMessage, notifications });
+  return { newGroupMessage, notifications };
 }
 
 export async function deleteGroupMessage(messageId: string) {
