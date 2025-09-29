@@ -133,14 +133,33 @@ export async function sendGroupMessage({
       where: { id: departmentId },
       select: { name: true, users: { select: { id: true, clerkId: true } } },
     });
-    console.log({ sender, department });
+
     if (department && sender) {
-      const recipients: any = department.users.filter(
-        (user: { id: string }) => user.id !== sender.id
+      // Recipients from the department (excluding the sender)
+      const departmentRecipients = department.users.filter(
+        (user) => user.id !== sender.id
       );
-      console.log({ recipients });
-      if (recipients.length > 0) {
-        const notificationsData = recipients.map((user: { id: string }) => ({
+
+      // Fetch all admin users
+      const adminUsers = await prisma.user.findMany({
+        where: { role: "admin" },
+        select: { id: true, clerkId: true },
+      });
+
+      // Combine department recipients and admin users, ensuring no duplicates
+      const allRecipientsMap = new Map<
+        string,
+        { id: string; clerkId: string | null }
+      >();
+      departmentRecipients.forEach((user) =>
+        allRecipientsMap.set(user.id, user)
+      );
+      adminUsers.forEach((user) => allRecipientsMap.set(user.id, user));
+
+      const allRecipients = Array.from(allRecipientsMap.values());
+
+      if (allRecipients.length > 0) {
+        const notificationsData = allRecipients.map((user) => ({
           type: "GROUP_MESSAGE" as const,
           message: `New message in #${department.name} from ${
             sender.username || "a user"
@@ -148,7 +167,7 @@ export async function sendGroupMessage({
           url: `/group-chat/${departmentId}`,
           recipientId: user.id,
         }));
-        console.log(notificationsData);
+
         // Create notifications one by one to get the created notification objects
         for (const notificationData of notificationsData) {
           const notification = await prisma.notification.create({
