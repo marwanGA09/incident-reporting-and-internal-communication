@@ -29,7 +29,12 @@ function IncidentItem({
   currentUser,
   users,
 }: {
-  incident: Incident & { department: Department; category: IncidentCategory };
+  incident: Incident &
+    {
+      department: Department;
+      category: IncidentCategory;
+    } &
+    { isRead: boolean };
   currentUser: UserResource;
   users: { name: string; id: string }[];
 }) {
@@ -66,11 +71,16 @@ function IncidentItem({
   return (
     <Card
       key={incident.id}
-      className="relative rounded-2xl border border-muted bg-background shadow-sm hover:shadow-lg   transition-shadow pb-8"
+      className={`relative rounded-2xl border border-muted bg-background shadow-sm hover:shadow-lg transition-shadow pb-8`}
     >
       <CardHeader>
         <CardTitle className="flex justify-between items-center">
-          {textShorter(incident.title, 25)}
+          <div className="flex items-center gap-2">
+            {textShorter(incident.title, 25)}
+            {!incident.isRead && (
+              <div className="w-2 h-2 bg-red-500 rounded-full" title="Unread Incident"></div>
+            )}
+          </div>
           <Badge
             variant={getBadgeVariantForStatus(incident.status)}
             className="px-4 py-2"
@@ -152,7 +162,7 @@ export default function IncidentsList({
   incidents: (Incident & {
     department: Department;
     category: IncidentCategory;
-  })[];
+  } & { isRead: boolean })[];
   users: { name: string; id: string }[];
 }) {
   const { isLoaded, user: currentUser } = useUser();

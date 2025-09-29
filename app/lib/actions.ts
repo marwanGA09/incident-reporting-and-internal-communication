@@ -385,6 +385,79 @@ export async function deleteOldReadNotifications() {
   }
 }
 
+export async function markIncidentAsRead(incidentId: string) {
+  const { userId: clerkId } = await auth();
+  console.log(`markIncidentAsRead called for incidentId: ${incidentId}, clerkId: ${clerkId}`);
+  if (!clerkId) return { error: "User not authenticated" };
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+
+    if (!user) return { error: "User not found" };
+
+    const result = await prisma.userIncidentReadStatus.upsert({
+      where: {
+        userId_incidentId: {
+          userId: user.id,
+          incidentId: incidentId,
+        },
+      },
+      update: {
+        readAt: new Date(),
+      },
+      create: {
+        userId: user.id,
+        incidentId: incidentId,
+        readAt: new Date(),
+      },
+    });
+    console.log(`UserIncidentReadStatus upserted: ${JSON.stringify(result)}`);
+    return { success: true };
+  } catch (error) {
+    logger.error(error, `Failed to mark incident ${incidentId} as read`);
+    return { error: "Failed to mark incident as read" };
+  }
+}
+
+export async function getUnreadIncidentsCount() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    return { error: "User not authenticated", count: 0 };
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return { error: "User not found", count: 0 };
+    }
+
+    const readIncidentIds = (await prisma.userIncidentReadStatus.findMany({
+      where: { userId: user.id },
+      select: { incidentId: true },
+    })).map(status => status.incidentId);
+
+    const unreadIncidentsCount = await prisma.incident.count({
+      where: {
+        id: {
+          notIn: readIncidentIds,
+        },
+      },
+    });
+
+    return { count: unreadIncidentsCount };
+  } catch (error) {
+    logger.error(error, "Failed to get unread incidents count");
+    return { error: "Failed to fetch unread incidents count", count: 0 };
+  }
+}
+
 export async function getNotifications() {
   const { userId: clerkId } = await auth();
   if (!clerkId) {

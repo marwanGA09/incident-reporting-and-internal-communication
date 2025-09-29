@@ -26,7 +26,7 @@ import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/lib/supabaseClient";
 import Image from "next/image";
 import SearchUsers from "./SearchUser";
-import { getNotifications } from "@/app/lib/actions";
+import { getNotifications, getUnreadIncidentsCount } from "@/app/lib/actions";
 
 interface UserFromDB {
   id: string;
@@ -84,49 +84,8 @@ export default function SidebarClient({
   usersFromDB,
 }: SidebarClientProps) {
   const [unreadNot, setUnreadNot] = useState<Notification[]>([]);
+  const [unreadIncidentsCount, setUnreadIncidentsCount] = useState(0);
 
-  // useEffect(() => {
-  //   let isMounted = true;
-
-  //   const setup = async () => {
-  //     const { unReadNotifications } = await getNotifications();
-  //     console.log({ unReadNotifications });
-  //     if (isMounted && unReadNotifications) {
-  //       console.log("unReadNotifications", unReadNotifications);
-  //       setUnreadNot(unReadNotifications);
-  //     }
-
-  //     const NotificationChannel = supabase.channel("NOTIFICATION", {
-  //       config: { presence: { key: dbUser.id } },
-  //     });
-
-  //     NotificationChannel.on(
-  //       "broadcast",
-  //       { event: "new-notification" },
-  //       (payload) => {
-  //         const newNotification = payload.payload;
-  //         setUnreadNot((prev) => {
-  //           console.log("payload from new notification", newNotification);
-  //           console.log("previous not", prev);
-  //           return [...prev, { ...newNotification }];
-  //         });
-  //       }
-  //     ).subscribe();
-  //     // setMessages((prev) =>
-  //     //   prev.map((msg) => (msg.id === updatedMessage.id ? updatedMessage : msg))
-  //     // );
-  //     // Cleanup
-  //     return () => {
-  //       supabase.removeChannel(NotificationChannel);
-  //     };
-  //   };
-
-  //   setup();
-
-  //   return () => {
-  //     isMounted = false;
-  //   };
-  // }, [dbUser.id]);
   useEffect(() => {
     let isMounted = true;
 
@@ -134,6 +93,11 @@ export default function SidebarClient({
       const { unReadNotifications } = await getNotifications();
       if (isMounted && unReadNotifications) {
         setUnreadNot(unReadNotifications);
+      }
+
+      const { count } = await getUnreadIncidentsCount();
+      if (isMounted && count !== undefined) {
+        setUnreadIncidentsCount(count);
       }
 
       const NotificationChannel = supabase.channel("NOTIFICATION", {
@@ -148,6 +112,10 @@ export default function SidebarClient({
           if (exists) return prev;
           return [...prev, { ...newNotification }];
         });
+
+        if (newNotification.type === "INCIDENT") {
+          setUnreadIncidentsCount((prev) => prev + 1);
+        }
       };
 
       NotificationChannel.on(
@@ -179,15 +147,15 @@ export default function SidebarClient({
     return acc;
   }, {} as Record<string, number>);
 
-  const incidentNotificationCount = Object.entries(notificationCounts).reduce(
-    (acc, [url, count]) => {
-      if (url.startsWith("/incidents")) {
-        return acc + count;
-      }
-      return acc;
-    },
-    0
-  );
+  // const incidentNotificationCount = Object.entries(notificationCounts).reduce(
+  //   (acc, [url, count]) => {
+  //     if (url.startsWith("/incidents")) {
+  //       return acc + count;
+  //     }
+  //     return acc;
+  //   },
+  //   0
+  // );
 
   const groupsDepartmentLink =
     dbUser.role === "admin"
@@ -215,7 +183,7 @@ export default function SidebarClient({
             <SidebarMenu>
               {incidentsLink.map((item) => {
                 const isIncidentParent = item.url === "/incidents";
-                const count = isIncidentParent ? incidentNotificationCount : 0;
+                const count = isIncidentParent ? unreadIncidentsCount : 0;
 
                 return (
                   <SidebarMenuItem key={item.title}>

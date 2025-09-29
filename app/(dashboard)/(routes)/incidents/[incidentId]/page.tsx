@@ -6,6 +6,8 @@ import IncidentDetail from "../_components/IncidentDetail";
 import { clerkClient } from "@/lib/clerkClient";
 import { MoveLeftIcon } from "lucide-react";
 import Link from "next/link";
+import { markIncidentAsRead } from "@/app/lib/actions";
+
 export default async function IncidentDetailPage({
   params,
 }: {
@@ -14,8 +16,13 @@ export default async function IncidentDetailPage({
   const user = await currentUser();
   if (!user) redirect("/");
 
+  const incidentId = (await params).incidentId;
+
+  // Mark the incident as read for the current user
+  await markIncidentAsRead(incidentId);
+
   const incident = await prisma.incident.findUnique({
-    where: { id: (await params).incidentId },
+    where: { id: incidentId },
     include: {
       category: true,
       department: true,

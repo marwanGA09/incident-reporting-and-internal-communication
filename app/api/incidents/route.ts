@@ -1,3 +1,4 @@
+import { supabase } from "@/lib/supabaseClient";
 import logger from "@/app/lib/logger";
 import { prisma } from "@/app/lib/prisma";
 import { IncidentFormSchema } from "@/lib/validation/incidents";
@@ -6,7 +7,7 @@ import { NextResponse } from "next/server";
 export async function POST(req: Request) {
   const body = await req.json();
   const result = IncidentFormSchema.safeParse(body);
-  // console.log({ result });
+
   if (!result.success) {
     return NextResponse.json({ error: result.error }, { status: 400 });
   }
@@ -14,31 +15,42 @@ export async function POST(req: Request) {
     const incident = await prisma.incident.create({
       data: result.data,
     });
-    console.log("NEW INCIDENT is created", incident);
+
     // --- Start Notification Logic ---
     try {
-      const usersInDepartment = await prisma.user.findMany({
-        where: { departmentId: incident.departmentId },
+      const allUsers = await prisma.user.findMany({
         select: { id: true },
       });
-      console.log("usersInDepartment of created incident", usersInDepartment);
-      if (usersInDepartment.length > 0) {
-        const notificationsData = usersInDepartment.map((user) => ({
+
+      if (allUsers.length > 0) {
+        const notificationsData = allUsers.map((user) => ({
           type: "INCIDENT" as const,
           message: `New incident reported: "${incident.title}"`,
           url: `/incidents/${incident.id}`,
           recipientId: user.id,
         }));
 
-        console.log("notificationsData of created incident", notificationsData);
-        await prisma.notification.createMany({
-          data: notificationsData,
-        });
+        const createdNotifications = [];
+        for (const notificationData of notificationsData) {
+          const notification = await prisma.notification.create({
+            data: notificationData,
+          });
+          createdNotifications.push(notification);
+        }
+
+        // Broadcast each notification to the NOTIFICATION channel
+        for (const notification of createdNotifications) {
+          supabase.channel("NOTIFICATION").send({
+            type: "broadcast",
+            event: "new-notification",
+            payload: notification,
+          });
+        }
       }
     } catch (notificationError) {
       logger.error(
         notificationError,
-        "Failed to create incident notifications"
+        "Failed to create or broadcast incident notifications"
       );
       // Do not re-throw; the incident was created successfully.
     }
@@ -57,11 +69,6 @@ export async function POST(req: Request) {
 export async function PATCH(req: Request) {
   const { id, status, note, userId } = await req.json();
   try {
-    // const incident = await prisma.incident.update({
-    //   where: { id },
-    //   data: { assignedToId: userId },
-    // });
-
     const updated = await prisma.incident.update({
       where: { id },
       data: {
