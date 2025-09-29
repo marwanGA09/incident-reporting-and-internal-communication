@@ -75,14 +75,15 @@ export default function DirectChat({
   useEffect(() => {
     if (!currentUserId || !targetUserId) return;
 
-    markNotificationsAsRead(`/direct-chat/${targetUserId}`);
     getDirectMessages(currentUserId, targetUserId).then(setMessages);
-
-    const channel = supabase.channel(roomName, {
+    const directChannel = supabase.channel(roomName, {
       config: { presence: { key: currentUserId } },
     });
-
-    channel
+    const notificationChannel = supabase.channel(roomName, {
+      config: { presence: { key: currentUserId } },
+    });
+    console.log({ directChannel, notificationChannel });
+    directChannel
       .on("broadcast", { event: "direct-message" }, (payload) => {
         const newMessage = payload.payload;
         setMessages((prev) => [...prev, { ...newMessage, status: "sent" }]);
@@ -104,7 +105,8 @@ export default function DirectChat({
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(directChannel);
+      supabase.removeChannel(notificationChannel);
     };
   }, [currentUserId, targetUserId, roomName]);
 
@@ -148,7 +150,7 @@ export default function DirectChat({
     setSelectedFiles([]);
 
     try {
-      const newMessage = await sendDirectMessage({
+      const { newMessage, notification } = await sendDirectMessage({
         senderId: currentUserId,
         receiverId: targetUserId,
         text: messageText || undefined,
@@ -161,7 +163,28 @@ export default function DirectChat({
         event: "direct-message",
         payload: { ...newMessage, status: "sent" },
       });
+      // try {
+      // const sender = newMessage.senderId;
+      // const receiver = newMessage.receiverId;
 
+      //   if (receiver && sender) {
+      //     await prisma.notification.create({
+      //       data: {
+      //         type: "DIRECT_MESSAGE",
+      //         message: `New message from ${sender.username || "a user"}`,
+      //         url: `/direct-chat/${senderId}`,
+      //         recipientId: receiver.id,
+      //       },
+      //     });
+      //   }
+      // } catch (error) {
+      //   logger.error(error, "Failed to create direct message notification");
+      // }
+      supabase.channel("NOTIFICATION").send({
+        type: "broadcast",
+        event: "new-notification",
+        payload: notification,
+      });
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId

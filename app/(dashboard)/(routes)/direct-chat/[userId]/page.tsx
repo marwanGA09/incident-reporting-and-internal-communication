@@ -2,13 +2,14 @@
 import logger from "@/app/lib/logger";
 import DirectChat from "./DirectChat";
 import { clerkClient } from "@/lib/clerkClient";
+import { markNotificationsAsRead } from "@/app/lib/actions";
 
 export default async function Page({
   params,
 }: {
   params: Promise<{ userId: string }>;
 }) {
-  logger.info("Direct chat page loaded", (await params).userId);
+  logger.info("Direct chat page loaded");
 
   let targetUser;
   try {
@@ -26,6 +27,9 @@ export default async function Page({
   if (!targetUser) {
     return <div className="p-6">User not found</div>;
   }
+  const url = `/direct-chat/${targetUser.id}`;
+  markNotificationsAsRead(url);
+
   return (
     <div className="p-6">
       <DirectChat targetUser={targetUser} />

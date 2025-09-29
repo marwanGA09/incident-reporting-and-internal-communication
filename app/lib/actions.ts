@@ -233,7 +233,7 @@ export async function sendDirectMessage({
     },
     include: { attachments: true },
   });
-
+  let notification = {};
   try {
     const sender = await prisma.user.findUnique({
       where: { clerkId: senderId },
@@ -245,7 +245,7 @@ export async function sendDirectMessage({
     });
 
     if (receiver && sender) {
-      await prisma.notification.create({
+      notification = await prisma.notification.create({
         data: {
           type: "DIRECT_MESSAGE",
           message: `New message from ${sender.username || "a user"}`,
@@ -258,7 +258,7 @@ export async function sendDirectMessage({
     logger.error(error, "Failed to create direct message notification");
   }
 
-  return newMessage;
+  return { newMessage, notification };
 }
 
 export async function getDirectMessages(userId1: string, userId2: string) {
@@ -383,7 +383,12 @@ export async function getNotifications() {
     const notifications = await prisma.notification.findMany({
       where: { recipientId: user.id },
       orderBy: { createdAt: "desc" },
-      take: 20,
+      // take: 50,
+    });
+    const unReadNotifications = await prisma.notification.findMany({
+      where: { recipientId: user.id, isRead: false },
+      orderBy: { createdAt: "desc" },
+      // take: 50,
     });
 
     const unreadCount = await prisma.notification.count({
@@ -393,7 +398,7 @@ export async function getNotifications() {
       },
     });
 
-    return { notifications, unreadCount };
+    return { notifications, unreadCount, unReadNotifications };
   } catch (error) {
     logger.error(error, "Failed to get notifications");
     return {
