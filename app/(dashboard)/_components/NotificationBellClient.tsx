@@ -15,6 +15,8 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import Link from 'next/link';
 import { Notification } from '@prisma/client';
 import { formatDistanceToNow } from 'date-fns';
+import { useEffect, useState } from 'react';
+import { supabase } from '@/lib/supabaseClient';
 
 export function NotificationBellClient({
   initialNotifications,
@@ -23,17 +25,35 @@ export function NotificationBellClient({
   initialNotifications: Notification[];
   initialUnreadCount: number;
 }) {
+  const [notifications, setNotifications] = useState(initialNotifications);
+  const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  useEffect(() => {
+    const channel = supabase.channel('NOTIFICATION');
+    channel
+      .on('broadcast', { event: 'new-notification' }, (payload) => {
+        const newNotification = payload.payload;
+        setNotifications((prev) => [newNotification, ...prev]);
+        setUnreadCount((prev) => prev + 1);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="outline" size="icon" className="relative">
           <BellIcon className="h-5 w-5" />
-          {initialUnreadCount > 0 && (
+          {unreadCount > 0 && (
             <Badge
               variant="destructive"
               className="absolute -top-2 -right-2 h-5 w-5 flex items-center justify-center p-0 text-xs"
             >
-              {initialUnreadCount}
+              {unreadCount}
             </Badge>
           )}
         </Button>
@@ -42,12 +62,12 @@ export function NotificationBellClient({
         <DropdownMenuLabel>Notifications</DropdownMenuLabel>
         <DropdownMenuSeparator />
         <ScrollArea className="h-96">
-          {initialNotifications.length === 0 ? (
+          {notifications.length === 0 ? (
             <p className="p-4 text-sm text-muted-foreground">
               You have no new notifications.
             </p>
           ) : (
-            initialNotifications.map((notif) => (
+            notifications.map((notif) => (
               <DropdownMenuItem key={notif.id} asChild>
                 <Link
                   href={notif.url || '#'}
