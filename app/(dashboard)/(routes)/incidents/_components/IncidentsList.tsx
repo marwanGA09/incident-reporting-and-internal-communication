@@ -29,12 +29,10 @@ function IncidentItem({
   currentUser,
   users,
 }: {
-  incident: Incident &
-    {
-      department: Department;
-      category: IncidentCategory;
-    } &
-    { isRead: boolean };
+  incident: Incident & {
+    department: Department;
+    category: IncidentCategory;
+  } & { isRead: boolean };
   currentUser: UserResource;
   users: { name: string; id: string }[];
 }) {
@@ -78,7 +76,10 @@ function IncidentItem({
           <div className="flex items-center gap-2">
             {textShorter(incident.title, 25)}
             {!incident.isRead && (
-              <div className="w-2 h-2 bg-red-500 rounded-full" title="Unread Incident"></div>
+              <div
+                className="w-2 h-2 bg-red-500 rounded-full"
+                title="Unread Incident"
+              ></div>
             )}
           </div>
           <Badge

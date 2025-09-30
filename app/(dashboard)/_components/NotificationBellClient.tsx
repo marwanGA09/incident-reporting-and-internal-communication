@@ -38,8 +38,29 @@ export function NotificationBellClient({
       })
       .subscribe();
 
+    const incidentReadChannel = supabase.channel('INCIDENT_READ_STATUS');
+    incidentReadChannel
+      .on('broadcast', { event: 'incident-read' }, (payload) => {
+        const { incidentId, userId } = payload.payload;
+        // Assuming the current user is the one who read the incident
+        // You might want to pass the current user's ID to this component
+        // and check if userId === currentUser.id
+
+        setNotifications((prev) =>
+          prev.map((notif) => {
+            if (notif.type === "INCIDENT" && notif.url === `/incidents/${incidentId}` && !notif.isRead) {
+              setUnreadCount((prevCount) => prevCount - 1);
+              return { ...notif, isRead: true };
+            }
+            return notif;
+          })
+        );
+      })
+      .subscribe();
+
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(incidentReadChannel);
     };
   }, []);
 

@@ -124,9 +124,25 @@ export default function SidebarClient({
         handleNotification
       ).subscribe();
 
+      const IncidentReadChannel = supabase.channel("INCIDENT_READ_STATUS", {
+        config: { presence: { key: dbUser.id } },
+      });
+
+      IncidentReadChannel.on(
+        "broadcast",
+        { event: "incident-read" },
+        (payload) => {
+          const { incidentId, userId } = payload.payload;
+          if (userId === dbUser.id) {
+            setUnreadIncidentsCount((prev) => Math.max(0, prev - 1));
+          }
+        }
+      ).subscribe();
+
       // Cleanup function
       return () => {
         supabase.removeChannel(NotificationChannel);
+        supabase.removeChannel(IncidentReadChannel);
       };
     };
 

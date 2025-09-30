@@ -6,6 +6,7 @@ import logger from "./logger";
 
 import { PendingAttachment } from "@/lib/defination";
 import { auth } from "@clerk/nextjs/server";
+import { supabase } from "@/lib/supabaseClient";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
@@ -387,7 +388,9 @@ export async function deleteOldReadNotifications() {
 
 export async function markIncidentAsRead(incidentId: string) {
   const { userId: clerkId } = await auth();
-  console.log(`markIncidentAsRead called for incidentId: ${incidentId}, clerkId: ${clerkId}`);
+  console.log(
+    `markIncidentAsRead called for incidentId: ${incidentId}, clerkId: ${clerkId}`
+  );
   if (!clerkId) return { error: "User not authenticated" };
 
   try {
@@ -415,6 +418,14 @@ export async function markIncidentAsRead(incidentId: string) {
       },
     });
     console.log(`UserIncidentReadStatus upserted: ${JSON.stringify(result)}`);
+
+    // Broadcast an event that the incident has been read
+    supabase.channel("INCIDENT_READ_STATUS").send({
+      type: "broadcast",
+      event: "incident-read",
+      payload: { incidentId, userId: user.id },
+    });
+
     return { success: true };
   } catch (error) {
     logger.error(error, `Failed to mark incident ${incidentId} as read`);
@@ -438,10 +449,12 @@ export async function getUnreadIncidentsCount() {
       return { error: "User not found", count: 0 };
     }
 
-    const readIncidentIds = (await prisma.userIncidentReadStatus.findMany({
-      where: { userId: user.id },
-      select: { incidentId: true },
-    })).map(status => status.incidentId);
+    const readIncidentIds = (
+      await prisma.userIncidentReadStatus.findMany({
+        where: { userId: user.id },
+        select: { incidentId: true },
+      })
+    ).map((status) => status.incidentId);
 
     const unreadIncidentsCount = await prisma.incident.count({
       where: {
