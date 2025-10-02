@@ -57,7 +57,7 @@ export default async function IncidentsPage() {
   const totalUnReadIncidents = incidentsWithReadStatus.filter(
     (incident) => !incident.isRead
   ).length;
-  // console.log({ totalUnReadIncidents });
+  console.log({ totalUnReadIncidents });
   const users =
     currentUserRole === "admin"
       ? data.map((user) => {

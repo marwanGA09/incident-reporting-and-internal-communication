@@ -90,7 +90,8 @@ export default function SidebarClient({
   useEffect(() => {
     let isMounted = true;
 
-    const setup = async () => {
+    // Fetch initial data
+    const fetchInitialData = async () => {
       const { unReadNotifications } = await getNotifications();
       if (isMounted && unReadNotifications) {
         setUnreadNot(unReadNotifications);
@@ -100,63 +101,59 @@ export default function SidebarClient({
       if (isMounted && count !== undefined) {
         setUnreadIncidentsCount(count);
       }
-
-      const NotificationChannel = supabase.channel("NOTIFICATION", {
-        config: { presence: { key: dbUser.id } },
-      });
-
-      const handleNotification = (payload: any) => {
-        const newNotification = payload.payload;
-        setUnreadNot((prev) => {
-          // Avoid duplicate notifications by checking if it  already exists
-          const exists = prev.some((n) => n.id === newNotification.id);
-          if (exists) return prev;
-          return [...prev, { ...newNotification }];
-        });
-
-        if (newNotification.type === "INCIDENT") {
-          setUnreadIncidentsCount((prev) => prev + 1);
-        }
-      };
-
-      NotificationChannel.on(
-        "broadcast",
-        { event: "new-notification" },
-        handleNotification
-      ).subscribe();
-
-      const IncidentReadChannel = supabase.channel("INCIDENT_READ_STATUS", {
-        config: { presence: { key: dbUser.id } },
-      });
-
-      IncidentReadChannel.on(
-        "broadcast",
-        { event: "incident-read" },
-        (payload) => {
-          const { incidentId, userId } = payload.payload;
-          if (userId === dbUser.id) {
-            setUnreadIncidentsCount((prev) => Math.max(0, prev - 1));
-          }
-        }
-      ).subscribe();
-
-      // Cleanup function
-      return () => {
-        supabase.removeChannel(NotificationChannel);
-        supabase.removeChannel(IncidentReadChannel);
-      };
     };
 
-    setup();
+    fetchInitialData();
 
-    // Additional cleanup in the outer return
+    // Setup Supabase channels and subscriptions
+    const handleNotification = (payload: any) => {
+      const newNotification = payload.payload;
+      setUnreadNot((prev) => {
+        const exists = prev.some((n) => n.id === newNotification.id);
+        if (exists) return prev;
+        return [...prev, { ...newNotification }];
+      });
+
+      if (newNotification.type === "INCIDENT") {
+        setUnreadIncidentsCount((prev) => prev + 1);
+      }
+    };
+
+    const handleIncidentRead = (payload: any) => {
+      const { userId } = payload.payload;
+      if (userId === dbUser.id) {
+        setUnreadIncidentsCount((prev) => Math.max(0, prev - 1));
+      }
+    };
+
+    const notificationChannel = supabase.channel("NOTIFICATION", {
+      config: { presence: { key: dbUser.id } },
+    });
+    notificationChannel
+      .on("broadcast", { event: "new-notification" }, handleNotification)
+      .subscribe();
+
+    const incidentReadChannel = supabase.channel("INCIDENT_READ_STATUS", {
+      config: { presence: { key: dbUser.id } },
+    });
+    incidentReadChannel
+      .on("broadcast", { event: "incident-read" }, handleIncidentRead)
+      .subscribe();
+
+    // Cleanup function
     return () => {
       isMounted = false;
+      supabase.removeChannel(notificationChannel);
+      supabase.removeChannel(incidentReadChannel);
     };
   }, [dbUser.id]); // Only re-run when dbUser.id changes
 
   const unreadNotifications = unreadNot;
-  console.log(unreadNotifications.length, unreadNotifications);
+  console.log(
+    "unread notification",
+    unreadNotifications.length,
+    unreadNotifications
+  );
   const notificationCounts = unreadNotifications.reduce((acc, notification) => {
     if (notification.url) {
       acc[notification.url] = (acc[notification.url] || 0) + 1;

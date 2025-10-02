@@ -18,12 +18,19 @@ export async function POST(req: Request) {
 
     // --- Start Notification Logic ---
     try {
-      const allUsers = await prisma.user.findMany({
+      // Find users who are admins or belong to the incident's department
+      const usersToNotify = await prisma.user.findMany({
+        where: {
+          OR: [
+            { role: "admin" },
+            { departmentId: result.data.departmentId },
+          ],
+        },
         select: { id: true },
       });
 
-      if (allUsers.length > 0) {
-        const notificationsData = allUsers.map((user) => ({
+      if (usersToNotify.length > 0) {
+        const notificationsData = usersToNotify.map((user) => ({
           type: "INCIDENT" as const,
           message: `New incident reported: "${incident.title}"`,
           url: `/incidents/${incident.id}`,

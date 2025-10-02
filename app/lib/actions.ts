@@ -426,6 +426,27 @@ export async function markIncidentAsRead(incidentId: string) {
       payload: { incidentId, userId: user.id },
     });
 
+    // Also mark the corresponding notification as read
+    try {
+      await prisma.notification.updateMany({
+        where: {
+          recipientId: user.id,
+          url: `/incidents/${incidentId}`,
+          isRead: false,
+        },
+        data: {
+          isRead: true,
+          readAt: new Date(),
+        },
+      });
+    } catch (notificationError) {
+      logger.error(
+        notificationError,
+        `Failed to mark notification as read for incident ${incidentId}`
+      );
+      // Do not throw an error here, as the primary action (marking incident as read) succeeded.
+    }
+
     return { success: true };
   } catch (error) {
     logger.error(error, `Failed to mark incident ${incidentId} as read`);
@@ -442,7 +463,7 @@ export async function getUnreadIncidentsCount() {
   try {
     const user = await prisma.user.findUnique({
       where: { clerkId },
-      select: { id: true },
+      select: { id: true, role: true, departmentId: true },
     });
 
     if (!user) {
@@ -456,12 +477,21 @@ export async function getUnreadIncidentsCount() {
       })
     ).map((status) => status.incidentId);
 
-    const unreadIncidentsCount = await prisma.incident.count({
-      where: {
-        id: {
-          notIn: readIncidentIds,
-        },
+    const where: any = {
+      id: {
+        notIn: readIncidentIds,
       },
+    };
+
+    if (user.role !== "admin") {
+      where.OR = [
+        { departmentId: user.departmentId },
+        { assignedToId: clerkId },
+      ];
+    }
+
+    const unreadIncidentsCount = await prisma.incident.count({
+      where,
     });
 
     return { count: unreadIncidentsCount };
