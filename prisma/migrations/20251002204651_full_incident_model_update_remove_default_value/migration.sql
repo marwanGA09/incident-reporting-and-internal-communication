@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Incident" ALTER COLUMN "occurredAt" DROP DEFAULT,
+ALTER COLUMN "reporterId" DROP DEFAULT;

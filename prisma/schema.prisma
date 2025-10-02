@@ -8,21 +8,30 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+// ##################################################
+// #                  USER & DEPT                   #
+// ##################################################
+
 model User {
-  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  clerkId                String?                  @unique
-  firstName              String?
-  lastName               String?
-  username               String?                  @unique
-  imageUrl               String?
-  email                  String?
-  role                   String?
-  position               String?
-  departmentId           String?                  @db.Uuid
-  department             Department?              @relation(fields: [departmentId], references: [id])
-  notification           Notification[]
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clerkId      String?     @unique
+  firstName    String?
+  lastName     String?
+  username     String?     @unique
+  imageUrl     String?
+  email        String?
+  role         String? // e.g., "admin", "user"
+  position     String? // e.g., "higher", "lower"
+  departmentId String?     @db.Uuid
+  department   Department? @relation(fields: [departmentId], references: [id])
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  // Relations to Incident
+  reportedIncidents Incident[] @relation("ReportedIncidents")
+  assignedIncidents Incident[] @relation("AssignedIncidents")
+
+  notifications          Notification[]
   UserIncidentReadStatus UserIncidentReadStatus[]
 }
 
@@ -37,41 +46,73 @@ model Department {
   updatedAt     DateTime       @updatedAt
 }
 
-model IncidentCategory {
-  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name        String     @unique // e.g., "Technical", "HR"
-  description String? // Optional, shown in UI
-  isActive    Boolean    @default(true) // Admin can disable without deleting
-  incidents   Incident[] // Relation to incidents using this category
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-}
+// ##################################################
+// #              INCIDENT CORE MODELS              #
+// ##################################################
 
 model Incident {
-  id                     String                   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title                  String
-  description            String?
-  location               String?
-  status                 IncidentStatus           @default(REPORTED)
-  categoryId             String                   @db.Uuid
-  departmentId           String                   @db.Uuid
-  assignedToId           String?
-  createdAt              DateTime                 @default(now())
-  updatedAt              DateTime                 @updatedAt
-  attachments            Attachment[]
-  category               IncidentCategory         @relation(fields: [categoryId], references: [id])
-  department             Department               @relation(fields: [departmentId], references: [id])
+  id             String @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  incidentNumber Int    @unique @default(autoincrement()) // Human-readable, sequential ID
+
+  // --- Core Details ---
+  title       String
+  description String?          @db.Text
+  status      IncidentStatus   @default(REPORTED)
+  severity    IncidentSeverity @default(MEDIUM)
+  priority    IncidentPriority @default(NORMAL)
+
+  // --- Timestamps ---
+  occurredAt DateTime  // When the incident actually happened
+  resolvedAt DateTime?
+  closedAt   DateTime?
+  createdAt  DateTime  @default(now()) // When the report was created
+  updatedAt  DateTime  @updatedAt
+
+  // --- Categorization & Location ---
+  locationAddress   String? // For human-readable address or description
+  locationLatitude  Float? // For map integration
+  locationLongitude Float? // For map integration
+  affectedServices  String[] // For non-physical services/apps affected
+
+  // --- Relations ---
+  category     IncidentCategory @relation(fields: [categoryId], references: [id])
+  categoryId   String           @db.Uuid
+  department   Department       @relation(fields: [departmentId], references: [id])
+  departmentId String           @db.Uuid
+
+  // --- People ---
+  reporter   User    @relation("ReportedIncidents", fields: [reporterId], references: [id])
+  reporterId String  @db.Uuid  
+  assignee   User?   @relation("AssignedIncidents", fields: [assigneeId], references: [id])
+  assigneeId String? @db.Uuid
+
+  // --- Analysis & Communication ---
+  communicationChannel String? @db.Text // Link to Slack channel, etc.
+  rootCause            String? @db.Text
+
+  // --- Related Data ---
   statusNotes            IncidentStatusNote[]
+  attachments            Attachment[]
   UserIncidentReadStatus UserIncidentReadStatus[]
+}
+
+model IncidentCategory {
+  id          String     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String     @unique // e.g., "Technical", "HR", "Facilities"
+  description String?
+  isActive    Boolean    @default(true)
+  incidents   Incident[]
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
 }
 
 model IncidentStatusNote {
   id          String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   incidentId  String         @db.Uuid
-  incident    Incident       @relation(fields: [incidentId], references: [id])
-  changedById String? // Clerk user ID who made the change
+  incident    Incident       @relation(fields: [incidentId], references: [id], onDelete: Cascade)
+  changedById String? // Clerk user ID
   status      IncidentStatus
-  note        String
+  note        String         @db.Text
   changedAt   DateTime       @default(now())
 
   @@index([incidentId])
@@ -93,10 +134,14 @@ model Attachment {
   url        String
   fileName   String?
   incidentId String   @db.Uuid
-  incident   Incident @relation(fields: [incidentId], references: [id])
+  incident   Incident @relation(fields: [incidentId], references: [id], onDelete: Cascade)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 }
+
+// ##################################################
+// #                 CHAT & NOTIFICATIONS           #
+// ##################################################
 
 model DirectMessage {
   id          String                    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
@@ -105,20 +150,18 @@ model DirectMessage {
   receiverId  String
   roomName    String
   attachments DirectMessageAttachment[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt   DateTime                  @default(now())
+  updatedAt   DateTime                  @updatedAt
 }
 
 model DirectMessageAttachment {
   id        String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   url       String
   fileName  String?
-  type      AttachmentType // IMAGE, VIDEO, etc.
+  type      AttachmentType
   messageId String         @db.Uuid
-  message   DirectMessage  @relation(fields: [messageId], references: [id])
-
-  createdAt DateTime @default(now())
+  message   DirectMessage  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
 }
 
 model GroupMessage {
@@ -129,9 +172,8 @@ model GroupMessage {
   roomName     String
   attachments  GroupMessageAttachment[]
   department   Department               @relation(fields: [departmentId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt    DateTime                 @default(now())
+  updatedAt    DateTime                 @updatedAt
 }
 
 model GroupMessageAttachment {
@@ -140,15 +182,8 @@ model GroupMessageAttachment {
   fileName  String?
   type      AttachmentType
   messageId String         @db.Uuid
-  message   GroupMessage   @relation(fields: [messageId], references: [id])
-
-  createdAt DateTime @default(now())
-}
-
-enum AttachmentType {
-  IMAGE
-  VIDEO
-  FILE
+  message   GroupMessage   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  createdAt DateTime       @default(now())
 }
 
 model Notification {
@@ -163,15 +198,41 @@ model Notification {
   readAt      DateTime?
 }
 
+// ##################################################
+// #                      ENUMS                     #
+// ##################################################
+
+enum IncidentStatus {
+  REPORTED
+  ACKNOWLEDGED
+  INVESTIGATING
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+enum IncidentSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentPriority {
+  URGENT
+  HIGH
+  NORMAL
+  LOW
+}
+
+enum AttachmentType {
+  IMAGE
+  VIDEO
+  FILE
+}
+
 enum NotificationType {
   DIRECT_MESSAGE
   GROUP_MESSAGE
   INCIDENT
-}
-
-enum IncidentStatus {
-  REPORTED
-  IN_REVIEW
-  RESOLVED
-  CLOSED
 }
