@@ -108,6 +108,12 @@ export default function SidebarClient({
     // Setup Supabase channels and subscriptions
     const handleNotification = (payload: any) => {
       const newNotification = payload.payload;
+
+      // Ensure the notification is for the current user
+      if (newNotification.recipientId !== dbUser.id) {
+        return;
+      }
+
       setUnreadNot((prev) => {
         const exists = prev.some((n) => n.id === newNotification.id);
         if (exists) return prev;
