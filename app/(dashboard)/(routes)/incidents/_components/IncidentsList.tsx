@@ -177,7 +177,7 @@ export default function IncidentsList({
       {incidents.map((incident) => (
         <IncidentItem
           key={`${incident.id}-${incident.assignedToId}`}
-          incident={incident || []}
+          incident={incident}
           currentUser={currentUser}
           users={users}
         />
