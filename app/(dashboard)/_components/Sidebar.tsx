@@ -346,7 +346,7 @@ export async function AppSidebar() {
 
   const dbUser = await prisma.user.findUnique({
     where: { clerkId: user.id },
-    select: { id: true, role: true, departmentId: true },
+    select: { id: true, role: true, departmentId: true, clerkId: true },
   });
 
   if (!dbUser) return null;

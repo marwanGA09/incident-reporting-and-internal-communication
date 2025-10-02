@@ -56,6 +56,7 @@ interface SidebarClientProps {
     id: string;
     role: string | null;
     departmentId: string | null;
+    clerkId: string | null;
   };
   unreadNotificationsProps: Notification[];
   // groupsDepartmentLink: GroupDepartmentLink[];
@@ -261,7 +262,10 @@ export default function SidebarClient({
             <SidebarMenu>
               <SidebarMenuItem key={dbUser.id}>
                 <SidebarMenuButton asChild>
-                  <a href={`/direct-chat/${dbUser.id}`}>
+                  <a
+                    href={`/direct-chat/${dbUser.clerkId}`}
+                    className="flex items-center gap-2"
+                  >
                     <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 flex justify-center items-center">
                       {<NotebookIcon className="w-5 h-5" />}
                     </div>
