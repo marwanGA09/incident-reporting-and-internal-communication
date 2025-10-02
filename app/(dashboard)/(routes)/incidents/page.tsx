@@ -14,15 +14,15 @@ export default async function IncidentsPage() {
 
   const currentUserDb = await prisma.user.findUnique({
     where: { clerkId: user.id },
-    select: { id: true },
+    select: { id: true, role: true, departmentId: true },
   });
 
   if (!currentUserDb) {
     redirect("/"); // Or handle the case where the user is not in your DB
   }
 
-  const currentUserRole = user.publicMetadata.role;
-  const currentUserDepId = user.publicMetadata.departmentId;
+  const currentUserRole = currentUserDb.role;
+  const currentUserDepId = currentUserDb.departmentId;
 
   const readIncidentStatuses = await prisma.userIncidentReadStatus.findMany({
     where: { userId: currentUserDb.id },
@@ -33,6 +33,9 @@ export default async function IncidentsPage() {
     readIncidentStatuses.map((status) => status.incidentId)
   );
 
+  const it = await prisma.incident.findMany();
+  console.log("Total incidents in DB:", it.length);
+
   const incidents = await prisma.incident.findMany({
     where:
       currentUserRole === "admin"
@@ -41,7 +44,7 @@ export default async function IncidentsPage() {
     include: { category: true, department: true },
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
   });
-
+  console.log("is admin", currentUserRole, incidents.length);
   const incidentsWithReadStatus = incidents.map((incident) => ({
     ...incident,
     isRead: readIncidentIds.has(incident.id),
@@ -54,7 +57,7 @@ export default async function IncidentsPage() {
   const totalUnReadIncidents = incidentsWithReadStatus.filter(
     (incident) => !incident.isRead
   ).length;
-  console.log({ totalUnReadIncidents });
+  // console.log({ totalUnReadIncidents });
   const users =
     currentUserRole === "admin"
       ? data.map((user) => {

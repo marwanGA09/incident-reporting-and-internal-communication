@@ -333,9 +333,6 @@ import {
 import { currentUser } from "@clerk/nextjs/server";
 import { getDepartments, getNotifications } from "@/app/lib/actions";
 import { prisma } from "@/app/lib/prisma";
-import Image from "next/image";
-import SearchUsers from "./SearchUser";
-import { Badge } from "@/components/ui/badge";
 import SidebarClient from "./SidebarClient";
 
 // Menu items.
