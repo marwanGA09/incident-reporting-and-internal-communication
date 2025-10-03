@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -28,7 +29,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIncidentFormStore } from "./IncidentFormStore";
 import { Step3Schema } from "@/lib/validation/incidents";
 
-export default function PageThreeForm() {
+export default function Step3Form() {
   const router = useRouter();
   const { data, setData } = useIncidentFormStore();
 
@@ -44,6 +45,24 @@ export default function PageThreeForm() {
     defaultValues,
   });
 
+  const handleGetCurrentLocation = () => {
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          form.setValue("locationLatitude", position.coords.latitude);
+          form.setValue("locationLongitude", position.coords.longitude);
+          toast.success("Location captured successfully!");
+        },
+        (error) => {
+          console.error("Geolocation error:", error);
+          toast.error(`Error: ${error.message}`);
+        }
+      );
+    } else {
+      toast.error("Geolocation is not supported by your browser.");
+    }
+  };
+
   function onSubmit(values: z.infer<typeof Step3Schema>) {
     setData(values);
     router.push("/incidents/new/step-4");
@@ -55,7 +74,7 @@ export default function PageThreeForm() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="max-w-xl mx-auto pt-8"
+      className="max-w-xl mx-auto"
     >
       <div className="flex flex-col items-center justify-center mb-6">
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
@@ -67,7 +86,8 @@ export default function PageThreeForm() {
         <CardHeader>
           <CardTitle>Location & Affected Services</CardTitle>
           <CardDescription>
-            Specify where the incident occurred and what services are impacted.
+            Specify where the incident occurred. You can use your current
+            location or type an address manually.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -79,12 +99,21 @@ export default function PageThreeForm() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Location / Address</FormLabel>
-                    <FormControl>
-                      <Input
-                        placeholder="e.g., Studio B, 5th Floor or On-site at City Hall"
-                        {...field}
-                      />
-                    </FormControl>
+                    <div className="flex items-center gap-2">
+                      <FormControl>
+                        <Input
+                          placeholder="e.g., Studio B, 5th Floor"
+                          {...field}
+                        />
+                      </FormControl>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={handleGetCurrentLocation}
+                      >
+                        Use Current Location
+                      </Button>
+                    </div>
                     <FormMessage />
                   </FormItem>
                 )}
