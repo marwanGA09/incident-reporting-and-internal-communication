@@ -31,7 +31,7 @@ export default async function Page({
   markNotificationsAsRead(url);
 
   return (
-    <div className="p-6">
+    <div className="p-6 w-full">
       <DirectChat targetUser={targetUser} />
     </div>
   );

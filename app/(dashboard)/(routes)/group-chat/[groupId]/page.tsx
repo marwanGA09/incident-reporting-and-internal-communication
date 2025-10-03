@@ -25,13 +25,13 @@ async function page({ params }: { params: Promise<{ groupId: string }> }) {
       };
     });
   // console.log({ users });
-  logger.info(
-    `   Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem sapiente nisi placeat veniam aspernatur fugit, atque delectus ducimus autem, reiciendis ullam iure quibusdam! Hic illum sit voluptatibus, quas enim quis.
- `,
-    users
-  );
+  //   logger.info(
+  //     `   Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem sapiente nisi placeat veniam aspernatur fugit, atque delectus ducimus autem, reiciendis ullam iure quibusdam! Hic illum sit voluptatibus, quas enim quis.
+  //  `,
+  //     users
+  //   );
   return (
-    <div className="p-6">
+    <div className="p-6 w-full">
       <GroupChat groupId={groupId} users={users} />
     </div>
   );

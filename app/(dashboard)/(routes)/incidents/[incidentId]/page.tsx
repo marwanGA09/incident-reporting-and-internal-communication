@@ -61,7 +61,7 @@ export default async function IncidentDetailPage({
   }
 
   return (
-    <div className="container py-8">
+    <div className="container py-8 w-full">
       <Link className="flex gap-2 pb-4 pl-8" href="/incidents">
         <MoveLeftIcon /> <span>Back to Incidents</span>
       </Link>

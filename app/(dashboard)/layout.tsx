@@ -6,6 +6,8 @@ import UserMetadataGuard from "../_components/UserMetadataGuard";
 import { currentUser } from "@clerk/nextjs/server";
 import { NotificationBell } from "./_components/NotificationBell";
 
+import { MainContent } from "./_components/MainContent";
+
 async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   if (!user) return null;
@@ -23,8 +25,15 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className=" absolute top-2 z-50">
             <SidebarTrigger />
           </div>
-          <div className="absolute top-[80px] bottom-0 flex-grow w-full">
-            {children}
+
+          {/* <MainContent>
+            <div className="absolute top-[80px] bottom-0 flex-grow w-full">
+              {children}
+            </div>
+          </MainContent> */}
+
+          <div className="bg-primary-foreground h-full flex items-center justify-end  px-6  inset-y-0 w-full  ">
+            <div className="flex items-center w-full">{children}</div>
           </div>
         </main>
       </SidebarProvider>

@@ -121,7 +121,7 @@ function Section({
   subValue?: string;
 }) {
   return (
-    <div className="border-b pb-3">
+    <div className="border-b pb-3 w-full">
       <h2 className="text-lg font-semibold">{title}</h2>
       <p className="text-gray-800">
         {value || <span className="text-gray-400">Not provided</span>}
