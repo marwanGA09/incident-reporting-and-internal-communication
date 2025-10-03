@@ -17,7 +17,7 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <main className="w-full h-screen flex flex-col">
           <div className="bg-primary-foreground h-[80px] flex items-center justify-end  px-6  inset-y-0 w-full z-10 ">
-            <div className="flex items-center gap-x-4 h-full">
+            <div className="flex items-center gap-x-4 h-full pt-8">
               <NotificationBell />
               <NavigationMenu />
             </div>
@@ -25,37 +25,11 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
           <div className=" absolute top-2 z-50">
             <SidebarTrigger />
           </div>
-
-          {/* <MainContent>
-            <div className="absolute top-[80px] bottom-0 flex-grow w-full">
-              {children}
-            </div>
-          </MainContent> */}
-
           <div className="inset-y-0 w-full">
             <div className="w-full overflow-y-auto">{children}</div>
           </div>
         </main>
       </SidebarProvider>
-      {/* <SidebarProvider defaultOpen={true}>
-        <AppSidebar />
-        <main className="w-full h-screen flex flex-col">
-          <div className="bg-primary-foreground h-[80px] flex items-center justify-end  px-6  inset-y-0 w-full z-50 ">
-            <div className="flex items-center gap-x-4">
-              <NotificationBell />
-              <NavigationMenu />
-            </div>
-          </div>
-          <div className=" absolute top-2 z-50">
-            <SidebarTrigger />
-          </div>
-          <MainContent>
-            <div className="absolute top-[80px] bottom-0 flex-grow w-full overflow-y-auto">
-              {children}
-            </div>
-          </MainContent>
-        </main>
-      </SidebarProvider> */}
     </UserMetadataGuard>
   );
 }

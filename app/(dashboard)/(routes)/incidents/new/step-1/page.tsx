@@ -62,7 +62,7 @@ export default function Step1() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="max-w-xl mx-auto w-full"
+      className="max-w-xl mx-auto w-full pt-8"
     >
       <div className="flex flex-col items-center justify-center mb-6">
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
@@ -156,7 +156,6 @@ export default function Step1() {
                           disabled={(date) =>
                             date > new Date() || date < new Date("1900-01-01")
                           }
-                          initialFocus
                         />
                         <div className="p-2 border-t border-border">
                           <p className="text-sm text-muted-foreground mb-2">
