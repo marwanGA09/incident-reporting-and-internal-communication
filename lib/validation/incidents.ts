@@ -26,7 +26,16 @@ export const IncidentFormSchema = z.object({
   locationAddress: z.string().optional(),
   locationLatitude: z.number().optional(),
   locationLongitude: z.number().optional(),
-  affectedServices: z.array(z.string()).optional(),
+  affectedServices: z
+    .preprocess((val) => {
+      if (typeof val === "string" && val.length > 0) {
+        return val.split(",").map((s) => s.trim());
+      }
+      if (Array.isArray(val)) {
+        return val;
+      }
+      return [];
+    }, z.array(z.string()).optional()),
 
   // Step 4 (was previously step 3)
   // departmentId: z.string().uuid("Please select a valid department."),

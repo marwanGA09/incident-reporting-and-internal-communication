@@ -1,94 +1,134 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import React, { useState, useTransition } from "react";
-import { useIncidentFormStore, useIncidentUIForm } from "./IncidentFormStore";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { Step3Schema } from "@/lib/validation/incidents";
-import { Button } from "@/components/ui/button";
-import SelectItems from "./SelectItems";
+import { motion } from "framer-motion";
 
-function PageThreeForm({
-  departments,
-}: {
-  departments: { id: string; name: string }[];
-}) {
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { useIncidentFormStore } from "./IncidentFormStore";
+import { Step3Schema } from "@/lib/validation/incidents";
+
+export default function PageThreeForm() {
   const router = useRouter();
   const { data, setData } = useIncidentFormStore();
-  const { setUiData } = useIncidentUIForm();
-  const [errors, setErrors] = useState<z.ZodIssue[]>([]);
 
-  const [departmentId, setDepartmentId] = useState(data.departmentId || "");
-  const [assignedToId, setAssignedToId] = useState(data.assignedToId || "");
-
-  const [isPending, startTransition] = useTransition();
-  const handleNext = () => {
-    const result = Step3Schema.safeParse({ departmentId, assignedToId });
-    if (!result.success) {
-      setErrors(result.error.issues);
-      return;
-    }
-    const departmentName = departments.find(
-      (dep) => dep.id === departmentId
-    )?.name;
-    setData({ departmentId, assignedToId });
-    setUiData({ departmentName });
-    startTransition(() => {
-      router.push("/incidents/new/review");
-    });
+  const defaultValues: z.infer<typeof Step3Schema> = {
+    locationAddress: data.locationAddress || "",
+    locationLatitude: data.locationLatitude,
+    locationLongitude: data.locationLongitude,
+    affectedServices: data.affectedServices || [],
   };
 
+  const form = useForm<z.infer<typeof Step3Schema>>({
+    resolver: zodResolver(Step3Schema),
+    defaultValues,
+  });
+
+  function onSubmit(values: z.infer<typeof Step3Schema>) {
+    setData(values);
+    router.push("/incidents/new/step-4");
+  }
+
   return (
-    <>
-      {/* <InputForm
-        placeholder="Adama, oromia..."
-        label="Location"
-        value={location}
-        onChange={setLocation}
-      /> */}
-
-      <SelectItems
-        label="Select Department"
-        value={departmentId}
-        onChange={setDepartmentId}
-        items={departments}
-      />
-      <SelectItems
-        disabled={true}
-        label="Assign To"
-        value={assignedToId}
-        onChange={setAssignedToId}
-        items={[]}
-      />
-
-      {errors.length > 0 && (
-        <div className="text-red-500">
-          {errors.map((err) => (
-            <p key={err.path.join(".")}>{err.message}</p>
-          ))}
+    <motion.div
+      initial={{ opacity: 0, x: -20 }}
+      animate={{ opacity: 1, x: 0 }}
+      exit={{ opacity: 0, x: 20 }}
+      transition={{ duration: 0.3 }}
+      className="max-w-xl mx-auto pt-8"
+    >
+      <div className="flex flex-col items-center justify-center mb-6">
+        <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
+          <div className="bg-blue-600 h-1.5 rounded-full w-3/4"></div>
         </div>
-      )}
-      <div className="flex justify-end items-center gap-2.5 mt-3">
-        <Button
-          // onClick={handleSubmit}
-          onClick={() => {
-            router.back();
-          }}
-          disabled={isPending}
-          className="bg-slate-300 hover:bg-slate-400 text-black px-6 py-2 rounded shadow"
-        >
-          {isPending ? "Edit..." : "Edit"}
-        </Button>
-        <Button
-          variant={"link"}
-          onClick={handleNext}
-          className=" bg-green-500 hover:bg-green-700 text-white  px-6 py-2 rounded shadow"
-        >
-          {isPending ? "Loading..." : "Next"}
-        </Button>
+        <p className="text-sm text-gray-500">Step 3 of 4: Location Details</p>
       </div>
-    </>
+      <Card className="shadow-lg">
+        <CardHeader>
+          <CardTitle>Location & Affected Services</CardTitle>
+          <CardDescription>
+            Specify where the incident occurred and what services are impacted.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Form {...form}>
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
+              <FormField
+                control={form.control}
+                name="locationAddress"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Location / Address</FormLabel>
+                    <FormControl>
+                      <Input
+                        placeholder="e.g., Studio B, 5th Floor or On-site at City Hall"
+                        {...field}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="affectedServices"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Affected Services</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        placeholder="e.g., Website, iOS App, Live Broadcast Feed"
+                        {...{
+                          ...field,
+                          value: Array.isArray(field.value)
+                            ? field.value.join(", ")
+                            : field.value,
+                        }}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      A comma-separated list of services or systems.
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <div className="flex justify-between items-center">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  onClick={() => router.back()}
+                >
+                  Back
+                </Button>
+                <Button type="submit">Next Step</Button>
+              </div>
+            </form>
+          </Form>
+        </CardContent>
+      </Card>
+    </motion.div>
   );
 }
-
-export default PageThreeForm;
