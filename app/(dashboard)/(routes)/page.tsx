@@ -1,5 +1,5 @@
 // import { auth, currentUser } from '@clerk/nextjs/server';
-
+import HomePage from "./_components/Homepage";
 export default async function Home() {
   // const someThing = await auth();
   // console.log({ someThing });
@@ -7,7 +7,7 @@ export default async function Home() {
   // console.log({ curUser });
   return (
     <div>
-      <div>Root page</div>
+      <div><HomePage /></div>
     </div>
   );
 }
