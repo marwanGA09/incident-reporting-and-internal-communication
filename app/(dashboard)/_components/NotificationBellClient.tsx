@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 import {
   DropdownMenu,
@@ -7,16 +7,16 @@ import {
   DropdownMenuLabel,
   DropdownMenuSeparator,
   DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { Button } from '@/components/ui/button';
-import { BellIcon, CheckCircle, Circle } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import Link from 'next/link';
-import { Notification } from '@prisma/client';
-import { formatDistanceToNow } from 'date-fns';
-import { useEffect, useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { BellIcon, CheckCircle, Circle } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import Link from "next/link";
+import { Notification } from "@prisma/client";
+import { formatDistanceToNow } from "date-fns";
+import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export function NotificationBellClient({
   initialNotifications,
@@ -29,18 +29,18 @@ export function NotificationBellClient({
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
 
   useEffect(() => {
-    const channel = supabase.channel('NOTIFICATION');
+    const channel = supabase.channel("NOTIFICATION");
     channel
-      .on('broadcast', { event: 'new-notification' }, (payload) => {
+      .on("broadcast", { event: "new-notification" }, (payload) => {
         const newNotification = payload.payload;
         setNotifications((prev) => [newNotification, ...prev]);
         setUnreadCount((prev) => prev + 1);
       })
       .subscribe();
 
-    const incidentReadChannel = supabase.channel('INCIDENT_READ_STATUS');
+    const incidentReadChannel = supabase.channel("INCIDENT_READ_STATUS");
     incidentReadChannel
-      .on('broadcast', { event: 'incident-read' }, (payload) => {
+      .on("broadcast", { event: "incident-read" }, (payload) => {
         const { incidentId, userId } = payload.payload;
         // Assuming the current user is the one who read the incident
         // You might want to pass the current user's ID to this component
@@ -48,7 +48,11 @@ export function NotificationBellClient({
 
         setNotifications((prev) =>
           prev.map((notif) => {
-            if (notif.type === "INCIDENT" && notif.url === `/incidents/${incidentId}` && !notif.isRead) {
+            if (
+              notif.type === "INCIDENT" &&
+              notif.url === `/incidents/${incidentId}` &&
+              !notif.isRead
+            ) {
               setUnreadCount((prevCount) => prevCount - 1);
               return { ...notif, isRead: true };
             }
@@ -91,7 +95,7 @@ export function NotificationBellClient({
             notifications.map((notif) => (
               <DropdownMenuItem key={notif.id} asChild>
                 <Link
-                  href={notif.url || '#'}
+                  href={notif.url || "#"}
                   className="flex items-start gap-3 p-2"
                 >
                   {notif.isRead ? (

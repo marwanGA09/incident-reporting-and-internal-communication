@@ -14,30 +14,32 @@ import { ToggleTheme } from "./ToggleTheme";
 
 export function NavigationMenu() {
   return (
-    <NavigationMenuPrimitive>
-      <NavigationMenuList>
-        <NavigationMenuItem>
-          <NavigationMenuLink asChild>
-            <Link href="/incidents">Incidents</Link>
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <NavigationMenuLink asChild>
-            <Link href="/chat">Chat</Link>
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-        <NavigationMenuItem className="pl-4">
-          <NavigationMenuLink asChild>
-            <UserButton />
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-        <NavigationMenuItem className="pl-4">
-          <NavigationMenuLink asChild>
-            <ToggleTheme />
-          </NavigationMenuLink>
-        </NavigationMenuItem>
-        {/* Add more items here */}
-      </NavigationMenuList>
-    </NavigationMenuPrimitive>
+    <div className="h-full">
+      <NavigationMenuPrimitive>
+        <NavigationMenuList>
+          <NavigationMenuItem>
+            <NavigationMenuLink asChild>
+              <Link href="/incidents">Incidents</Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem>
+            <NavigationMenuLink asChild>
+              <Link href="/chat">Chat</Link>
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="pl-4">
+            <NavigationMenuLink asChild>
+              <UserButton />
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          <NavigationMenuItem className="pl-4">
+            <NavigationMenuLink asChild>
+              <ToggleTheme />
+            </NavigationMenuLink>
+          </NavigationMenuItem>
+          {/* Add more items here */}
+        </NavigationMenuList>
+      </NavigationMenuPrimitive>{" "}
+    </div>
   );
 }

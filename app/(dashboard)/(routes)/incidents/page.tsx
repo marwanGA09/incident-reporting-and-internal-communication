@@ -82,9 +82,11 @@ export default async function IncidentsPage() {
           });
 
   return (
-    <div className="container p-8">
-      <h1 className="text-3xl font-bold mb-6">Incident Reports</h1>
-      <IncidentsList incidents={incidentsWithReadStatus} users={users} />
+    <div className="w-full flex flex-col items-center justify-center">
+      <div className="container p-8">
+        <h1 className="text-3xl font-bold mb-6">Incident Reports</h1>
+        <IncidentsList incidents={incidentsWithReadStatus} users={users} />
+      </div>
     </div>
   );
 }
