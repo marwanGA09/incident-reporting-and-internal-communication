@@ -6,8 +6,6 @@ import UserMetadataGuard from "../_components/UserMetadataGuard";
 import { currentUser } from "@clerk/nextjs/server";
 import { NotificationBell } from "./_components/NotificationBell";
 
-import { MainContent } from "./_components/MainContent";
-
 async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
   if (!user) return null;
