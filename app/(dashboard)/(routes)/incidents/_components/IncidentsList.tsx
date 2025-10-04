@@ -26,16 +26,15 @@ import { Incident, User } from "@prisma/client";
 import { IncidentSkeleton } from "./IncidentSkeleton";
 import { textShorter } from "@/lib/textShorter";
 
+import { cn } from "@/lib/utils";
+
 // Helper to get color and icon for severity
 const getSeverityProps = (severity: string) => {
   switch (severity) {
     case "CRITICAL":
       return { icon: <Siren className="h-4 w-4" />, color: "bg-red-500" };
     case "HIGH":
-      return {
-        icon: <ShieldAlert className="h-4 w-4" />,
-        color: "bg-orange-500",
-      };
+      return { icon: <ShieldAlert className="h-4 w-4" />, color: "bg-orange-500" };
     case "MEDIUM":
       return {
         icon: <AlertTriangle className="h-4 w-4" />,
@@ -74,6 +73,20 @@ const getPriorityProps = (priority: string) => {
   }
 };
 
+// Helper for the new status ribbon color
+const getRibbonColorForStatus = (status: string) => {
+  switch (status) {
+    case "RESOLVED":
+      return "bg-green-600";
+    case "CLOSED":
+      return "bg-gray-500";
+    case "IN_PROGRESS":
+      return "bg-blue-600";
+    default:
+      return "bg-slate-800";
+  }
+};
+
 function IncidentItem({
   incident,
 }: {
@@ -86,7 +99,10 @@ function IncidentItem({
     <Link href={`/incidents/${incident.id}`} className="block h-full">
       <Card
         key={incident.id}
-        className={`relative rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg hover:ring-2 hover:ring-primary transition-all pb-8 h-full`}
+        className={cn(
+          `relative rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg hover:ring-2 hover:ring-primary transition-all pb-8 h-full overflow-hidden`,
+          incident.status === "CLOSED" && "opacity-60 grayscale"
+        )}
       >
         <CardHeader>
           <CardTitle className="flex justify-between items-start">
@@ -101,12 +117,7 @@ function IncidentItem({
                 </span>
               </div>
             </div>
-            <Badge
-              variant={getBadgeVariantForStatus(incident.status)}
-              className="capitalize"
-            >
-              {incident.status.replace("_", " ").toLowerCase()}
-            </Badge>
+            {/* Status badge is removed */}
           </CardTitle>
           <CardDescription className="text-sm text-muted-foreground pt-2">
             Occurred {formatDistanceToNow(new Date(incident.occurredAt))} ago
@@ -139,6 +150,15 @@ function IncidentItem({
             title="Unread Incident"
           ></div>
         )}
+        {/* New Status Ribbon */}
+        <div
+          className={cn(
+            "absolute -right-16 bottom-4 w-48 text-center transform rotate-[-45deg] py-1 text-sm font-bold uppercase text-white shadow-lg",
+            getRibbonColorForStatus(incident.status)
+          )}
+        >
+          {incident.status.replace("_", " ")}
+        </div>
       </Card>
     </Link>
   );
