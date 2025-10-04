@@ -34,6 +34,7 @@ import {
   Department,
   GroupMessage,
   GroupMessageAttachment,
+  AttachmentType,
 } from "@prisma/client";
 import Image from "next/image";
 import logger from "@/app/lib/logger";
@@ -62,6 +63,33 @@ import {
 import { DialogTitle } from "@radix-ui/react-dialog";
 // import { toast } from "sonner";
 
+// Helper function for date formatting
+const isSameDay = (d1: Date, d2: Date) => {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+const formatDateForDisplay = (date: Date) => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (isSameDay(date, today)) {
+    return "Today";
+  }
+  if (isSameDay(date, yesterday)) {
+    return "Yesterday";
+  }
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+};
+
 export default function GroupChat({
   department,
   users,
@@ -79,6 +107,8 @@ export default function GroupChat({
   const [messages, setMessages] = useState<ExtendedGroupMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [page, setPage] = useState(1);
+  const [hasMoreMessages, setHasMoreMessages] = useState(true);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   const [editingMessage, setEditingMessage] =
     useState<ExtendedGroupMessage | null>(null);
   const [editedText, setEditedText] = useState("");
@@ -96,19 +126,32 @@ export default function GroupChat({
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaContainerRef = useRef<HTMLDivElement>(null); // Ref for the ScrollArea component itself
   const groupId = department.id;
   const roomName = `group-chat:${groupId}`;
 
+  // Initial message load and real-time updates
   useEffect(() => {
     if (!groupId || !user?.id) return;
 
     markNotificationsAsRead(`/group-chat/${groupId}`);
 
-    async function loadMessages() {
-      const msgs = await getGroupMessages(groupId, page);
-      setMessages(msgs.map((msg) => ({ ...msg, status: "sent" })));
+    async function loadInitialMessages() {
+      setIsLoadingMore(true);
+      const newMsgs = await getGroupMessages(groupId, 1); // Load first page
+      setMessages(
+        newMsgs.map(
+          (msg) => ({ ...msg, status: "sent" } as ExtendedGroupMessage)
+        )
+      );
+      setHasMoreMessages(newMsgs.length === 20); // Assuming 20 messages per page
+      setIsLoadingMore(false);
+      // Scroll to bottom after initial load
+      if (scrollRef.current) {
+        scrollRef.current.scrollIntoView({ behavior: "instant" }); // Use instant for initial load
+      }
     }
-    loadMessages();
+    loadInitialMessages();
 
     const channel = supabase.channel(roomName, {
       config: { presence: { key: user.id } },
@@ -118,7 +161,12 @@ export default function GroupChat({
       .on("broadcast", { event: "group-message" }, (payload) => {
         const newMessage = payload.payload;
         if (newMessage.departmentId === groupId) {
-          setMessages((prev) => [...prev, { ...newMessage, status: "sent" }]);
+          setMessages((prev) => [
+            ...prev,
+            { ...newMessage, status: "sent" } as ExtendedGroupMessage,
+          ]);
+          // Scroll to bottom for new messages
+          scrollRef.current?.scrollIntoView({ behavior: "smooth" });
         }
       })
       .on("broadcast", { event: "UpdateGroupMessage" }, (payload) => {
@@ -127,7 +175,10 @@ export default function GroupChat({
           setMessages((prev) =>
             prev.map((msg) =>
               msg.id === updatedMessage.id
-                ? { ...updatedMessage, status: "sent" }
+                ? ({
+                    ...updatedMessage,
+                    status: "sent",
+                  } as ExtendedGroupMessage)
                 : msg
             )
           );
@@ -142,7 +193,59 @@ export default function GroupChat({
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [groupId, user?.id, page, roomName]);
+  }, [groupId, user?.id, roomName]);
+
+  // Effect for loading more messages on page change
+  useEffect(() => {
+    if (page > 1 && hasMoreMessages) {
+      async function loadMoreMessages() {
+        setIsLoadingMore(true);
+        const oldScrollHeight =
+          scrollAreaContainerRef.current?.querySelector(
+            "[data-radix-scroll-area-viewport]"
+          )?.scrollHeight || 0;
+        const newMsgs = await getGroupMessages(groupId, page);
+        setMessages((prev) => [
+          ...newMsgs.map(
+            (msg) => ({ ...msg, status: "sent" } as ExtendedGroupMessage)
+          ),
+          ...prev,
+        ]);
+        setHasMoreMessages(newMsgs.length === 20);
+        setIsLoadingMore(false);
+
+        // Maintain scroll position
+        const viewport = scrollAreaContainerRef.current?.querySelector(
+          "[data-radix-scroll-area-viewport]"
+        );
+        if (viewport) {
+          const newScrollHeight = viewport.scrollHeight;
+          viewport.scrollTop = newScrollHeight - oldScrollHeight;
+        }
+      }
+      loadMoreMessages();
+    }
+  }, [page, groupId, hasMoreMessages]);
+
+  // Scroll event listener for loading more messages
+  useEffect(() => {
+    const viewport = scrollAreaContainerRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    ) as HTMLDivElement | null;
+
+    if (!viewport) return;
+
+    const handleScroll = () => {
+      if (viewport.scrollTop === 0 && hasMoreMessages && !isLoadingMore) {
+        setPage((prevPage) => prevPage + 1);
+      }
+    };
+
+    viewport.addEventListener("scroll", handleScroll);
+    return () => {
+      viewport.removeEventListener("scroll", handleScroll);
+    };
+  }, [hasMoreMessages, isLoadingMore]);
 
   const findUser = (userId: string) => {
     return (
@@ -184,7 +287,11 @@ export default function GroupChat({
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
-            ? { ...msg, status: "error", errorMsg: "File upload failed" }
+            ? ({
+                ...msg,
+                status: "error",
+                errorMsg: "File upload failed",
+              } as ExtendedGroupMessage)
             : msg
         )
       );
@@ -227,12 +334,12 @@ export default function GroupChat({
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
-            ? {
+            ? ({
                 ...msg,
                 status: "sent",
                 id: newGroupMessage.id,
                 attachments: newGroupMessage.attachments,
-              }
+              } as ExtendedGroupMessage)
             : msg
         )
       );
@@ -245,11 +352,11 @@ export default function GroupChat({
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
-            ? {
+            ? ({
                 ...msg,
                 status: "error",
                 errorMsg: errorMessage,
-              }
+              } as ExtendedGroupMessage)
             : msg
         )
       );
@@ -317,9 +424,26 @@ export default function GroupChat({
     }
   };
 
+  // Scroll to bottom when new messages arrive (initial load or new broadcast)
   useEffect(() => {
-    scrollRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    // Only scroll to bottom if the user is already near the bottom
+    // or if it's the very first load (page 1)
+    const viewport = scrollAreaContainerRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+
+    if (viewport) {
+      const { scrollTop, scrollHeight, clientHeight } = viewport;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 100; // Threshold of 100px from bottom
+
+      // If it's the initial load (page 1 and messages just loaded) or user is near bottom, scroll to bottom
+      if (page === 1 && messages.length > 0 && !isLoadingMore) {
+        scrollRef.current?.scrollIntoView({ behavior: "instant" });
+      } else if (isAtBottom && !isLoadingMore) {
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
+      }
+    }
+  }, [messages.length, page, isLoadingMore]);
 
   return (
     <div className="flex flex-col h-full bg-background rounded-lg border shadow-sm">
@@ -329,160 +453,192 @@ export default function GroupChat({
       </div>
 
       {/* Message Area */}
-      <ScrollArea>
+      <ScrollArea ref={scrollAreaContainerRef}>
         <div className="flex-1 overflow-y-auto p-4 space-y-1 h-[60vh]">
+          {isLoadingMore && (
+            <div className="text-center text-muted-foreground py-2">
+              Loading older messages...
+            </div>
+          )}
           {messages.map((msg, idx) => {
             const isOwn = msg.senderId === user?.id;
             const prevMsg = messages[idx - 1];
+            const msgDate = new Date(msg.createdAt);
+            const prevMsgDate = prevMsg ? new Date(prevMsg.createdAt) : null;
+
+            let showDateSeparator = false;
+            if (!prevMsgDate) {
+              showDateSeparator = true;
+            } else {
+              showDateSeparator = !isSameDay(msgDate, prevMsgDate);
+            }
+
             const isGrouped =
               prevMsg &&
               prevMsg.senderId === msg.senderId &&
               new Date(msg.createdAt).getTime() -
                 new Date(prevMsg.createdAt).getTime() <
-                5 * 60 * 1000; // 5 minutes threshold
+                5 * 60 * 1000 &&
+              prevMsgDate !== null && // Ensure prevMsgDate is not null
+              isSameDay(msgDate, prevMsgDate);
 
             const currentUser = findUser(msg.senderId);
 
             return (
-              <div
-                key={msg.id}
-                className={cn(
-                  "flex items-start gap-3",
-                  isOwn && "justify-end",
-                  isGrouped && "mt-1"
-                )}
-              >
-                {!isOwn && (
-                  <div className="w-8 h-8 rounded-full overflow-hidden border flex-shrink-0">
-                    {isGrouped ? (
-                      <div className="w-8" />
-                    ) : currentUser.imageUrl ? (
-                      <Image
-                        src={currentUser.imageUrl}
-                        alt={currentUser.name}
-                        width={32}
-                        height={32}
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                        {currentUser.name?.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+              <React.Fragment key={msg.id}>
+                {showDateSeparator && (
+                  <div className="relative my-6 text-center">
+                    <div className="absolute inset-0 flex items-center">
+                      <span className="w-full border-t" />
+                    </div>
+                    <div className="relative flex justify-center text-xs uppercase">
+                      <span className="bg-background px-2 text-muted-foreground">
+                        {formatDateForDisplay(msgDate)}
+                      </span>
+                    </div>
                   </div>
                 )}
-                <div className={cn("flex flex-col", isOwn && "items-end")}>
-                  {!isGrouped && !isOwn && (
-                    <p className="text-xs text-muted-foreground mb-0.5 ml-2">
-                      {currentUser.name}
-                    </p>
+                <div
+                  className={cn(
+                    "flex items-start gap-3",
+                    isOwn && "justify-end",
+                    isGrouped && "mt-1"
                   )}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <div
-                        className={cn(
-                          "relative max-w-xs md:max-w-md px-3 py-2 rounded-xl cursor-pointer",
-                          isOwn
-                            ? "bg-primary text-primary-foreground rounded-br-none"
-                            : "bg-muted rounded-bl-none"
-                        )}
-                      >
-                        <p className="whitespace-pre-wrap">{msg.text}</p>
-                        {msg.attachments && msg.attachments.length > 0 && (
-                          <div className="flex flex-col gap-2 mt-2">
-                            {msg.attachments.map((attachment) => (
-                              <div key={attachment.id}>
-                                {attachment.type === "IMAGE" ? (
-                                  <Image
-                                    src={attachment.url}
-                                    alt={attachment.fileName || "Attachment"}
-                                    width={200}
-                                    height={200}
-                                    className="rounded-md cursor-pointer"
-                                    onClick={() => {
-                                      setCurrentImage(attachment.url);
-                                      setShowImageModal(true);
-                                    }}
-                                  />
-                                ) : attachment.type === "VIDEO" ? (
-                                  <div
-                                    onClick={() => {
-                                      setCurrentVideo(attachment.url);
-                                      setShowVideoModal(true);
-                                    }}
-                                    className="relative block rounded-md overflow-hidden cursor-pointer"
-                                  >
-                                    <video
+                >
+                  {!isOwn && (
+                    <div className="w-8 h-8 rounded-full overflow-hidden border flex-shrink-0">
+                      {isGrouped ? (
+                        <div className="w-8" />
+                      ) : currentUser.imageUrl ? (
+                        <Image
+                          src={currentUser.imageUrl}
+                          alt={currentUser.name}
+                          width={32}
+                          height={32}
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                          {currentUser.name?.charAt(0).toUpperCase()}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                  <div className={cn("flex flex-col", isOwn && "items-end")}>
+                    {!isGrouped && !isOwn && (
+                      <p className="text-xs text-muted-foreground mb-0.5 ml-2">
+                        {currentUser.name}
+                      </p>
+                    )}
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <div
+                          className={cn(
+                            "relative max-w-xs md:max-w-md px-3 py-2 rounded-xl cursor-pointer",
+                            isOwn
+                              ? "bg-primary text-primary-foreground rounded-br-none"
+                              : "bg-muted rounded-bl-none"
+                          )}
+                        >
+                          <p className="whitespace-pre-wrap">{msg.text}</p>
+                          {msg.attachments && msg.attachments.length > 0 && (
+                            <div className="flex flex-col gap-2 mt-2">
+                              {msg.attachments.map((attachment) => (
+                                <div key={attachment.id}>
+                                  {attachment.type === "IMAGE" ? (
+                                    <Image
                                       src={attachment.url}
-                                      controls={false}
-                                      preload="metadata"
-                                      className="w-full h-auto max-h-[200px] object-cover"
+                                      alt={attachment.fileName || "Attachment"}
+                                      width={200}
+                                      height={200}
+                                      className="rounded-md cursor-pointer"
+                                      onClick={() => {
+                                        setCurrentImage(attachment.url);
+                                        setShowImageModal(true);
+                                      }}
                                     />
-                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
-                                      <PlayIcon className="w-8 h-8 text-white" />
+                                  ) : attachment.type === "VIDEO" ? (
+                                    <div
+                                      onClick={() => {
+                                        setCurrentVideo(attachment.url);
+                                        setShowVideoModal(true);
+                                      }}
+                                      className="relative block rounded-md overflow-hidden cursor-pointer"
+                                    >
+                                      <video
+                                        src={attachment.url}
+                                        controls={false}
+                                        preload="metadata"
+                                        className="w-full h-auto max-h-[200px] object-cover"
+                                      />
+                                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                        <PlayIcon className="w-8 h-8 text-white" />
+                                      </div>
                                     </div>
-                                  </div>
-                                ) : (
-                                  <a
-                                    href={attachment.url}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="flex items-center gap-1 bg-background p-1 rounded-md text-sm hover:underline"
-                                  >
-                                    <FileIcon className="w-4 h-4" />
-                                    <span className="truncate max-w-[100px]">
-                                      {attachment.fileName || "File"}
-                                    </span>
-                                  </a>
-                                )}
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                        <div className="flex items-center justify-end gap-1 mt-1">
-                          {" "}
-                          {msg.status === "pending" && (
-                            <span className="text-xs text-muted-foreground">
-                              Sending...
-                            </span>
+                                  ) : (
+                                    <a
+                                      href={attachment.url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      className="flex items-center gap-1 bg-background p-1 rounded-md text-sm hover:underline"
+                                    >
+                                      <FileIcon className="w-4 h-4" />
+                                      <span className="truncate max-w-[100px]">
+                                        {attachment.fileName || "File"}
+                                      </span>
+                                    </a>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
                           )}
-                          {msg.status === "error" && (
-                            <span className="text-xs text-red-500">Failed</span>
-                          )}
-                          {msg.status === "sent" && (
-                            <CheckCheckIcon className="w-4 h-4 text-blue-500" />
-                          )}
-                          <p className="text-xs opacity-70">
-                            {new Date(msg.createdAt).toLocaleTimeString([], {
-                              hour: "2-digit",
-                              minute: "2-digit",
-                            })}
-                          </p>
-                          {msg.updatedAt &&
-                            new Date(msg.updatedAt).getTime() !==
-                              new Date(msg.createdAt).getTime() && (
-                              <span className="text-xs opacity-50 ml-1">
-                                (Edited)
+                          <div className="flex items-center justify-end gap-1 mt-1">
+                            {" "}
+                            {msg.status === "pending" && (
+                              <span className="text-xs text-muted-foreground">
+                                Sending...
                               </span>
                             )}
+                            {msg.status === "error" && (
+                              <span className="text-xs text-red-500">
+                                Failed
+                              </span>
+                            )}
+                            {msg.status === "sent" && (
+                              <CheckCheckIcon className="w-4 h-4 text-blue-500" />
+                            )}
+                            <p className="text-xs opacity-70">
+                              {new Date(msg.createdAt).toLocaleTimeString([], {
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </p>
+                            {msg.updatedAt &&
+                              new Date(msg.updatedAt).getTime() !==
+                                new Date(msg.createdAt).getTime() && (
+                                <span className="text-xs opacity-50 ml-1">
+                                  (Edited)
+                                </span>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    </DropdownMenuTrigger>
-                    {isOwn && (
-                      <DropdownMenuContent align={isOwn ? "end" : "start"}>
-                        <DropdownMenuItem onClick={() => handleEdit(msg)}>
-                          Edit
-                        </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() => handleDeleteClick(msg.id)}
-                          className="text-red-500"
-                        >
-                          Delete
-                        </DropdownMenuItem>
-                      </DropdownMenuContent>
-                    )}
-                  </DropdownMenu>
+                      </DropdownMenuTrigger>
+                      {isOwn && (
+                        <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                          <DropdownMenuItem onClick={() => handleEdit(msg)}>
+                            Edit
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => handleDeleteClick(msg.id)}
+                            className="text-red-500"
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      )}
+                    </DropdownMenu>
+                  </div>
                 </div>
-              </div>
+              </React.Fragment>
             );
           })}
           <div ref={scrollRef} />
@@ -626,7 +782,7 @@ export default function GroupChat({
 
       {/* Image Modal */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-        <DialogTitle></DialogTitle>
+        {/* <DialogTitle>Image Preview</DialogTitle> */}
         <DialogContent className="max-w-3xl">
           {currentImage && (
             <Image
@@ -643,7 +799,7 @@ export default function GroupChat({
 
       {/* Video Modal */}
       <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
-        <DialogTitle></DialogTitle>
+        {/* <DialogTitle>Video Playback</DialogTitle> */}
         <DialogContent className="max-w-3xl">
           {currentVideo && (
             <video controls width="100%" src={currentVideo}>
