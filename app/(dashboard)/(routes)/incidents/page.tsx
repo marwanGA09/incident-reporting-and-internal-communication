@@ -1,13 +1,15 @@
 import { prisma } from "@/app/lib/prisma";
 import { currentUser } from "@clerk/nextjs/server";
-
 import { redirect } from "next/navigation";
+import Link from "next/link";
+import { PlusCircle } from "lucide-react";
+
 import IncidentsList from "./_components/IncidentsList";
-import { clerkClient } from "@/lib/clerkClient";
+import { Button } from "@/components/ui/button";
+import { IncidentControls } from "./_components/IncidentControls";
 
-export default async function IncidentsPage() {
+export default async function IncidentsPage({ searchParams }: { searchParams?: { query?: string; sortBy?: string } }) {
   const user = await currentUser();
-
   if (!user) {
     redirect("/");
   }
@@ -18,11 +20,43 @@ export default async function IncidentsPage() {
   });
 
   if (!currentUserDb) {
-    redirect("/"); // Or handle the case where the user is not in your DB
+    redirect("/");
   }
 
-  const currentUserRole = currentUserDb.role;
-  const currentUserDepId = currentUserDb.departmentId;
+  const query = searchParams?.query || "";
+  const sortBy = searchParams?.sortBy || "newest";
+
+  const whereClause: any = {
+    title: {
+      contains: query,
+      mode: "insensitive",
+    },
+  };
+
+  if (currentUserDb.role !== "admin") {
+    whereClause.departmentId = currentUserDb.departmentId;
+  }
+
+  let orderByClause: any = { createdAt: "desc" };
+  if (sortBy === "oldest") {
+    orderByClause = { createdAt: "asc" };
+  }
+  if (sortBy === "severity") {
+    orderByClause = { severity: "asc" }; // CRITICAL is first alphabetically
+  }
+  if (sortBy === "priority") {
+    orderByClause = { priority: "asc" }; // URGENT is first alphabetically
+  }
+
+  const incidents = await prisma.incident.findMany({
+    where: whereClause,
+    include: {
+      category: true,
+      department: true,
+      assignee: true,
+    },
+    orderBy: orderByClause,
+  });
 
   const readIncidentStatuses = await prisma.userIncidentReadStatus.findMany({
     where: { userId: currentUserDb.id },
@@ -33,33 +67,34 @@ export default async function IncidentsPage() {
     readIncidentStatuses.map((status) => status.incidentId)
   );
 
-  const it = await prisma.incident.findMany();
-  console.log("Total incidents in DB:", it.length);
-
-  const incidents = await prisma.incident.findMany({
-    where:
-      currentUserRole === "admin"
-        ? {}
-        : { departmentId: String(currentUserDepId) },
-    include: {
-      category: true,
-      department: true,
-      assignee: true, // Include assignee details
-    },
-    orderBy: [{ createdAt: "desc" }, { id: "asc" }],
-  });
-  console.log("is admin", currentUserRole, incidents.length);
   const incidentsWithReadStatus = incidents.map((incident) => ({
     ...incident,
     isRead: readIncidentIds.has(incident.id),
   }));
 
   return (
-    <div className="w-full flex flex-col items-center justify-center ">
-      <div className="container p-8">
-        <h1 className="text-3xl font-bold mb-6">Incident Reports</h1>
-        <IncidentsList incidents={incidentsWithReadStatus} />
+    <div className="container mx-auto p-4 md:p-8">
+      {/* New Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-3xl font-bold">Incident Reports</h1>
+          <p className="text-muted-foreground">
+            A list of all incidents in your organization.
+          </p>
+        </div>
+        <Link href="/incidents/new/step-1">
+          <Button>
+            <PlusCircle className="h-4 w-4 mr-2" />
+            Report New Incident
+          </Button>
+        </Link>
       </div>
+
+      {/* Search and Sort Controls */}
+      <IncidentControls />
+
+      {/* Incident List */}
+      <IncidentsList incidents={incidentsWithReadStatus} />
     </div>
   );
 }
