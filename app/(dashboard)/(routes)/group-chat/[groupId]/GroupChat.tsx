@@ -21,6 +21,7 @@ import {
   PaperclipIcon,
   SendIcon,
   XIcon,
+  PlayIcon,
 } from "lucide-react";
 import { Textarea } from "@/components/ui/textarea";
 import {
@@ -40,6 +41,7 @@ import { uploadFile } from "@/lib/uploadFile";
 import { PendingAttachment } from "@/lib/defination";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
 
 interface ExtendedGroupMessage extends GroupMessage {
   status?: "pending" | "sent" | "error";
@@ -57,6 +59,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { DialogTitle } from "@radix-ui/react-dialog";
 // import { toast } from "sonner";
 
 export default function GroupChat({
@@ -84,6 +87,13 @@ export default function GroupChat({
   const [messageToDeleteId, setMessageToDeleteId] = useState<string | null>(
     null
   );
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingAttachment[]
+  >([]);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [currentVideo, setCurrentVideo] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const groupId = department.id;
@@ -183,6 +193,7 @@ export default function GroupChat({
 
     setMessageText("");
     setSelectedFiles([]);
+    setPendingAttachments([]);
 
     try {
       // 3. Store in DB using your existing backend function
@@ -376,7 +387,59 @@ export default function GroupChat({
                         )}
                       >
                         <p className="whitespace-pre-wrap">{msg.text}</p>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-col gap-2 mt-2">
+                            {msg.attachments.map((attachment) => (
+                              <div key={attachment.id}>
+                                {attachment.type === "IMAGE" ? (
+                                  <Image
+                                    src={attachment.url}
+                                    alt={attachment.fileName || "Attachment"}
+                                    width={200}
+                                    height={200}
+                                    className="rounded-md cursor-pointer"
+                                    onClick={() => {
+                                      setCurrentImage(attachment.url);
+                                      setShowImageModal(true);
+                                    }}
+                                  />
+                                ) : attachment.type === "VIDEO" ? (
+                                  <div
+                                    onClick={() => {
+                                      setCurrentVideo(attachment.url);
+                                      setShowVideoModal(true);
+                                    }}
+                                    className="relative block rounded-md overflow-hidden cursor-pointer"
+                                  >
+                                    <video
+                                      src={attachment.url}
+                                      controls={false}
+                                      preload="metadata"
+                                      className="w-full h-auto max-h-[200px] object-cover"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                      <PlayIcon className="w-8 h-8 text-white" />
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <a
+                                    href={attachment.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 bg-background p-1 rounded-md text-sm hover:underline"
+                                  >
+                                    <FileIcon className="w-4 h-4" />
+                                    <span className="truncate max-w-[100px]">
+                                      {attachment.fileName || "File"}
+                                    </span>
+                                  </a>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         <div className="flex items-center justify-end gap-1 mt-1">
+                          {" "}
                           {msg.status === "pending" && (
                             <span className="text-xs text-muted-foreground">
                               Sending...
@@ -385,7 +448,7 @@ export default function GroupChat({
                           {msg.status === "error" && (
                             <span className="text-xs text-red-500">Failed</span>
                           )}
-                          {isOwn && msg.status === "sent" && (
+                          {msg.status === "sent" && (
                             <CheckCheckIcon className="w-4 h-4 text-blue-500" />
                           )}
                           <p className="text-xs opacity-70">
@@ -394,6 +457,13 @@ export default function GroupChat({
                               minute: "2-digit",
                             })}
                           </p>
+                          {msg.updatedAt &&
+                            new Date(msg.updatedAt).getTime() !==
+                              new Date(msg.createdAt).getTime() && (
+                              <span className="text-xs opacity-50 ml-1">
+                                (Edited)
+                              </span>
+                            )}
                         </div>
                       </div>
                     </DropdownMenuTrigger>
@@ -444,6 +514,48 @@ export default function GroupChat({
           </div>
         ) : (
           <div className="relative">
+            {pendingAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-2 border-t border-b bg-secondary/20">
+                {pendingAttachments.map((attachment, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1 bg-secondary rounded-md p-1"
+                  >
+                    {attachment.type === "IMAGE" ||
+                    attachment.type === "VIDEO" ? (
+                      <Image
+                        src={attachment.url}
+                        alt={attachment.fileName}
+                        width={24}
+                        height={24}
+                        className="rounded"
+                      />
+                    ) : (
+                      <FileIcon className="w-4 h-4" />
+                    )}
+                    <span className="text-sm truncate max-w-[100px]">
+                      {attachment.fileName}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-5 h-5"
+                      onClick={() => {
+                        const newSelectedFiles = selectedFiles.filter(
+                          (_, i) => i !== index
+                        );
+                        setSelectedFiles(newSelectedFiles);
+                        setPendingAttachments(
+                          pendingAttachments.filter((_, i) => i !== index)
+                        );
+                      }}
+                    >
+                      <XIcon className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
             <Textarea
               rows={1}
               placeholder={`Message #${department.name}`}
@@ -469,7 +581,19 @@ export default function GroupChat({
                   className="hidden"
                   onChange={(e) => {
                     if (!e.target.files) return;
-                    setSelectedFiles(Array.from(e.target.files));
+                    const files = Array.from(e.target.files);
+                    setSelectedFiles(files);
+                    setPendingAttachments(
+                      files.map((file) => ({
+                        fileName: file.name,
+                        type: file.type.startsWith("image/")
+                          ? "IMAGE"
+                          : file.type.startsWith("video/")
+                          ? "VIDEO"
+                          : "FILE",
+                        url: URL.createObjectURL(file),
+                      }))
+                    );
                   }}
                 />
               </label>
@@ -499,6 +623,35 @@ export default function GroupChat({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Image Modal */}
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogTitle></DialogTitle>
+        <DialogContent className="max-w-3xl">
+          {currentImage && (
+            <Image
+              src={currentImage}
+              alt="Full size image"
+              layout="responsive"
+              width={1000}
+              height={1000}
+              objectFit="contain"
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogTitle></DialogTitle>
+        <DialogContent className="max-w-3xl">
+          {currentVideo && (
+            <video controls width="100%" src={currentVideo}>
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
