@@ -2,7 +2,7 @@
 
 import { motion } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useTransition } from "react";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 
@@ -14,9 +14,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Terminal } from "lucide-react";
-import { useIncidentFormStore, useIncidentUIForm } from "../_components/IncidentFormStore";
+import {
+  useIncidentFormStore,
+  useIncidentUIForm,
+} from "../_components/IncidentFormStore";
 import { IncidentFormSchema } from "@/lib/validation/incidents";
 import logger from "@/app/lib/logger";
 
@@ -31,7 +32,9 @@ export default function Review() {
     const result = IncidentFormSchema.safeParse(data);
     if (!result.success) {
       console.error("Form validation failed on review:", result.error.issues);
-      toast.error("Form has invalid or incomplete data. Please go back and edit.");
+      toast.error(
+        "Form has invalid or incomplete data. Please go back and edit."
+      );
       return;
     }
 
@@ -51,9 +54,15 @@ export default function Review() {
         clear();
         clearUI();
         router.push("/incidents");
-      } catch (error) {
+      } catch (error: unknown) {
         logger.error({ error }, "Submission Error");
-        toast.error(`Failed to submit incident: ${error.message}`);
+        toast.error(
+          `Failed to submit incident: ${
+            typeof error.message === "object"
+              ? JSON.stringify(error.message)
+              : error.message
+          }`
+        );
       }
     });
   };
@@ -63,7 +72,7 @@ export default function Review() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="max-w-3xl mx-auto"
+      className="max-w-3xl mx-auto pt-8"
     >
       <div className="flex flex-col items-center justify-center mb-6">
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
@@ -102,11 +111,7 @@ export default function Review() {
             value={data.affectedServices?.join(", ")}
             fullWidth
           />
-          <ReviewItem
-            label="Description"
-            value={data.description}
-            fullWidth
-          />
+          <ReviewItem label="Description" value={data.description} fullWidth />
 
           <div className="flex justify-between items-center pt-6">
             <Button
@@ -130,7 +135,11 @@ export default function Review() {
   );
 }
 
-function ReviewItem({ label, value, fullWidth = false }: {
+function ReviewItem({
+  label,
+  value,
+  fullWidth = false,
+}: {
   label: string;
   value?: string | null;
   fullWidth?: boolean;
@@ -139,7 +148,9 @@ function ReviewItem({ label, value, fullWidth = false }: {
     <div className={fullWidth ? "md:col-span-2" : ""}>
       <h3 className="text-sm font-medium text-gray-500">{label}</h3>
       <p className="text-base font-semibold text-gray-800 mt-1">
-        {value || <span className="font-normal text-gray-400">Not provided</span>}
+        {value || (
+          <span className="font-normal text-gray-400">Not provided</span>
+        )}
       </p>
     </div>
   );

@@ -4,27 +4,60 @@ import { prisma } from "@/app/lib/prisma";
 import { IncidentFormSchema } from "@/lib/validation/incidents";
 import { NextResponse } from "next/server";
 
-export async function POST(req: Request) {
-  const body = await req.json();
-  const result = IncidentFormSchema.safeParse(body);
+// import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
 
-  if (!result.success) {
-    return NextResponse.json({ error: result.error }, { status: 400 });
-  }
+// import logger from "@/app/lib/logger";
+// import { prisma } from "@/app/lib/prisma";
+// import { supabase } from "@/lib/supabaseClient";
+// import { IncidentFormSchema } from "@/lib/validation/incidents";
+
+export async function POST(req: Request) {
   try {
+    const { userId: clerkId } = await auth();
+    if (!clerkId) {
+      return NextResponse.json(
+        { error: "User not authenticated" },
+        { status: 401 }
+      );
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { clerkId },
+      select: { id: true },
+    });
+
+    if (!user) {
+      return NextResponse.json(
+        { error: "User not found in DB" },
+        { status: 404 }
+      );
+    }
+
+    const body = await req.json();
+    const result = IncidentFormSchema.safeParse(body);
+
+    if (!result.success) {
+      return NextResponse.json(
+        { error: result.error.format() },
+        { status: 400 }
+      );
+    }
+
+    const incidentData = {
+      ...result.data,
+      reporterId: user.id, // Set the reporter ID
+    };
+
     const incident = await prisma.incident.create({
-      data: result.data,
+      data: incidentData,
     });
 
     // --- Start Notification Logic ---
     try {
-      // Find users who are admins or belong to the incident's department
       const usersToNotify = await prisma.user.findMany({
         where: {
-          OR: [
-            { role: "admin" },
-            { departmentId: result.data.departmentId },
-          ],
+          OR: [{ role: "admin" }, { departmentId: result.data.departmentId }],
         },
         select: { id: true },
       });
@@ -45,7 +78,6 @@ export async function POST(req: Request) {
           createdNotifications.push(notification);
         }
 
-        // Broadcast each notification to the NOTIFICATION channel
         for (const notification of createdNotifications) {
           supabase.channel("NOTIFICATION").send({
             type: "broadcast",
@@ -59,15 +91,14 @@ export async function POST(req: Request) {
         notificationError,
         "Failed to create or broadcast incident notifications"
       );
-      // Do not re-throw; the incident was created successfully.
     }
     // --- End Notification Logic ---
 
     return NextResponse.json(incident, { status: 201 });
   } catch (error) {
-    logger.error({ error }, "ERROR");
+    logger.error({ error }, "Failed to create incident");
     return NextResponse.json(
-      { error: "internal server error" },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

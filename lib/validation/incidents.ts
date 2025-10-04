@@ -14,7 +14,7 @@ export const IncidentFormSchema = z.object({
   // Step 1
   title: z.string().min(3, "Title must be at least 3 characters long."),
   description: z.string().optional(),
-  occurredAt: z.date(),
+  occurredAt: z.coerce.date(),
 
   // Step 2
   severity: IncidentSeverityEnum.default("MEDIUM"),
