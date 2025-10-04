@@ -24,6 +24,7 @@ import {
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 import { Incident, User } from "@prisma/client";
 import { IncidentSkeleton } from "./IncidentSkeleton";
+import { textShorter } from "@/lib/textShorter";
 
 // Helper to get color and icon for severity
 const getSeverityProps = (severity: string) => {
@@ -31,7 +32,10 @@ const getSeverityProps = (severity: string) => {
     case "CRITICAL":
       return { icon: <Siren className="h-4 w-4" />, color: "bg-red-500" };
     case "HIGH":
-      return { icon: <ShieldAlert className="h-4 w-4" />, color: "bg-orange-500" };
+      return {
+        icon: <ShieldAlert className="h-4 w-4" />,
+        color: "bg-orange-500",
+      };
     case "MEDIUM":
       return {
         icon: <AlertTriangle className="h-4 w-4" />,
@@ -46,7 +50,10 @@ const getSeverityProps = (severity: string) => {
 const getPriorityProps = (priority: string) => {
   switch (priority) {
     case "URGENT":
-      return { icon: <Flame className="h-4 w-4 text-red-500" />, label: "Urgent" };
+      return {
+        icon: <Flame className="h-4 w-4 text-red-500" />,
+        label: "Urgent",
+      };
     case "HIGH":
       return {
         icon: <ArrowUp className="h-4 w-4 text-orange-500" />,
@@ -89,7 +96,9 @@ function IncidentItem({
                 <span className="text-xs font-medium text-gray-500">
                   INC-{String(incident.incidentNumber).padStart(5, "0")}
                 </span>
-                <span className="font-bold text-lg">{incident.title}</span>
+                <span className="font-bold text-lg">
+                  {textShorter(incident.title, 25)}
+                </span>
               </div>
             </div>
             <Badge
