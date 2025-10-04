@@ -603,7 +603,7 @@ export default function GroupChat({
                                 Failed
                               </span>
                             )}
-                            {msg.status === "sent" && (
+                            {isOwn && msg.status === "sent" && (
                               <CheckCheckIcon className="w-4 h-4 text-blue-500" />
                             )}
                             <p className="text-xs opacity-70">

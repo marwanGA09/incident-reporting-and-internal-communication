@@ -14,7 +14,6 @@ import { Textarea } from "@/components/ui/textarea";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectMessage, DirectMessageAttachment } from "@prisma/client";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   CheckCheckIcon,
   Edit3Icon,
@@ -25,6 +24,7 @@ import {
   PaperclipIcon,
   SendIcon,
   XIcon,
+  PlayIcon,
 } from "lucide-react";
 import Image from "next/image";
 import logger from "@/app/lib/logger";
@@ -37,6 +37,51 @@ import {
 import { uploadFile } from "@/lib/uploadFile";
 import { Input } from "@/components/ui/input";
 import { PendingAttachment } from "@/lib/defination";
+import { cn } from "@/lib/utils";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent } from "@/components/ui/dialog";
+
+interface ExtendedDirectMessage extends DirectMessage {
+  status?: "pending" | "sent" | "error";
+  errorMsg?: string;
+  attachments?: DirectMessageAttachment[];
+}
+
+// Helper function for date formatting
+const isSameDay = (d1: Date, d2: Date) => {
+  return (
+    d1.getFullYear() === d2.getFullYear() &&
+    d1.getMonth() === d2.getMonth() &&
+    d1.getDate() === d2.getDate()
+  );
+};
+
+const formatDateForDisplay = (date: Date) => {
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+
+  if (isSameDay(date, today)) {
+    return "Today";
+  }
+  if (isSameDay(date, yesterday)) {
+    return "Yesterday";
+  }
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+};
 
 export default function DirectChat({
   targetUser,
@@ -50,25 +95,31 @@ export default function DirectChat({
   };
 }) {
   const { user } = useUser();
-  const [messages, setMessages] = useState<DirectMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedDirectMessage[]>([]);
   const [messageText, setMessageText] = useState("");
-
-  const [editingMessage, setEditingMessage] = useState<DirectMessage | null>(
-    null
-  );
+  const [editingMessage, setEditingMessage] =
+    useState<ExtendedDirectMessage | null>(null);
   const [editedText, setEditedText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
-  const [selectedId, setSelectedId] = useState<string | null>(
-    "message-bb9553e7-ecc2-4581-b8d7-c86c28e54009"
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [messageToDeleteId, setMessageToDeleteId] = useState<string | null>(
+    null
   );
+  const [pendingAttachments, setPendingAttachments] = useState<
+    PendingAttachment[]
+  >([]);
+  const [showImageModal, setShowImageModal] = useState(false);
+  const [currentImage, setCurrentImage] = useState<string | null>(null);
+  const [showVideoModal, setShowVideoModal] = useState(false);
+  const [currentVideo, setCurrentVideo] = useState<string | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const scrollAreaContainerRef = useRef<HTMLDivElement>(null);
 
   const currentUserId = user?.id;
   const targetUserId = targetUser.id;
 
   const roomName = `direct-chat:${[currentUserId, targetUserId]
-
     .sort()
     .join("-")}`;
 
@@ -87,6 +138,7 @@ export default function DirectChat({
       .on("broadcast", { event: "direct-message" }, (payload) => {
         const newMessage = payload.payload;
         setMessages((prev) => [...prev, { ...newMessage, status: "sent" }]);
+        scrollRef.current?.scrollIntoView({ behavior: "smooth" });
       })
       .on("broadcast", { event: "UpdateDirectMessage" }, (payload) => {
         const updatedMessage = payload.payload;
@@ -99,7 +151,6 @@ export default function DirectChat({
       })
       .on("broadcast", { event: "DeleteDirectMessage" }, (payload) => {
         const { id } = payload.payload;
-        // console.log({ id });
         setMessages((prev) => prev.filter((msg) => msg.id !== id));
       })
       .subscribe();
@@ -117,7 +168,21 @@ export default function DirectChat({
     const tempId = crypto.randomUUID();
     const timestamp = new Date();
 
-    // 1. Upload attachments
+    // 1. Optimistically show in UI as pending
+    const tempMessage: ExtendedDirectMessage = {
+      id: tempId,
+      senderId: currentUserId,
+      text: messageText || null,
+      receiverId: targetUserId,
+      roomName,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      status: "pending",
+      attachments: [], // Placeholder, actual attachments uploaded later
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+
+    // 2. Upload attachments
     let attachments: PendingAttachment[] = [];
     try {
       attachments = await Promise.all(
@@ -127,27 +192,23 @@ export default function DirectChat({
       );
     } catch (err) {
       logger.error(err, "File upload failed");
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? ({
+                ...msg,
+                status: "error",
+                errorMsg: "File upload failed",
+              } as ExtendedDirectMessage)
+            : msg
+        )
+      );
       return;
     }
 
-    const tempMessage: DirectMessage & {
-      status: string;
-      attachments?: PendingAttachment[];
-    } = {
-      id: tempId,
-      senderId: currentUserId,
-      text: messageText || null,
-      receiverId: targetUserId,
-      roomName,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      status: "pending",
-      attachments,
-    };
-
-    setMessages((prev) => [...prev, tempMessage]);
     setMessageText("");
     setSelectedFiles([]);
+    setPendingAttachments([]);
 
     try {
       const { newMessage, notification } = await sendDirectMessage({
@@ -163,79 +224,75 @@ export default function DirectChat({
         event: "direct-message",
         payload: { ...newMessage, status: "sent" },
       });
-      // try {
-      // const sender = newMessage.senderId;
-      // const receiver = newMessage.receiverId;
 
-      //   if (receiver && sender) {
-      //     await prisma.notification.create({
-      //       data: {
-      //         type: "DIRECT_MESSAGE",
-      //         message: `New message from ${sender.username || "a user"}`,
-      //         url: `/direct-chat/${senderId}`,
-      //         recipientId: receiver.id,
-      //       },
-      //     });
-      //   }
-      // } catch (error) {
-      //   logger.error(error, "Failed to create direct message notification");
-      // }
       supabase.channel("NOTIFICATION").send({
         type: "broadcast",
         event: "new-notification",
         payload: notification,
       });
+
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId
-            ? { ...msg, status: "sent", id: newMessage.id }
+            ? ({
+                ...msg,
+                status: "sent",
+                id: newMessage.id,
+                attachments: newMessage.attachments,
+              } as ExtendedDirectMessage)
             : msg
         )
       );
     } catch (error) {
       logger.error({ error }, "Send failed:");
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === tempId ? { ...msg, status: "error" } : msg
-        )
-      );
-    }
-  };
-
-  const handleEdit = (msg: DirectMessage) => {
-    setEditingMessage(msg);
-    setEditedText(msg.text || "");
-  };
-
-  const handleDelete = async (id: string) => {
-    try {
-      // You need to implement this backend logic
-      await deleteDirectMessage(id); // Your API
-      // console.log({ deletedThing });
-      setMessages((prev) => prev.filter((m) => m.id !== id));
-
-      //  If deleted successfully, broadcast to other clients
-      supabase.channel(roomName).send({
-        type: "broadcast",
-        event: "DeleteDirectMessage",
-        payload: { id: id },
-      });
-    } catch (error) {
-      logger.error({ error }, "Failed to delete message");
       const errorMessage =
-        error instanceof Error ? error.message : "Delete failed";
+        error instanceof Error ? error.message : "Send failed";
+
       setMessages((prev) =>
         prev.map((msg) =>
-          msg.id === id
-            ? {
+          msg.id === tempId
+            ? ({
                 ...msg,
-                status: "error ",
+                status: "error",
                 errorMsg: errorMessage,
-              }
+              } as ExtendedDirectMessage)
             : msg
         )
       );
     }
+  };
+
+  const handleEdit = (msg: ExtendedDirectMessage) => {
+    setEditingMessage(msg);
+    setEditedText(msg?.text || "");
+  };
+
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setEditedText("");
+  };
+
+  const confirmDelete = async () => {
+    if (!messageToDeleteId) return;
+    try {
+      await deleteDirectMessage(messageToDeleteId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageToDeleteId));
+      supabase.channel(roomName).send({
+        type: "broadcast",
+        event: "DeleteDirectMessage",
+        payload: { id: messageToDeleteId },
+      });
+    } catch (error) {
+      logger.error({ error }, "Failed to delete message");
+    } finally {
+      setShowDeleteDialog(false);
+      setMessageToDeleteId(null);
+    }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setMessageToDeleteId(id);
+    setShowDeleteDialog(true);
   };
 
   const handleUpdateMessage = async () => {
@@ -245,8 +302,6 @@ export default function DirectChat({
       text: editedText,
       updatedAt: new Date(),
     };
-    // console.log({ editingMessage, updatedMessage });
-    // 1. Optimistically show in UI as pending
     setMessages((prev) =>
       prev.map((msg) => (msg.id === editingMessage.id ? updatedMessage : msg))
     );
@@ -254,18 +309,10 @@ export default function DirectChat({
     setEditedText("");
 
     try {
-      // 2. Store in DB using your existing backend function
-
       const dbUpdatedMessage = await updateDirectMessage(
         editingMessage.id,
         editedText
       );
-      // console.log(
-      //   "DB Updated Message",
-      //   dbUpdatedMessage.updatedAt,
-      //   dbUpdatedMessage.createdAt
-      // );
-      // 3. If saved successfully, broadcast to other clients
       supabase.channel(roomName).send({
         type: "broadcast",
         event: "UpdateDirectMessage",
@@ -273,46 +320,18 @@ export default function DirectChat({
       });
     } catch (error) {
       logger.error({ error }, "Update failed");
-      const errorMessage =
-        error instanceof Error ? error.message : "Update failed";
-      // 5. Update message with error
-      setMessages((prev) =>
-        prev.map((msg) =>
-          msg.id === editingMessage.id
-            ? {
-                ...msg,
-                status: "error",
-                errorMsg: errorMessage,
-              }
-            : msg
-        )
-      );
     }
   };
-
-  useEffect(() => {
-    if (typeof window !== "undefined" && window.location.hash) {
-      const el = document.querySelector(window.location.hash);
-      if (el) {
-        el.scrollIntoView({ behavior: "smooth", block: "end" });
-      }
-    }
-  }, [selectedId]);
-
-  // useEffect(() => {
-  //   if (window.location.hash) {
-  //     setSelectedId(window.location.hash.replace("#", ""));
-  //   }
-  // }, []);
 
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
   return (
-    <Card className="w-full max-w-2xl mx-auto p-4 shadow-xl">
-      <CardContent>
-        <div className="flex items-center justify-start gap-4 mb-4">
+    <div className="w-full max-w-4xl mx-auto p-4">
+      {/* Header - preserved from DirectChat */}
+      <div className="p-4 border-b">
+        <div className="flex items-center justify-start gap-4">
           <MoveLeftIcon />
           <div className="flex items-center gap-3">
             {user?.id === targetUserId ? (
@@ -349,7 +368,6 @@ export default function DirectChat({
                   <span className="text-xs text-gray-500">
                     last seen recently
                   </span>
-                  {/* You can make this dynamic later if you implement online presence tracking */}
                 </div>
               </>
             )}
@@ -371,321 +389,256 @@ export default function DirectChat({
             </DropdownMenu>
           </div>
         </div>
-        <ScrollArea className="h-96 overflow-y-auto">
-          <div className="flex flex-col gap-2">
-            {messages.map(
-              (
-                msg: DirectMessage & {
-                  status?: "pending" | "sent" | "error";
-                  errorMsg?: string;
-                  attachments?: DirectMessageAttachment[];
-                },
-                idx
-              ) => {
-                // console.log(`message-${msg.id}`);
-                const isOwn = msg.senderId === currentUserId;
-                const isUpdated =
-                  new Date(msg.updatedAt).getTime() >
-                  new Date(msg.createdAt).getTime();
-                const currentDate = isUpdated
-                  ? new Date(msg.updatedAt)
-                  : new Date(msg.createdAt);
-                const prevDate =
-                  idx > 0 ? new Date(messages[idx - 1].createdAt) : null;
+      </div>
 
-                const showDateSeparator =
-                  !prevDate ||
-                  currentDate.getDate() !== prevDate.getDate() ||
-                  currentDate.getMonth() !== prevDate.getMonth() ||
-                  currentDate.getFullYear() !== prevDate.getFullYear();
+      {/* Message Area */}
+      <ScrollArea
+        ref={scrollAreaContainerRef}
+        className="flex-1 overflow-y-auto p-4 space-y-1 h-[60vh]"
+      >
+        {messages.map((msg, idx) => {
+          const isOwn = msg.senderId === currentUserId;
+          const prevMsg = messages[idx - 1];
+          const msgDate = new Date(msg.createdAt);
+          const prevMsgDate = prevMsg ? new Date(prevMsg.createdAt) : null;
 
-                const dateOptions: Intl.DateTimeFormatOptions = {
-                  month: "long",
-                  day: "numeric",
-                };
+          let showDateSeparator = false;
+          if (!prevMsgDate) {
+            showDateSeparator = true;
+          } else {
+            showDateSeparator = !isSameDay(msgDate, prevMsgDate);
+          }
 
-                if (currentDate.getFullYear() !== new Date().getFullYear()) {
-                  dateOptions.year = "numeric";
-                }
+          const isGrouped =
+            prevMsg &&
+            prevMsg.senderId === msg.senderId &&
+            new Date(msg.createdAt).getTime() -
+              new Date(prevMsg.createdAt).getTime() <
+              5 * 60 * 1000 &&
+            prevMsgDate !== null && // Ensure prevMsgDate is not null
+            isSameDay(msgDate, prevMsgDate);
 
-                const formattedDate = currentDate.toLocaleDateString(
-                  undefined,
-                  dateOptions
-                );
-
-                return (
-                  <React.Fragment key={msg.id}>
-                    {showDateSeparator && (
-                      <div className="self-center text-xs text-gray-400 font-semibold py-2">
-                        {formattedDate}
-                      </div>
-                    )}
-                    <div
-                      className={`flex items-end gap-2 px-6 ${
-                        isOwn ? "self-end flex-row-reverse" : "self-start"
-                      } `}
-                    >
-                      {/* <div
-                      className={`flex flex-col max-w-xs p-2 rounded-lg ${
-                        isOwn
-                        ? "bg-blue-500 text-white"
-                          : "bg-gray-200 text-black"
-                      } ${
-                        selectedId === `message-${msg.id}`
-                          ? "ring-2 ring-yellow-400"
-                          : ""
-                      }`}
-                    > */}
+          return (
+            <React.Fragment key={msg.id}>
+              {showDateSeparator && (
+                <div className="relative my-6 text-center">
+                  <div className="absolute inset-0 flex items-center">
+                    <span className="w-full border-t" />
+                  </div>
+                  <div className="relative flex justify-center text-xs uppercase">
+                    <span className="bg-background px-2 text-muted-foreground">
+                      {formatDateForDisplay(msgDate)}
+                    </span>
+                  </div>
+                </div>
+              )}
+              <div
+                className={cn(
+                  "flex items-start gap-3",
+                  isOwn && "justify-end",
+                  isGrouped && "mt-1"
+                )}
+              >
+                <div className={cn("flex flex-col", isOwn && "items-end")}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <div
-                        id={`message-${msg.id}`}
-                        className={`flex flex-col max-w-xs p-2 rounded-lg ${
+                        className={cn(
+                          "relative max-w-xs md:max-w-md px-3 py-2 rounded-xl cursor-pointer mt-1",
                           isOwn
-                            ? "bg-blue-500 text-white"
-                            : "bg-gray-200 text-black"
-                        } border ${
-                          msg.status === "error"
-                            ? "border-red-500"
-                            : "border-transparent"
-                        } ${
-                          selectedId === `message-${msg.id}`
-                            ? "ring-2 ring-yellow-400"
-                            : ""
-                        }`}
-                        onClick={() => {
-                          window.history.replaceState(
-                            null,
-                            "",
-                            `#message-${msg.id}`
-                          );
-                          // document
-                          //   .getElementById(`message-${msg.id}`)
-                          //   ?.scrollIntoView({
-                          //     behavior: "smooth",
-                          //     block: "end",
-                          //   });
-                          // document
-                          //   .getElementById(`message-${msg.id}`)
-                          //   ?.style.setProperty("background-color", "#fbbf24"); // yellow-400
-                          setSelectedId(`message-${msg.id}`);
-                        }}
+                            ? "bg-primary text-primary-foreground rounded-br-none"
+                            : "bg-muted rounded-bl-none"
+                        )}
                       >
-                        {isOwn ? (
-                          <div className="relative">
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  size="icon"
-                                  variant="ghost"
-                                  className="absolute -top-2 -right-2 h-6 w-6 p-0"
-                                >
-                                  <MoreHorizontalIcon className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuItem
-                                  onClick={() => handleEdit(msg)}
-                                >
-                                  Edit
-                                </DropdownMenuItem>
-                                <DropdownMenuItem
-                                  onClick={() => handleDelete(msg.id)}
-                                  className="text-red-500"
-                                >
-                                  Delete
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-
-                            <span className="whitespace-pre-wrap">
-                              {msg.text}
-                            </span>
-                          </div>
-                        ) : (
-                          <span className="whitespace-pre-wrap">
-                            {msg.text}
-                          </span>
-                        )}
-
-                        {msg.status === "pending" && (
-                          <span className="text-xs text-yellow-400">
-                            Sending...
-                          </span>
-                        )}
-                        {msg.status === "error" && (
-                          <span className="text-xs text-red-500">
-                            Failed to send
-                          </span>
-                        )}
-                        {isOwn && msg.status === "sent" && (
-                          <span className="text-xs text-green-500">
-                            <CheckCheckIcon className="w-4 h-4" />
-                          </span>
-                        )}
-
-                        <span className="text-xs opacity-50 self-end">
-                          {`${currentDate.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                            hour12: true,
-                          })} ${isUpdated ? "(edited)" : ""}`}
-                        </span>
-
-                        <div>
-                          {msg.attachments?.map((att) => {
-                            return (
-                              <div key={att.id} className="mt-2">
-                                {att.type === "IMAGE" && (
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        {msg.attachments && msg.attachments.length > 0 && (
+                          <div className="flex flex-col gap-2 mt-2">
+                            {msg.attachments.map((attachment) => (
+                              <div key={attachment.id}>
+                                {attachment.type === "IMAGE" ? (
                                   <Image
-                                    src={att.url}
-                                    alt={att.fileName || "image"}
+                                    src={attachment.url}
+                                    alt={attachment.fileName || "Attachment"}
                                     width={200}
                                     height={200}
-                                    className="rounded-lg"
+                                    className="rounded-md cursor-pointer"
+                                    onClick={() => {
+                                      setCurrentImage(attachment.url);
+                                      setShowImageModal(true);
+                                    }}
                                   />
-                                )}
-                                {att.type === "VIDEO" && (
-                                  <video
-                                    controls
-                                    className="rounded-lg max-w-xs"
+                                ) : attachment.type === "VIDEO" ? (
+                                  <div
+                                    onClick={() => {
+                                      setCurrentVideo(attachment.url);
+                                      setShowVideoModal(true);
+                                    }}
+                                    className="relative block rounded-md overflow-hidden cursor-pointer"
                                   >
-                                    <source src={att.url} />
-                                  </video>
-                                )}
-                                {att.type === "FILE" && (
+                                    <video
+                                      src={attachment.url}
+                                      controls={false}
+                                      preload="metadata"
+                                      className="w-full h-auto max-h-[200px] object-cover"
+                                    />
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                      <PlayIcon className="w-8 h-8 text-white" />
+                                    </div>
+                                  </div>
+                                ) : (
                                   <a
-                                    href={att.url}
+                                    href={attachment.url}
                                     target="_blank"
-                                    rel="noreferrer"
-                                    className="text-blue-500 underline text-sm"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1 bg-background p-1 rounded-md text-sm hover:underline"
                                   >
-                                    {att.fileName || "Download file"}
+                                    <FileIcon className="w-4 h-4" />
+                                    <span className="truncate max-w-[100px]">
+                                      {attachment.fileName || "File"}
+                                    </span>
                                   </a>
                                 )}
                               </div>
-                            );
-                          })}
+                            ))}
+                          </div>
+                        )}
+                        <div className="flex items-center justify-end gap-1 mt-1">
+                          {" "}
+                          {msg.status === "pending" && (
+                            <span className="text-xs text-muted-foreground">
+                              Sending...
+                            </span>
+                          )}
+                          {msg.status === "error" && (
+                            <span className="text-xs text-red-500">Failed</span>
+                          )}
+                          {isOwn && msg.status === "sent" && (
+                            <CheckCheckIcon className="w-4 h-4 text-blue-500" />
+                          )}
+                          <p className="text-xs opacity-70">
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                          {msg.updatedAt &&
+                            new Date(msg.updatedAt).getTime() !==
+                              new Date(msg.createdAt).getTime() && (
+                              <span className="text-xs opacity-50 ml-1">
+                                (Edited)
+                              </span>
+                            )}
                         </div>
                       </div>
-                    </div>
-                  </React.Fragment>
-                );
-              }
-            )}
-            <div ref={scrollRef} />
-          </div>
-        </ScrollArea>{" "}
-        {/* <div className="mt-4 flex gap-2">
-          {!editingMessage ? (
-            <>
-             
-              <label htmlFor="file-upload">
-                <Button variant="ghost" size="icon" asChild>
-                  <PaperclipIcon className="w-5 h-5" />
-                </Button>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (!e.target.files) return;
-                    setSelectedFiles(Array.from(e.target.files));
-                  }}
-                />
-              </label>
-
-              <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-              />
-              <Button onClick={handleSend}>
-                <SendIcon />
-              </Button>
-            </>
-          ) : (
-            <>
-              {" "}
-              <div className="flex flex-col justify-between items-center py-1">
-                <Edit3Icon />
-                <XIcon
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setEditingMessage(null);
-                    setEditedText("");
-                  }}
-                />
-              </div>
-              <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleUpdateMessage();
-                  }
-                }}
-              />
-              <Button onClick={handleUpdateMessage}>
-                <SendIcon />
-              </Button>
-            </>
-          )}
-        </div> */}
-        <div className="mt-4 flex flex-col gap-2">
-          {/* File preview row */}
-          {selectedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 rounded-lg border p-2 bg-muted">
-              {selectedFiles.map((file, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1 rounded-md shadow px-2 py-1"
-                >
-                  <FileIcon className="h-4 w-4" />
-                  <span className="text-xs truncate max-w-[120px]">
-                    {file.name}
-                  </span>
-                  <XIcon
-                    className="h-4 w-4 cursor-pointer"
-                    onClick={() =>
-                      setSelectedFiles((prev) =>
-                        prev.filter((_, idx) => idx !== i)
-                      )
-                    }
-                  />
+                    </DropdownMenuTrigger>
+                    {isOwn && (
+                      <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                        <DropdownMenuItem onClick={() => handleEdit(msg)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(msg.id)}
+                          className="text-red-500"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
                 </div>
-              ))}
+              </div>
+            </React.Fragment>
+          );
+        })}
+        <div ref={scrollRef} />
+      </ScrollArea>
+
+      {/* Input Area */}
+      <div className="p-2 border-t bg-background">
+        {editingMessage ? (
+          <div className="flex flex-col gap-2">
+            <Textarea
+              rows={1}
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleUpdateMessage();
+                }
+              }}
+              placeholder="Edit your message"
+              className="pr-24 resize-none"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateMessage}>Save</Button>
             </div>
-          )}
-
-          {/* Input row */}
-          {!editingMessage ? (
-            <div className="flex items-end gap-2">
-              <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-
-              {/* File picker button */}
+          </div>
+        ) : (
+          <div className="relative">
+            {pendingAttachments.length > 0 && (
+              <div className="flex flex-wrap gap-2 p-2 border-t border-b bg-secondary/20">
+                {pendingAttachments.map((attachment, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-1 bg-secondary rounded-md p-1"
+                  >
+                    {attachment.type === "IMAGE" ||
+                    attachment.type === "VIDEO" ? (
+                      <Image
+                        src={attachment.url}
+                        alt={attachment.fileName}
+                        width={24}
+                        height={24}
+                        className="rounded"
+                      />
+                    ) : (
+                      <FileIcon className="w-4 h-4" />
+                    )}
+                    <span className="text-sm truncate max-w-[100px]">
+                      {attachment.fileName}
+                    </span>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="w-5 h-5"
+                      onClick={() => {
+                        const newSelectedFiles = selectedFiles.filter(
+                          (_, i) => i !== index
+                        );
+                        setSelectedFiles(newSelectedFiles);
+                        setPendingAttachments(
+                          pendingAttachments.filter((_, i) => i !== index)
+                        );
+                      }}
+                    >
+                      <XIcon className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            )}
+            <Textarea
+              rows={1}
+              placeholder={`Message ${targetUser.username || targetUser.name}`}
+              className="pr-24 resize-none"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-4">
               <label htmlFor="file-upload">
                 <Button variant="ghost" size="icon" asChild>
                   <PaperclipIcon className="w-5 h-5" />
                 </Button>
-
                 <Input
                   id="file-upload"
                   type="file"
@@ -693,153 +646,75 @@ export default function DirectChat({
                   className="hidden"
                   onChange={(e) => {
                     if (!e.target.files) return;
-                    setSelectedFiles(Array.from(e.target.files));
+                    const files = Array.from(e.target.files);
+                    setSelectedFiles(files);
+                    setPendingAttachments(
+                      files.map((file) => ({
+                        fileName: file.name,
+                        type: file.type.startsWith("image/")
+                          ? "IMAGE"
+                          : file.type.startsWith("video/")
+                          ? "VIDEO"
+                          : "FILE",
+                        url: URL.createObjectURL(file),
+                      }))
+                    );
                   }}
                 />
               </label>
-
-              {/* Send button */}
               <Button onClick={handleSend} size="icon">
-                <SendIcon />
+                <SendIcon className=" w-5 h-5" />
               </Button>
             </div>
-          ) : (
-            <div className="flex items-end gap-2">
-              <div className="flex flex-col justify-between items-center py-1">
-                <Edit3Icon />
-                <XIcon
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setEditingMessage(null);
-                    setEditedText("");
-                  }}
-                />
-              </div>
-              <Textarea
-                rows={1}
-                placeholder="Edit message..."
-                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleUpdateMessage();
-                  }
-                }}
-              />
-              <Button onClick={handleUpdateMessage} size="icon">
-                <SendIcon />
-              </Button>
-            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              message.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Image Modal */}
+      <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
+        <DialogContent className="max-w-3xl">
+          {currentImage && (
+            <Image
+              src={currentImage}
+              alt="Full size image"
+              layout="responsive"
+              width={1000}
+              height={1000}
+              objectFit="contain"
+            />
           )}
-        </div>
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+
+      {/* Video Modal */}
+      <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
+        <DialogContent className="max-w-3xl">
+          {currentVideo && (
+            <video controls width="100%" src={currentVideo}>
+              Your browser does not support the video tag.
+            </video>
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
   );
-}
-
-{
-  /* <div className="mt-4 flex gap-2">
-          {!editingMessage ? (
-            <>
-              <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-              <div className="flex gap-2 items-center">
-                <label htmlFor="file-upload">
-                  <Button variant="ghost" size="icon" asChild>
-                    <PaperclipIcon className="w-5 h-5" />
-                  </Button>
-                </label>
-
-                <Textarea
-                  rows={1}
-                  placeholder="Type a message..."
-                  className="flex-1 resize-none rounded-xl border"
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                />
-                <Button onClick={handleSend}>
-                  <SendIcon />
-                </Button>
-              </div>
-              <Button onClick={handleSend}>
-                <SendIcon />
-              </Button>
-              <Input
-                type="file"
-                accept="image/*,video/*"
-                onChange={async (e) => {
-                  const file = e.target.files?.[0];
-                  if (!file || !currentUserId) return;
-
-                  try {
-                    const url = await uploadFile(file, currentUserId);
-                    const type = file.type.startsWith("video")
-                      ? "VIDEO"
-                      : "IMAGE";
-
-                    const newMessage = await sendDirectMessage({
-                      senderId: currentUserId,
-                      receiverId: targetUserId,
-                      roomName,
-                      attachments: [{ url, type, fileName: file.name }],
-                    });
-
-                    supabase.channel(roomName).send({
-                      type: "broadcast",
-                      event: "direct-message",
-                      payload: newMessage,
-                    });
-
-                    setMessages((prev) => [...prev, newMessage]);
-                  } catch (err) {
-                    console.error("Upload failed", err);
-                  }
-                }}
-              />
-            </>
-          ) : (
-            <>
-              {" "}
-              <div className="flex flex-col justify-between items-center py-1">
-                <Edit3Icon />
-                <XIcon
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setEditingMessage(null);
-                    setEditedText("");
-                  }}
-                />
-              </div>
-              <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border border-gray-300  px-4 py-2 text-sm leading-5 shadow-sm "
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleUpdateMessage();
-                  }
-                }}
-              />
-              <Button onClick={handleUpdateMessage}>
-                <SendIcon />
-              </Button>
-            </>
-          )}
-        </div> */
 }
