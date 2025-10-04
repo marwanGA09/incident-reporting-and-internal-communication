@@ -26,6 +26,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 
+import IncidentInteraction from "../_components/IncidentInteraction";
+
 // Helper to get icon and label for priority
 const getPriorityProps = (priority: string) => {
   switch (priority) {
@@ -88,6 +90,18 @@ export default async function IncidentDetailPage({
   if (!incident) {
     redirect("/incidents");
   }
+
+  const departmentUsers = await prisma.user.findMany({
+    where: { departmentId: incident.departmentId },
+    select: {
+      id: true,
+      firstName: true,
+      lastName: true,
+      position: true,
+      username: true,
+      email: true,
+    },
+  });
 
   const severityProps = getSeverityProps(incident.severity);
   const priorityProps = getPriorityProps(incident.priority);
@@ -181,6 +195,10 @@ export default async function IncidentDetailPage({
 
         {/* Right Column (Metadata) */}
         <div className="space-y-6">
+          <IncidentInteraction
+            incident={incident}
+            departmentUsers={departmentUsers}
+          />
           <Card>
             <CardHeader>
               <CardTitle>Metadata</CardTitle>
@@ -190,7 +208,7 @@ export default async function IncidentDetailPage({
                 icon={<UserIcon className="h-4 w-4" />}
                 label="Reporter"
                 value={`${incident.reporter.firstName || ""} ${
-                  incident.reporter.lastName || ""
+                  incident.reporter.username || ""
                 }`.trim()}
               />
               <MetadataItem
@@ -199,7 +217,7 @@ export default async function IncidentDetailPage({
                 value={
                   incident.assignee
                     ? `${incident.assignee.firstName || ""} ${
-                        incident.assignee.lastName || ""
+                        incident.assignee.username || ""
                       }`.trim()
                     : "Unassigned"
                 }

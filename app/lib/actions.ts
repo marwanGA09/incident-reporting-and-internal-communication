@@ -7,6 +7,7 @@ import logger from "./logger";
 import { PendingAttachment } from "@/lib/defination";
 import { auth } from "@clerk/nextjs/server";
 import { supabase } from "@/lib/supabaseClient";
+import { revalidatePath } from "next/cache";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
@@ -547,5 +548,56 @@ export async function getNotifications() {
       notifications: [],
       unreadCount: 0,
     };
+  }
+}
+
+export async function updateIncidentAction(payload: {
+  id: string;
+  status?: any;
+  assigneeId?: string | null;
+  note?: string;
+}) {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) {
+    throw new Error("User not authenticated");
+  }
+
+  const { id, status, assigneeId, note } = payload;
+
+  try {
+    const dataToUpdate: any = {};
+
+    if (status) {
+      dataToUpdate.status = status;
+      // If status is changing, and a note is provided, create a status note
+      if (note) {
+        dataToUpdate.statusNotes = {
+          create: {
+            status,
+            note,
+            changedById: clerkId,
+          },
+        };
+      }
+    }
+
+    if (assigneeId !== undefined) {
+      dataToUpdate.assigneeId = assigneeId;
+    }
+
+    if (Object.keys(dataToUpdate).length === 0) {
+      return;
+    }
+
+    await prisma.incident.update({
+      where: { id },
+      data: dataToUpdate,
+    });
+
+    revalidatePath(`/incidents/${id}`);
+    revalidatePath("/incidents");
+  } catch (error) {
+    logger.error({ error }, "Failed to update incident");
+    throw new Error("Failed to update incident.");
   }
 }
