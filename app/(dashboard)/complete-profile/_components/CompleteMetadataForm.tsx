@@ -35,7 +35,7 @@ export default function CompleteMetadataForm({
   const handleSubmit = () => {
     startTransition(async () => {
       try {
-        await setUserMetadata({ role: "regular", departmentId, position });
+        await setUserMetadata({ role: "user", departmentId, position });
         // ✅ Ask Clerk to reload the user data from server
         await user?.reload();
         toast.success("Profile setup complete!");

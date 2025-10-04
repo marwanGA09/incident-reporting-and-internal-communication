@@ -1,7 +1,7 @@
 export {};
 
 // Create a type for the roles
-export type Roles = "admin" | "regular";
+export type Roles = "admin" | "user";
 export type Position = "higher" | "middle" | "lower";
 // position?: "higher" | "middle" | "lower";
 // departmentId?: string;

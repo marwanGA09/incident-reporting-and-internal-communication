@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { useMemo, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -32,15 +33,18 @@ import {
 import { useIncidentFormStore, useIncidentUIForm } from "./IncidentFormStore";
 import { Step4Schema } from "@/lib/validation/incidents";
 
-interface PageFourFormProps {
+// Correctly type the props
+interface Step4FormProps {
   departments: { id: string; name: string }[];
-  users: { id: string; name: string }[];
+  users: {
+    id: string;
+    name: string;
+    position: string | null;
+    departmentId: string | null;
+  }[];
 }
 
-export default function PageFourForm({
-  departments,
-  users,
-}: PageFourFormProps) {
+export default function PageFourForm({ departments, users }: Step4FormProps) {
   const router = useRouter();
   const { data, setData } = useIncidentFormStore();
   const { setUiData } = useIncidentUIForm();
@@ -54,6 +58,26 @@ export default function PageFourForm({
     resolver: zodResolver(Step4Schema),
     defaultValues,
   });
+
+  const watchedDepartmentId = form.watch("departmentId");
+
+  const assignableUsers = useMemo(() => {
+    if (!watchedDepartmentId) return [];
+    return users.filter((user) => user.departmentId === watchedDepartmentId);
+  }, [watchedDepartmentId, users]);
+
+  // When the department changes, check if there are any valid users to assign.
+  // If not, clear the assigneeId field.
+  useEffect(() => {
+    if (watchedDepartmentId) {
+      const hasAssignableUsers = assignableUsers.some(
+        (user) => user.position !== "low"
+      );
+      if (!hasAssignableUsers) {
+        form.setValue("assigneeId", undefined);
+      }
+    }
+  }, [watchedDepartmentId, assignableUsers, form]);
 
   function onSubmit(values: z.infer<typeof Step4Schema>) {
     const departmentName = departments.find(
@@ -74,7 +98,7 @@ export default function PageFourForm({
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="max-w-xl mx-auto pt-8"
+      className="max-w-xl mx-auto pt8"
     >
       <div className="flex flex-col items-center justify-center mb-6">
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">
@@ -130,6 +154,7 @@ export default function PageFourForm({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
+                      disabled={!watchedDepartmentId} // Disable if no department is selected
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -137,9 +162,13 @@ export default function PageFourForm({
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {users.map((user) => (
-                          <SelectItem key={user.id} value={user.id}>
-                            {user.name}
+                        {assignableUsers.map((user) => (
+                          <SelectItem
+                            key={user.id}
+                            value={user.id}
+                            disabled={user.position === "lower"}
+                          >
+                            {user.name} (Position: {user.position || "N/A"})
                           </SelectItem>
                         ))}
                       </SelectContent>

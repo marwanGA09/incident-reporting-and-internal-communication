@@ -4,7 +4,7 @@ import { clerkClient } from "@/lib/clerkClient";
 import { auth } from "@clerk/nextjs/server";
 
 type MetadataInput = {
-  role: "admin" | "regular";
+  role: "admin" | "user";
   position: "higher" | "middle" | "lower";
   departmentId: string;
 };

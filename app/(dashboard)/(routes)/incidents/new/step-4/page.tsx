@@ -14,6 +14,7 @@ export default async function Step4() {
       lastName: true,
       email: true,
       position: true,
+      departmentId: true,
     },
     orderBy: { firstName: "asc" },
   });
@@ -22,6 +23,7 @@ export default async function Step4() {
     id: user.id,
     name: `${user.firstName || ""} ${user.lastName || ""} (${user.email})`,
     position: user.position,
+    departmentId: user.departmentId,
   }));
 
   return <PageFourForm departments={departments} users={formattedUsers} />;
