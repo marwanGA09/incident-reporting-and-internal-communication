@@ -601,3 +601,31 @@ export async function updateIncidentAction(payload: {
     throw new Error("Failed to update incident.");
   }
 }
+
+export async function addAttachmentToAction(payload: {
+  incidentId: string;
+  url: string;
+  fileName: string;
+}) {
+  const { incidentId, url, fileName } = payload;
+  const { userId } = auth();
+  if (!userId) {
+    throw new Error("User not authenticated");
+  }
+
+  try {
+    await prisma.attachment.create({
+      data: {
+        incidentId,
+        url,
+        fileName,
+      },
+    });
+
+    revalidatePath(`/incidents/${incidentId}`);
+  } catch (error) {
+    logger.error({ error }, "Failed to add attachment");
+    throw new Error("Failed to add attachment.");
+  }
+}
+

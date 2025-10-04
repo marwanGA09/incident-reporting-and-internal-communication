@@ -9,6 +9,7 @@ import {
   ArrowUp,
   Calendar as CalendarIcon,
   Clock,
+  File as FileIcon,
   Flame,
   Minus,
   MoveLeftIcon,
@@ -18,6 +19,7 @@ import {
   Building,
   Tag,
 } from "lucide-react";
+import Image from "next/image";
 
 import { markIncidentAsRead } from "@/app/lib/actions";
 import { Badge } from "@/components/ui/badge";
@@ -25,20 +27,33 @@ import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-
 import IncidentInteraction from "../_components/IncidentInteraction";
+import AddAttachment from "../_components/AddAttachment";
+import { Attachment } from "@prisma/client";
 
 // Helper to get icon and label for priority
 const getPriorityProps = (priority: string) => {
   switch (priority) {
     case "URGENT":
-      return { icon: <Flame className="h-4 w-4" />, label: "Urgent" };
+      return {
+        icon: <Flame className="h-4 w-4 text-red-500" />,
+        label: "Urgent",
+      };
     case "HIGH":
-      return { icon: <ArrowUp className="h-4 w-4" />, label: "High" };
+      return {
+        icon: <ArrowUp className="h-4 w-4 text-orange-500" />,
+        label: "High",
+      };
     case "NORMAL":
-      return { icon: <Minus className="h-4 w-4" />, label: "Normal" };
+      return {
+        icon: <Minus className="h-4 w-4 text-blue-500" />,
+        label: "Normal",
+      };
     case "LOW":
-      return { icon: <ArrowDown className="h-4 w-4" />, label: "Low" };
+      return {
+        icon: <ArrowDown className="h-4 w-4 text-gray-500" />,
+        label: "Low",
+      };
     default:
       return { icon: null, label: priority };
   }
@@ -64,6 +79,40 @@ const getSeverityProps = (severity: string) => {
   }
 };
 
+const renderAttachment = (file: Attachment) => {
+  const extension = file.fileName?.split(".").pop()?.toLowerCase();
+
+  if (["png", "jpg", "jpeg", "gif", "webp"].includes(extension!)) {
+    return (
+      <a href={file.url} target="_blank" rel="noopener noreferrer">
+        <Image
+          src={file.url}
+          alt={file.fileName || "Incident Attachment"}
+          width={200}
+          height={200}
+          className="rounded-lg object-cover h-48 w-full hover:opacity-80 transition-opacity"
+        />
+      </a>
+    );
+  }
+
+  if (["mp4", "webm", "mov"].includes(extension!)) {
+    return <video src={file.url} controls className="rounded-lg w-full" />;
+  }
+
+  return (
+    <a
+      href={file.url}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="flex flex-col items-center justify-center gap-2 text-center p-2 border rounded-lg h-48 w-full hover:bg-accent"
+    >
+      <FileIcon className="h-10 w-10 flex-shrink-0" />
+      <span className="font-medium text-xs break-all">{file.fileName}</span>
+    </a>
+  );
+};
+
 export default async function IncidentDetailPage({
   params,
 }: {
@@ -84,6 +133,7 @@ export default async function IncidentDetailPage({
       statusNotes: {
         orderBy: { changedAt: "asc" },
       },
+      attachments: true,
     },
   });
 
@@ -116,7 +166,7 @@ export default async function IncidentDetailPage({
         <span>Back to All Incidents</span>
       </Link>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
         {/* Left Column (Main Details) */}
         <div className="lg:col-span-2 space-y-6">
           {/* Header */}
@@ -127,7 +177,11 @@ export default async function IncidentDetailPage({
             <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
               {incident.title}
             </h1>
-            <p className="text-muted-foreground">{incident.description}</p>
+            {incident.description && (
+              <p className="text-muted-foreground text-base">
+                {incident.description}
+              </p>
+            )}
           </div>
 
           {/* Status & Vitals */}
@@ -156,30 +210,51 @@ export default async function IncidentDetailPage({
             />
           </div>
 
+          {/* Attachments Card */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Attachments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {incident.attachments.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {incident.attachments.map((file) => (
+                    <div key={file.id}>{renderAttachment(file)}</div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-muted-foreground">
+                  No attachments for this incident.
+                </p>
+              )}
+              <Separator className="my-6" />
+              <AddAttachment incidentId={incident.id} />
+            </CardContent>
+          </Card>
+
           {/* Status Notes Timeline */}
           <Card>
             <CardHeader>
               <CardTitle>Status History</CardTitle>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {incident.statusNotes.map((note, index) => (
-                  <div key={note.id} className="flex gap-4">
-                    <div className="flex flex-col items-center">
-                      <div className="w-4 h-4 bg-primary rounded-full" />
-                      {index < incident.statusNotes.length - 1 && (
-                        <div className="w-px h-full bg-border" />
-                      )}
+            <CardContent className="pt-6">
+              <div className="space-y-8 relative before:absolute before:inset-0 before:ml-5 before:h-full before:w-0.5 before:bg-border before:-translate-x-px">
+                {incident.statusNotes.map((note) => (
+                  <div
+                    key={note.id}
+                    className="relative flex items-start gap-4"
+                  >
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-background border-2 border-primary">
+                      <CalendarIcon className="h-5 w-5 text-primary" />
                     </div>
-                    <div className="pb-6">
+                    <div className="flex-1 pt-1.5">
                       <p className="font-semibold">
-                        Status changed to "
-                        <span className="capitalize">
+                        Status changed to{" "}
+                        <span className="capitalize font-bold">
                           {note.status.replace("_", " ").toLowerCase()}
                         </span>
-                        "
                       </p>
-                      <p className="text-sm text-muted-foreground">
+                      <p className="text-xs text-muted-foreground">
                         {format(new Date(note.changedAt), "PPP p")}
                       </p>
                       <p className="mt-2 text-sm bg-muted p-3 rounded-md">
@@ -194,7 +269,7 @@ export default async function IncidentDetailPage({
         </div>
 
         {/* Right Column (Metadata) */}
-        <div className="space-y-6">
+        <div className="space-y-6 lg:sticky lg:top-24">
           <IncidentInteraction
             incident={incident}
             departmentUsers={departmentUsers}
@@ -208,7 +283,7 @@ export default async function IncidentDetailPage({
                 icon={<UserIcon className="h-4 w-4" />}
                 label="Reporter"
                 value={`${incident.reporter.firstName || ""} ${
-                  incident.reporter.username || ""
+                  incident.reporter.lastName || ""
                 }`.trim()}
               />
               <MetadataItem
@@ -217,7 +292,7 @@ export default async function IncidentDetailPage({
                 value={
                   incident.assignee
                     ? `${incident.assignee.firstName || ""} ${
-                        incident.assignee.username || ""
+                        incident.assignee.lastName || ""
                       }`.trim()
                     : "Unassigned"
                 }
