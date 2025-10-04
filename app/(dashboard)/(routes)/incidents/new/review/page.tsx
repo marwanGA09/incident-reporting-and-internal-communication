@@ -21,12 +21,27 @@ import {
 import { IncidentFormSchema } from "@/lib/validation/incidents";
 import logger from "@/app/lib/logger";
 
+import FileUpload from "../_components/FileUpload";
+import { File as FileIcon, X } from "lucide-react";
+
 export default function Review() {
   const router = useRouter();
-  const { data, clear } = useIncidentFormStore();
+  const { data, setData, clear } = useIncidentFormStore();
   const { uiData, clearUI } = useIncidentUIForm();
 
   const [isPending, startTransition] = useTransition();
+
+  const handleUpload = (url: string, fileName: string) => {
+    const newAttachment = { url, fileName };
+    const updatedAttachments = [...(data.attachments || []), newAttachment];
+    setData({ attachments: updatedAttachments });
+  };
+
+  const handleRemoveAttachment = (index: number) => {
+    const updatedAttachments = [...(data.attachments || [])];
+    updatedAttachments.splice(index, 1);
+    setData({ attachments: updatedAttachments });
+  };
 
   const handleSubmit = async () => {
     const result = IncidentFormSchema.safeParse(data);
@@ -112,6 +127,38 @@ export default function Review() {
             fullWidth
           />
           <ReviewItem label="Description" value={data.description} fullWidth />
+
+          {/* Attachments Section */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-medium text-gray-500">Attachments</h3>
+            <FileUpload onUpload={handleUpload} />
+            {data.attachments && data.attachments.length > 0 && (
+              <div className="space-y-2 pt-2">
+                <p className="text-sm font-medium">Uploaded files:</p>
+                <ul className="list-disc list-inside space-y-1">
+                  {data.attachments.map((file, index) => (
+                    <li
+                      key={index}
+                      className="text-sm flex items-center justify-between"
+                    >
+                      <span className="flex items-center gap-2">
+                        <FileIcon className="h-4 w-4 text-gray-500" />
+                        {file.fileName}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6"
+                        onClick={() => handleRemoveAttachment(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
 
           <div className="flex justify-between items-center pt-6">
             <Button

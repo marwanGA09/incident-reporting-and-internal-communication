@@ -41,6 +41,14 @@ export const IncidentFormSchema = z.object({
   departmentId: z.uuid("Please select a valid department."),
   // assigneeId: z.string().uuid().optional(), // Changed from assignedToId
   assigneeId: z.uuid().optional(), // Changed from assignedToId
+  attachments: z
+    .array(
+      z.object({
+        url: z.string(),
+        fileName: z.string(),
+      })
+    )
+    .optional(),
 });
 
 export type IncidentFormData = z.infer<typeof IncidentFormSchema>;

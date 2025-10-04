@@ -10,6 +10,7 @@ const initialData: Partial<IncidentFormData> = {
   priority: "NORMAL",
   locationAddress: "",
   affectedServices: [],
+  attachments: [],
 };
 
 type IncidentFormStore = {

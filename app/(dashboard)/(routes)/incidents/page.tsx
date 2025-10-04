@@ -8,7 +8,11 @@ import IncidentsList from "./_components/IncidentsList";
 import { Button } from "@/components/ui/button";
 import { IncidentControls } from "./_components/IncidentControls";
 
-export default async function IncidentsPage({ searchParams }: { searchParams?: { query?: string; sortBy?: string } }) {
+export default async function IncidentsPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ query?: string; sortBy?: string }>;
+}) {
   const user = await currentUser();
   if (!user) {
     redirect("/");
@@ -23,8 +27,8 @@ export default async function IncidentsPage({ searchParams }: { searchParams?: {
     redirect("/");
   }
 
-  const query = searchParams?.query || "";
-  const sortBy = searchParams?.sortBy || "newest";
+  const query = (await searchParams)?.query || "";
+  const sortBy = (await searchParams)?.sortBy || "newest";
 
   const whereClause: any = {
     title: {

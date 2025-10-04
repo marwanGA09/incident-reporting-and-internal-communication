@@ -44,13 +44,18 @@ export async function POST(req: Request) {
       );
     }
 
-    const incidentData = {
-      ...result.data,
-      reporterId: user.id, // Set the reporter ID
-    };
+    const { attachments, ...incidentPayload } = result.data;
 
     const incident = await prisma.incident.create({
-      data: incidentData,
+      data: {
+        ...incidentPayload,
+        reporterId: user.id, // Set the reporter ID
+        attachments: {
+          createMany: {
+            data: attachments || [],
+          },
+        },
+      },
     });
 
     // --- Start Notification Logic ---
