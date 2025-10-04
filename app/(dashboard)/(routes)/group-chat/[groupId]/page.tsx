@@ -1,11 +1,19 @@
 import { clerkClient } from "@/lib/clerkClient";
 import GroupChat from "./GroupChat";
 import logger from "@/app/lib/logger";
+import { prisma } from "@/app/lib/prisma";
 
 async function page({ params }: { params: Promise<{ groupId: string }> }) {
-  // console.log("Group ID:", await params);
-
   const groupId = (await params).groupId;
+
+  const department = await prisma.department.findUnique({
+    where: { id: groupId },
+  });
+
+  if (!department) {
+    return <div>Department not found.</div>;
+  }
+
   const { data } = await clerkClient.users.getUserList({
     orderBy: "-created_at",
     limit: 500,
@@ -14,8 +22,6 @@ async function page({ params }: { params: Promise<{ groupId: string }> }) {
   const users = data
     .filter((user) => user.publicMetadata.departmentId === groupId)
     .map((user) => {
-      // console.log({ user });
-
       return {
         name: user?.firstName || "",
         id: user.id,
@@ -24,15 +30,12 @@ async function page({ params }: { params: Promise<{ groupId: string }> }) {
         email: user.primaryEmailAddress?.emailAddress || "",
       };
     });
-  // console.log({ users });
-  //   logger.info(
-  //     `   Lorem ipsum dolor sit amet consectetur adipisicing elit. Quidem sapiente nisi placeat veniam aspernatur fugit, atque delectus ducimus autem, reiciendis ullam iure quibusdam! Hic illum sit voluptatibus, quas enim quis.
-  //  `,
-  //     users
-  //   );
+
   return (
-    <div className="p-6 w-full">
-      <GroupChat groupId={groupId} users={users} />
+    <div className="w-full h-full flex justify-center p-4 lg:p-6">
+      <div className="w-full max-w-5xl h-full">
+        <GroupChat department={department} users={users} />
+      </div>
     </div>
   );
 }

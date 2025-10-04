@@ -608,7 +608,7 @@ export async function addAttachmentToAction(payload: {
   fileName: string;
 }) {
   const { incidentId, url, fileName } = payload;
-  const { userId } = auth();
+  const { userId } = await auth();
   if (!userId) {
     throw new Error("User not authenticated");
   }
@@ -628,4 +628,3 @@ export async function addAttachmentToAction(payload: {
     throw new Error("Failed to add attachment.");
   }
 }
-
