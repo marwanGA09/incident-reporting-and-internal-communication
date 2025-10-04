@@ -8,7 +8,14 @@ import logger from "@/app/lib/logger";
 
 export async function POST(req: NextRequest) {
   try {
-    const evt: WebhookEvent = await verifyWebhook(req);
+    const evt: WebhookEvent = await verifyWebhook(req, {
+      signingSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET!,
+    });
+
+    console.log(
+      "Received Clerk webhook event env:",
+      process.env.CLERK_WEBHOOK_SIGNING_SECRET
+    );
     const eventType = evt.type;
 
     if (eventType === "user.created" || eventType === "user.updated") {
@@ -28,7 +35,6 @@ export async function POST(req: NextRequest) {
         ? u.email_addresses[0]?.email_address
         : u.email_addresses && null;
 
- 
       await prisma.user.upsert({
         where: { clerkId },
         create: {
@@ -70,7 +76,7 @@ export async function POST(req: NextRequest) {
 
     return new Response("ignored", { status: 200 });
   } catch (error) {
-    logger.error({error},"Webhook verification or handler error:");
+    logger.error({ error }, "Webhook verification or handler error:");
     return new Response("Webhook verification failed", { status: 400 });
   }
 }
