@@ -41,7 +41,11 @@ export default async function IncidentsPage() {
       currentUserRole === "admin"
         ? {}
         : { departmentId: String(currentUserDepId) },
-    include: { category: true, department: true },
+    include: {
+      category: true,
+      department: true,
+      assignee: true, // Include assignee details
+    },
     orderBy: [{ createdAt: "desc" }, { id: "asc" }],
   });
   console.log("is admin", currentUserRole, incidents.length);
@@ -50,42 +54,11 @@ export default async function IncidentsPage() {
     isRead: readIncidentIds.has(incident.id),
   }));
 
-  const { data } = await clerkClient.users.getUserList({
-    orderBy: "-created_at",
-    limit: 500,
-  });
-  const totalUnReadIncidents = incidentsWithReadStatus.filter(
-    (incident) => !incident.isRead
-  ).length;
-  console.log({ totalUnReadIncidents });
-  const users =
-    currentUserRole === "admin"
-      ? data.map((user) => {
-          return {
-            name:
-              `${user?.fullName} (${user?.primaryEmailAddress?.emailAddress})` ||
-              "",
-            id: user.id,
-          };
-        })
-      : data
-          .filter(
-            (user) => user.publicMetadata.departmentId === currentUserDepId
-          )
-          .map((user) => {
-            return {
-              name:
-                `${user?.fullName} (${user?.primaryEmailAddress?.emailAddress})` ||
-                "",
-              id: user.id,
-            };
-          });
-
   return (
-    <div className="w-full flex flex-col items-center justify-center">
+    <div className="w-full flex flex-col items-center justify-center ">
       <div className="container p-8">
         <h1 className="text-3xl font-bold mb-6">Incident Reports</h1>
-        <IncidentsList incidents={incidentsWithReadStatus} users={users} />
+        <IncidentsList incidents={incidentsWithReadStatus} />
       </div>
     </div>
   );

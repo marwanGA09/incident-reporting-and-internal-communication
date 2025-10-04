@@ -1,186 +1,155 @@
 "use client";
 
+import { formatDistanceToNow } from "date-fns";
+import { useUser } from "@clerk/nextjs";
+import Link from "next/link";
+import {
+  AlertTriangle,
+  ArrowDown,
+  ArrowUp,
+  Flame,
+  Minus,
+  ShieldAlert,
+  Siren,
+} from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { formatDistanceToNow } from "date-fns";
-import { useUser } from "@clerk/nextjs";
-import { IncidentSkeleton } from "./IncidentSkeleton";
-import { Dropdown } from "./DropDown";
-import SelectItems from "../new/_components/SelectItems";
-import axios from "axios";
-import { useRouter } from "next/navigation";
-import { useTransition } from "react";
-import { EyeIcon, Loader2Icon } from "lucide-react";
-import { textShorter } from "@/lib/textShorter";
-import Link from "next/link";
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
-import { Department, Incident, IncidentCategory } from "@prisma/client";
-import { UserResource } from "@clerk/types";
-import logger from "@/app/lib/logger";
+import { Incident, User } from "@prisma/client";
+import { IncidentSkeleton } from "./IncidentSkeleton";
+
+// Helper to get color and icon for severity
+const getSeverityProps = (severity: string) => {
+  switch (severity) {
+    case "CRITICAL":
+      return { icon: <Siren className="h-4 w-4" />, color: "bg-red-500" };
+    case "HIGH":
+      return { icon: <ShieldAlert className="h-4 w-4" />, color: "bg-orange-500" };
+    case "MEDIUM":
+      return {
+        icon: <AlertTriangle className="h-4 w-4" />,
+        color: "bg-yellow-500",
+      };
+    default:
+      return { icon: null, color: "bg-gray-500" };
+  }
+};
+
+// Helper to get icon and label for priority
+const getPriorityProps = (priority: string) => {
+  switch (priority) {
+    case "URGENT":
+      return { icon: <Flame className="h-4 w-4 text-red-500" />, label: "Urgent" };
+    case "HIGH":
+      return {
+        icon: <ArrowUp className="h-4 w-4 text-orange-500" />,
+        label: "High",
+      };
+    case "NORMAL":
+      return {
+        icon: <Minus className="h-4 w-4 text-blue-500" />,
+        label: "Normal",
+      };
+    case "LOW":
+      return {
+        icon: <ArrowDown className="h-4 w-4 text-gray-500" />,
+        label: "Low",
+      };
+    default:
+      return { icon: null, label: priority };
+  }
+};
 
 function IncidentItem({
   incident,
-  currentUser,
-  users,
 }: {
-  incident: Incident & {
-    department: Department;
-    category: IncidentCategory;
-  } & { isRead: boolean };
-  currentUser: UserResource;
-  users: { name: string; id: string }[];
+  incident: Incident & { isRead: boolean; assignee: User | null };
 }) {
-  const router = useRouter();
-  const [isPending, startTransition] = useTransition();
-  const handleAssign = async (userId: string, id: string) => {
-    startTransition(async () => {
-      await axios.patch("api/incidents", { userId, id });
-      router.refresh();
-    });
-  };
-  const handleSubmitNote = async (
-    note: string,
-    incidentId: string,
-    selectedStatus: string,
-    userId: string
-  ) => {
-    try {
-      // console.log({ note, incidentId, selectedStatus, userId });
-      startTransition(async () => {
-        await axios.patch("/api/incidents", {
-          id: incidentId,
-          status: selectedStatus,
-          note,
-          userId,
-        });
-        router.refresh();
-      });
-    } catch (error) {
-      logger.error({ error }, "Status change failed");
-    }
-  };
+  const { icon, color } = getSeverityProps(incident.severity);
+  const priorityProps = getPriorityProps(incident.priority);
 
   return (
-    <Card
-      key={incident.id}
-      className={`relative rounded-2xl border border-muted bg-background shadow-sm hover:shadow-lg transition-shadow pb-8`}
-    >
-      <CardHeader>
-        <CardTitle className="flex justify-between items-center">
-          <div className="flex items-center gap-2">
-            {textShorter(incident.title, 25)}
-            {!incident.isRead && (
-              <div
-                className="w-2 h-2 bg-red-500 rounded-full"
-                title="Unread Incident"
-              ></div>
-            )}
+    <Link href={`/incidents/${incident.id}`} className="block h-full">
+      <Card
+        key={incident.id}
+        className={`relative rounded-lg border bg-card text-card-foreground shadow-sm hover:shadow-lg hover:ring-2 hover:ring-primary transition-all pb-8 h-full`}
+      >
+        <CardHeader>
+          <CardTitle className="flex justify-between items-start">
+            <div className="flex items-center gap-3">
+              <div className={`p-2 rounded-md ${color}`}>{icon}</div>
+              <div className="flex flex-col">
+                <span className="text-xs font-medium text-gray-500">
+                  INC-{String(incident.incidentNumber).padStart(5, "0")}
+                </span>
+                <span className="font-bold text-lg">{incident.title}</span>
+              </div>
+            </div>
+            <Badge
+              variant={getBadgeVariantForStatus(incident.status)}
+              className="capitalize"
+            >
+              {incident.status.replace("_", " ").toLowerCase()}
+            </Badge>
+          </CardTitle>
+          <CardDescription className="text-sm text-muted-foreground pt-2">
+            Occurred {formatDistanceToNow(new Date(incident.occurredAt))} ago
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-2 text-sm">
+          <p className="text-muted-foreground line-clamp-3">
+            {incident.description}
+          </p>
+          <div className="text-muted-foreground pt-2">
+            <strong>Location:</strong> {incident.locationAddress || "N/A"}
           </div>
-          <Badge
-            variant={getBadgeVariantForStatus(incident.status)}
-            className="px-4 py-2"
-          >
-            <span>{incident.status}</span>
-            {currentUser?.publicMetadata.position === "higher" && (
-              <Dropdown
-                status={incident.status}
-                handleSubmitNote={(note: string, selectedStatus: string) =>
-                  handleSubmitNote(
-                    note,
-                    incident.id,
-                    selectedStatus,
-                    currentUser?.id
-                  )
-                }
-              />
-            )}
-          </Badge>
-        </CardTitle>
-        <CardDescription className="text-sm text-muted-foreground">
-          Reported {formatDistanceToNow(new Date(incident.createdAt))} ago{" "}
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-2">
-        {incident.description && (
-          <p className="text-sm">{textShorter(incident.description, 200)}</p>
-        )}
-        <div className="text-sm text-muted-foreground">
-          <strong>Location:</strong> {incident.location || "N/A"}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          <strong>Category:</strong> {incident.category?.name}
-        </div>
-        <div className="text-sm text-muted-foreground">
-          <strong>Department:</strong> {incident.department?.name}
-        </div>
-
-        {incident.assignedToId ? (
-          <div className="text-sm text-muted-foreground">
-            <strong>Assigned to:</strong>{" "}
-            {users.find((user) => user.id == incident.assignedToId)?.name}
+          <div className="text-muted-foreground flex items-center gap-2">
+            <strong>Priority:</strong>
+            {priorityProps.icon}
+            <span>{priorityProps.label}</span>
           </div>
-        ) : (
-          <SelectItems
-            label="Assign to Staff"
-            value={incident.assignedToId ?? ""}
-            items={users}
-            onChange={(userId) => {
-              handleAssign(userId, incident.id);
-            }}
-            disabled={
-              currentUser.publicMetadata.role === "admin" ||
-              currentUser.publicMetadata.position === "lower"
-            }
-          />
+          <div className="text-muted-foreground">
+            <strong>Assignee:</strong>{" "}
+            {incident.assignee
+              ? `${incident.assignee.firstName || ""} ${
+                  incident.assignee.lastName || ""
+                }`.trim()
+              : "Unassigned"}
+          </div>
+        </CardContent>
+        {!incident.isRead && (
+          <div
+            className="absolute top-3 right-3 w-2.5 h-2.5 bg-blue-500 rounded-full ring-2 ring-background"
+            title="Unread Incident"
+          ></div>
         )}
-        <Link
-          href={`/incidents/${incident.id}`}
-          className="absolute bottom-3 right-3 "
-        >
-          <EyeIcon className=" stroke-muted-foreground hover:scale-120 transition-transform" />
-        </Link>
-      </CardContent>
-      {isPending && (
-        <div className="absolute top-0 left-0 w-full h-full flex justify-center items-center bg-slate-200/30">
-          {" "}
-          <Loader2Icon className="animate-spin repeat-infinite" />
-        </div>
-      )}
-    </Card>
+      </Card>
+    </Link>
   );
 }
 
 export default function IncidentsList({
   incidents,
-  users,
 }: {
-  incidents: (Incident & {
-    department: Department;
-    category: IncidentCategory;
-  } & { isRead: boolean })[];
-  users: { name: string; id: string }[];
+  incidents: (Incident & { isRead: boolean; assignee: User | null })[];
 }) {
-  const { isLoaded, user: currentUser } = useUser();
-  // const [userId, setUserId] = useState(incident.department?.AssignedToId);
-  if (!isLoaded || !currentUser) {
+  const { isLoaded } = useUser();
+
+  if (!isLoaded) {
     return <IncidentSkeleton />;
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3 overflow-x-auto">
+    <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
       {incidents.map((incident) => (
-        <IncidentItem
-          key={`${incident.id}-${incident.assignedToId}`}
-          incident={incident}
-          currentUser={currentUser}
-          users={users}
-        />
+        <IncidentItem key={incident.id} incident={incident} />
       ))}
     </div>
   );
