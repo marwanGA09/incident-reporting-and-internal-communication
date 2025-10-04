@@ -38,7 +38,26 @@ import Image from "next/image";
 import logger from "@/app/lib/logger";
 import { uploadFile } from "@/lib/uploadFile";
 import { PendingAttachment } from "@/lib/defination";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
+
+interface ExtendedGroupMessage extends GroupMessage {
+  status?: "pending" | "sent" | "error";
+  errorMsg?: string;
+  attachments?: GroupMessageAttachment[];
+}
+
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+// import { toast } from "sonner";
 
 export default function GroupChat({
   department,
@@ -54,14 +73,17 @@ export default function GroupChat({
   }[];
 }) {
   const { user } = useUser();
-  const [messages, setMessages] = useState<GroupMessage[]>([]);
+  const [messages, setMessages] = useState<ExtendedGroupMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [page, setPage] = useState(1);
-  const [editingMessage, setEditingMessage] = useState<GroupMessage | null>(
-    null
-  );
+  const [editingMessage, setEditingMessage] =
+    useState<ExtendedGroupMessage | null>(null);
   const [editedText, setEditedText] = useState("");
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [messageToDeleteId, setMessageToDeleteId] = useState<string | null>(
+    null
+  );
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const groupId = department.id;
@@ -74,7 +96,7 @@ export default function GroupChat({
 
     async function loadMessages() {
       const msgs = await getGroupMessages(groupId, page);
-      setMessages(msgs);
+      setMessages(msgs.map((msg) => ({ ...msg, status: "sent" })));
     }
     loadMessages();
 
@@ -94,7 +116,9 @@ export default function GroupChat({
         if (updatedMessage.departmentId === groupId) {
           setMessages((prev) =>
             prev.map((msg) =>
-              msg.id === updatedMessage.id ? updatedMessage : msg
+              msg.id === updatedMessage.id
+                ? { ...updatedMessage, status: "sent" }
+                : msg
             )
           );
         }
@@ -122,6 +146,24 @@ export default function GroupChat({
   const handleSend = async () => {
     if ((!messageText.trim() && selectedFiles.length === 0) || !user) return;
 
+    const tempId = crypto.randomUUID();
+    const timestamp = new Date();
+
+    // 1. Optimistically show in UI as pending
+    const tempMessage: ExtendedGroupMessage = {
+      id: tempId,
+      senderId: user.id,
+      text: messageText,
+      departmentId: groupId,
+      roomName,
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      status: "pending",
+      attachments: [], // Placeholder, actual attachments uploaded later
+    };
+    setMessages((prev) => [...prev, tempMessage]);
+
+    // 2. Upload attachments
     let attachments: PendingAttachment[] = [];
     try {
       attachments = await Promise.all(
@@ -129,54 +171,111 @@ export default function GroupChat({
       );
     } catch (err) {
       logger.error(err, "File upload failed");
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? { ...msg, status: "error", errorMsg: "File upload failed" }
+            : msg
+        )
+      );
       return;
     }
 
     setMessageText("");
     setSelectedFiles([]);
 
-    const { newGroupMessage, notifications } = await sendGroupMessage({
-      text: messageText,
-      departmentId: groupId,
-      senderId: user.id,
-      roomName,
-      attachments,
-    });
+    try {
+      // 3. Store in DB using your existing backend function
+      const { newGroupMessage, notifications } = await sendGroupMessage({
+        text: messageText,
+        departmentId: groupId,
+        senderId: user.id,
+        roomName,
+        attachments,
+      });
 
-    supabase.channel(roomName).send({
-      type: "broadcast",
-      event: "group-message",
-      payload: { ...newGroupMessage, status: "sent" },
-    });
+      // 4. If saved successfully, broadcast to other clients
+      supabase.channel(roomName).send({
+        type: "broadcast",
+        event: "group-message",
+        payload: { ...newGroupMessage, status: "sent" },
+      });
 
-    if (notifications && notifications.length > 0) {
-      for (const notification of notifications) {
-        supabase.channel("NOTIFICATION").send({
-          type: "broadcast",
-          event: "new-notification",
-          payload: notification,
-        });
+      // Broadcast notifications to relevant recipients
+      if (notifications && notifications.length > 0) {
+        for (const notification of notifications) {
+          supabase.channel("NOTIFICATION").send({
+            type: "broadcast",
+            event: "new-notification",
+            payload: notification,
+          });
+        }
       }
+
+      // 5. Update message status to sent
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                status: "sent",
+                id: newGroupMessage.id,
+                attachments: newGroupMessage.attachments,
+              }
+            : msg
+        )
+      );
+    } catch (error) {
+      logger.error({ error }, "Send failed:");
+      const errorMessage =
+        error instanceof Error ? error.message : "Send failed";
+
+      // 6. Update message with error
+      setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === tempId
+            ? {
+                ...msg,
+                status: "error",
+                errorMsg: errorMessage,
+              }
+            : msg
+        )
+      );
     }
   };
 
-  const handleEdit = (msg: GroupMessage) => {
+  const handleEdit = (msg: ExtendedGroupMessage) => {
     setEditingMessage(msg);
     setEditedText(msg?.text || "");
   };
 
-  const handleDelete = async (id: string) => {
+  const handleCancelEdit = () => {
+    setEditingMessage(null);
+    setEditedText("");
+  };
+
+  const confirmDelete = async () => {
+    if (!messageToDeleteId) return;
     try {
-      await deleteGroupMessage(id);
-      setMessages((prev) => prev.filter((m) => m.id !== id));
+      await deleteGroupMessage(messageToDeleteId);
+      setMessages((prev) => prev.filter((m) => m.id !== messageToDeleteId));
       supabase.channel(roomName).send({
         type: "broadcast",
         event: "DeleteGroupMessage",
-        payload: { id: id },
+        payload: { id: messageToDeleteId },
       });
     } catch (error) {
       logger.error({ error }, "Failed to delete message");
+    } finally {
+      setShowDeleteDialog(false);
+      setMessageToDeleteId(null);
     }
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setMessageToDeleteId(id);
+    setShowDeleteDialog(true);
   };
 
   const handleUpdateMessage = async () => {
@@ -218,261 +317,151 @@ export default function GroupChat({
         <h2 className="text-xl font-bold"># {department.name}</h2>
       </div>
 
-      <CardContent className="flex-1 flex flex-col p-0">
-        <ScrollArea className="flex-1 overflow-y-auto ">
-          <div className="p-4">
-            <div className="flex justify-center">
-              <span
-                onClick={() => {
-                  setPage((prev) => prev + 1);
-                  getGroupMessages(groupId, page + 1).then((newMessages) => {
-                    setMessages((prev) => [...newMessages.reverse(), ...prev]);
-                  });
-                }}
-                className="border-0 self-center text-xs text-gray-400 font-semibold py-2 cursor-pointer"
+      {/* Message Area */}
+      <ScrollArea>
+        <div className="flex-1 overflow-y-auto p-4 space-y-1 h-[60vh]">
+          {messages.map((msg, idx) => {
+            const isOwn = msg.senderId === user?.id;
+            const prevMsg = messages[idx - 1];
+            const isGrouped =
+              prevMsg &&
+              prevMsg.senderId === msg.senderId &&
+              new Date(msg.createdAt).getTime() -
+                new Date(prevMsg.createdAt).getTime() <
+                5 * 60 * 1000; // 5 minutes threshold
+
+            const currentUser = findUser(msg.senderId);
+
+            return (
+              <div
+                key={msg.id}
+                className={cn(
+                  "flex items-start gap-3",
+                  isOwn && "justify-end",
+                  isGrouped && "mt-1"
+                )}
               >
-                more
-              </span>
-            </div>
-            <div className="flex flex-col gap-2">
-              {messages.map(
-                (
-                  msg: GroupMessage & {
-                    status?: "pending" | "sent" | "error";
-                    errorMsg?: string;
-                    attachments?: GroupMessageAttachment[];
-                  },
-                  idx
-                ) => {
-                  const isOwn = msg.senderId === user?.id;
-                  const isUpdated =
-                    new Date(msg.updatedAt).getTime() >
-                    new Date(msg.createdAt).getTime();
-                  const currentDate = isUpdated
-                    ? new Date(msg.updatedAt)
-                    : new Date(msg.createdAt);
-                  const prevDate =
-                    idx > 0 ? new Date(messages[idx - 1].createdAt) : null;
-
-                  const showDateSeparator =
-                    !prevDate ||
-                    currentDate.getDate() !== prevDate.getDate() ||
-                    currentDate.getMonth() !== prevDate.getMonth() ||
-                    currentDate.getFullYear() !== prevDate.getFullYear();
-
-                  const dateOptions: Intl.DateTimeFormatOptions = {
-                    month: "long",
-                    day: "numeric",
-                  };
-
-                  if (currentDate.getFullYear() !== new Date().getFullYear()) {
-                    dateOptions.year = "numeric";
-                  }
-
-                  const formattedDate = currentDate.toLocaleDateString(
-                    undefined,
-                    dateOptions
-                  );
-
-                  const currentUser = findUser(msg.senderId);
-                  return (
-                    <React.Fragment key={msg.id}>
-                      {showDateSeparator && (
-                        <div className="self-center text-xs text-gray-400 font-semibold py-2">
-                          {formattedDate}
-                        </div>
-                      )}
-
+                {!isOwn && (
+                  <div className="w-8 h-8 rounded-full overflow-hidden border flex-shrink-0">
+                    {isGrouped ? (
+                      <div className="w-8" />
+                    ) : currentUser.imageUrl ? (
+                      <Image
+                        src={currentUser.imageUrl}
+                        alt={currentUser.name}
+                        width={32}
+                        height={32}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                        {currentUser.name?.charAt(0).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
+                )}
+                <div className={cn("flex flex-col", isOwn && "items-end")}>
+                  {!isGrouped && !isOwn && (
+                    <p className="text-xs text-muted-foreground mb-0.5 ml-2">
+                      {currentUser.name}
+                    </p>
+                  )}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
                       <div
-                        className={`flex items-end gap-2 px-6 ${
-                          isOwn ? "self-end flex-row-reverse" : "self-start"
-                        }`}
-                      >
-                        {!isOwn && (
-                          <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
-                            {currentUser.imageUrl ? (
-                              <Image
-                                src={currentUser.imageUrl}
-                                alt={currentUser.name}
-                                width={40}
-                                height={40}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-xs font-semibold">
-                                {currentUser.name?.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
+                        className={cn(
+                          "relative max-w-xs md:max-w-md px-3 py-2 rounded-xl cursor-pointer",
+                          isOwn
+                            ? "bg-primary text-primary-foreground rounded-br-none"
+                            : "bg-muted rounded-bl-none"
                         )}
-                        <div
-                          className={`flex flex-col max-w-xs p-2 rounded-lg ${
-                            isOwn
-                              ? "bg-blue-500 text-white"
-                              : "bg-gray-200 text-black"
-                          } border ${
-                            msg.status === "error"
-                              ? "border-red-500"
-                              : "border-transparent"
-                          }`}
-                        >
-                          <span className="text-xs opacity-70">
-                            {isOwn ? "You" : currentUser.name}
-                          </span>
-
-                          {isOwn ? (
-                            <div className="relative">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    size="icon"
-                                    variant="ghost"
-                                    className="absolute -top-6 -right-2 h-6 w-6 p-0"
-                                  >
-                                    <MoreHorizontalIcon className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem
-                                    onClick={() => handleEdit(msg)}
-                                  >
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDelete(msg.id)}
-                                    className="text-red-500"
-                                  >
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-
-                              <span className="whitespace-pre-wrap">
-                                {msg.text}
-                              </span>
-                            </div>
-                          ) : (
-                            <span className="whitespace-pre-wrap">
-                              {msg.text}
-                            </span>
-                          )}
-
+                      >
+                        <p className="whitespace-pre-wrap">{msg.text}</p>
+                        <div className="flex items-center justify-end gap-1 mt-1">
                           {msg.status === "pending" && (
-                            <span className="text-xs text-yellow-400">
+                            <span className="text-xs text-muted-foreground">
                               Sending...
                             </span>
                           )}
                           {msg.status === "error" && (
-                            <span className="text-xs text-red-500">
-                              Failed to send
-                            </span>
+                            <span className="text-xs text-red-500">Failed</span>
                           )}
                           {isOwn && msg.status === "sent" && (
-                            <span className="text-xs text-green-500">
-                              <CheckCheckIcon className="w-4 h-4" />
-                            </span>
+                            <CheckCheckIcon className="w-4 h-4 text-blue-500" />
                           )}
-                          <span className="text-xs opacity-50 self-end">
-                            {`${currentDate.toLocaleTimeString([], {
+                          <p className="text-xs opacity-70">
+                            {new Date(msg.createdAt).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
-                              hour12: true,
-                            })} ${isUpdated ? "(edited)" : ""}`}
-                          </span>
-                          <div>
-                            {msg.attachments?.map((att: any) => {
-                              return (
-                                <div key={att.id} className="mt-2">
-                                  {att.type === "IMAGE" && (
-                                    <Image
-                                      src={att.url}
-                                      alt={att.fileName || "image"}
-                                      width={200}
-                                      height={200}
-                                      className="rounded-lg"
-                                    />
-                                  )}
-                                  {att.type === "VIDEO" && (
-                                    <video
-                                      controls
-                                      className="rounded-lg max-w-xs"
-                                    >
-                                      <source src={att.url} />
-                                    </video>
-                                  )}
-                                  {att.type === "FILE" && (
-                                    <a
-                                      href={att.url}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-blue-500 underline text-sm"
-                                    >
-                                      {att.fileName || "Download file"}
-                                    </a>
-                                  )}
-                                </div>
-                              );
                             })}
-                          </div>
+                          </p>
                         </div>
                       </div>
-                    </React.Fragment>
-                  );
+                    </DropdownMenuTrigger>
+                    {isOwn && (
+                      <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                        <DropdownMenuItem onClick={() => handleEdit(msg)}>
+                          Edit
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => handleDeleteClick(msg.id)}
+                          className="text-red-500"
+                        >
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    )}
+                  </DropdownMenu>
+                </div>
+              </div>
+            );
+          })}
+          <div ref={scrollRef} />
+        </div>
+      </ScrollArea>
+      {/* Input Area */}
+      <div className="p-2 border-t bg-background">
+        {editingMessage ? (
+          <div className="flex flex-col gap-2">
+            <Textarea
+              rows={1}
+              value={editedText}
+              onChange={(e) => setEditedText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleUpdateMessage();
                 }
-              )}
-              <div ref={scrollRef} />
+              }}
+              placeholder="Edit your message"
+              className="pr-24 resize-none"
+            />
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={handleCancelEdit}>
+                Cancel
+              </Button>
+              <Button onClick={handleUpdateMessage}>Save</Button>
             </div>
           </div>
-        </ScrollArea>
-        <div className="mt-4 flex flex-col gap-2">
-          {/* File preview row */}
-          {selectedFiles.length > 0 && (
-            <div className="flex flex-wrap gap-2 rounded-lg border p-2 bg-muted">
-              {selectedFiles.map((file, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-1 rounded-md shadow px-2 py-1"
-                >
-                  <FileIcon className="h-4 w-4" />
-                  <span className="text-xs truncate max-w-[120px]">
-                    {file.name}
-                  </span>
-                  <XIcon
-                    className="h-4 w-4 cursor-pointer"
-                    onClick={() =>
-                      setSelectedFiles((prev) =>
-                        prev.filter((_, idx) => idx !== i)
-                      )
-                    }
-                  />
-                </div>
-              ))}
-            </div>
-          )}
-
-          {/* Input row */}
-          {!editingMessage ? (
-            <div className="flex items-end gap-2">
-              <Textarea
-                rows={1}
-                placeholder="Type a message..."
-                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-              />
-
-              {/* File picker button */}
+        ) : (
+          <div className="relative">
+            <Textarea
+              rows={1}
+              placeholder={`Message #${department.name}`}
+              className="pr-24 resize-none"
+              value={messageText}
+              onChange={(e) => setMessageText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+            />
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
               <label htmlFor="file-upload">
                 <Button variant="ghost" size="icon" asChild>
                   <PaperclipIcon className="w-5 h-5" />
                 </Button>
-
                 <Input
                   id="file-upload"
                   type="file"
@@ -484,44 +473,32 @@ export default function GroupChat({
                   }}
                 />
               </label>
-
-              {/* Send button */}
               <Button onClick={handleSend} size="icon">
-                <SendIcon />
+                <SendIcon className="w-5 h-5" />
               </Button>
             </div>
-          ) : (
-            <div className="flex items-end gap-2">
-              <div className="flex flex-col justify-between items-center py-1">
-                <Edit3Icon />
-                <XIcon
-                  className="cursor-pointer"
-                  onClick={() => {
-                    setEditingMessage(null);
-                    setEditedText("");
-                  }}
-                />
-              </div>
-              <Textarea
-                rows={1}
-                placeholder="Edit message..."
-                className="flex-1 resize-none rounded-xl border px-3 py-2 text-sm leading-5 shadow-sm"
-                value={editedText}
-                onChange={(e) => setEditedText(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleUpdateMessage();
-                  }
-                }}
-              />
-              <Button onClick={handleUpdateMessage} size="icon">
-                <SendIcon />
-              </Button>
-            </div>
-          )}
-        </div>
-      </CardContent>
+          </div>
+        )}
+      </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete your
+              message.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDelete}>
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

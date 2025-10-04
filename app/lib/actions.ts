@@ -122,6 +122,7 @@ export async function sendGroupMessage({
         })),
       },
     },
+    include: { attachments: true },
   });
 
   let notifications: any[] = [];
