@@ -33,6 +33,7 @@ import {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Department, Notification } from "@prisma/client";
 import SearchUsers from "./SearchUser";
@@ -104,6 +105,7 @@ export default function SidebarClient({
   usersFromDB,
 }: SidebarClientProps) {
   const pathname = usePathname();
+  const { open } = useSidebar();
   const [unreadNot, setUnreadNot] = useState<Notification[]>(
     unreadNotificationsProps
   );
@@ -199,6 +201,7 @@ export default function SidebarClient({
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
+        <SearchUsers />
         <SidebarMenu>
           <SidebarMenuItem>
             <SidebarMenuButton
@@ -206,9 +209,14 @@ export default function SidebarClient({
               tooltip={homeLink.title}
               className={cn(pathname === homeLink.url && activeClass)}
             >
-              <Link href={homeLink.url}>
-                <homeLink.icon className="size-5 shrink-0" />
-                <span>{homeLink.title}</span>
+              <Link
+                href={homeLink.url}
+                className="flex justify-between items-center w-full"
+              >
+                <div className="flex items-center gap-2">
+                  <homeLink.icon className="size-5 shrink-0" />
+                  <span>{homeLink.title}</span>
+                </div>
               </Link>
             </SidebarMenuButton>
           </SidebarMenuItem>
@@ -258,7 +266,14 @@ export default function SidebarClient({
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild tooltip="Admin Dashboard">
-                    <div>
+                    <div
+                      className={cn(
+                        !open &&
+                          pathname.startsWith("/dashboard") &&
+                          activeClass,
+                        "flex items-center gap-2"
+                      )}
+                    >
                       <LayoutDashboardIcon className="size-5 shrink-0" />
                       <span>Dashboard</span>
                     </div>
@@ -384,9 +399,6 @@ export default function SidebarClient({
               })}
             </SidebarMenu>
           </SidebarGroupContent>
-          <div className="mt-auto">
-            <SearchUsers />
-          </div>
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
