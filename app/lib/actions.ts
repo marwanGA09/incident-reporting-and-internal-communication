@@ -764,36 +764,51 @@ export async function getIncidentsPerDay(range: '7d' | '30d' | '365d' = '7d') {
       break;
   }
 
-  const incidents = await prisma.incident.groupBy({
-    by: ["createdAt"],
-    _count: {
-      createdAt: true,
-    },
+  const incidents = await prisma.incident.findMany({
     where: {
       createdAt: {
         gte: startDate,
       },
     },
+    select: {
+      createdAt: true,
+    },
     orderBy: {
-      createdAt: "asc",
+      createdAt: 'asc',
     },
   });
 
-  // The above query groups by timestamp, so we need to aggregate by day
-  const dailyCounts = incidents.reduce((acc, incident) => {
-    const date = new Date(incident.createdAt).toISOString().split("T")[0];
-    if (!acc[date]) {
-      acc[date] = 0;
-    }
-    acc[date] += incident._count.createdAt;
-    return acc;
-  }, {} as Record<string, number>);
+  if (range === '365d') {
+    // Aggregate by month
+    const monthlyCounts = incidents.reduce((acc, incident) => {
+      const month = new Date(incident.createdAt).toLocaleString('default', { month: 'short', year: '2-digit' });
+      if (!acc[month]) {
+        acc[month] = 0;
+      }
+      acc[month]++;
+      return acc;
+    }, {} as Record<string, number>);
 
-  // Format for the chart
-  return Object.entries(dailyCounts).map(([date, count]) => ({
-    date,
-    count,
-  }));
+    return Object.entries(monthlyCounts).map(([month, count]) => ({
+      month,
+      count,
+    }));
+  } else {
+    // Aggregate by day
+    const dailyCounts = incidents.reduce((acc, incident) => {
+      const date = new Date(incident.createdAt).toISOString().split('T')[0];
+      if (!acc[date]) {
+        acc[date] = 0;
+      }
+      acc[date]++;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Object.entries(dailyCounts).map(([date, count]) => ({
+      date,
+      count,
+    }));
+  }
 }
 
 export async function getIncidentsByStatus() {

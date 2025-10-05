@@ -29,6 +29,17 @@ export const IncidentsBarChart = () => {
     fetchData();
   }, [range]);
 
+  const dataKey = range === '365d' ? 'month' : 'date';
+
+  const formatTick = (tick: string) => {
+    if (range === '365d') {
+      return tick; // Already formatted as "Mon 'YY"
+    }
+    // For '7d' and '30d', the tick is 'YYYY-MM-DD'
+    const [year, month, day] = tick.split('-');
+    return `${month}/${day}`;
+  };
+
   return (
     <div>
       <div className="flex justify-end gap-2 mb-4">
@@ -39,7 +50,7 @@ export const IncidentsBarChart = () => {
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
-          <XAxis dataKey="date" />
+          <XAxis dataKey={dataKey} tickFormatter={formatTick} />
           <YAxis />
           <Tooltip />
           <Legend />
