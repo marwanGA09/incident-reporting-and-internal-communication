@@ -27,13 +27,16 @@ export default async function AdminDashboardPage() {
           Admin Dashboard
         </h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Manage departments, categories, and more
+          Centralized control panel for managing all aspects of the incident reporting system.
         </p>
       </div>
 
       <div className="py-8 space-y-8">
-        <section className="p-6 space-y-4">
-          <h2 className="text-2xl font-semibold">Quick Actions</h2>
+        <section className="p-6 space-y-4 bg-secondary/20 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold text-primary">System Navigation</h2>
+          <p className="text-muted-foreground">
+            Quickly access key management areas:
+          </p>
           <AdminNavigationBar />
         </section>
 
@@ -41,7 +44,6 @@ export default async function AdminDashboardPage() {
           <TabsList>
             <TabsTrigger value="departments">Departments</TabsTrigger>
             <TabsTrigger value="categories">Categories</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
           </TabsList>
 
           <TabsContent value="departments">
@@ -60,8 +62,11 @@ export default async function AdminDashboardPage() {
             <CategoryTable categories={categories} />
           </TabsContent>
 
-          <TabsContent value="analytics">
-            <h2 className="text-xl font-semibold mb-4">Analytics Overview</h2>
+        </Tabs>
+
+        <div className="py-8 space-y-8">
+          <section className="p-6 space-y-4">
+            <h2 className="text-2xl font-semibold">Analytics Overview</h2>
             <div className="grid gap-4 md:grid-cols-2">
               <Card>
                 <CardHeader>
@@ -80,8 +85,8 @@ export default async function AdminDashboardPage() {
                 </CardContent>
               </Card>
             </div>
-          </TabsContent>
-        </Tabs>
+          </section>
+        </div>
       </div>
     </div>
   );
