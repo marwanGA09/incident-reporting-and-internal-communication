@@ -679,3 +679,118 @@ export async function getUserPresence(clerkId: string) {
     where: { userId: user.id },
   });
 }
+
+export async function getActiveIncidentsCount() {
+  return await prisma.incident.count({
+    where: {
+      NOT: {
+        status: {
+          in: ["RESOLVED", "CLOSED"],
+        },
+      },
+    },
+  });
+}
+
+export async function getIncidentsReportedTodayCount() {
+  const twentyFourHoursAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  return await prisma.incident.count({
+    where: {
+      createdAt: {
+        gte: twentyFourHoursAgo,
+      },
+    },
+  });
+}
+
+export async function getMyOpenIncidentsCount() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return 0;
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
+  if (!user) return 0;
+
+  return await prisma.incident.count({
+    where: {
+      AND: [
+        {
+          NOT: {
+            status: {
+              in: ["RESOLVED", "CLOSED"],
+            },
+          },
+        },
+        {
+          OR: [
+            { reporterId: user.id },
+            { assigneeId: user.id },
+          ],
+        },
+      ],
+    },
+  });
+}
+
+export async function getRecentIncidents() {
+  return await prisma.incident.findMany({
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 10,
+    include: {
+      assignee: true,
+      department: true,
+    },
+  });
+}
+
+export async function getIncidentsPerDay() {
+  const incidents = await prisma.incident.groupBy({
+    by: ["createdAt"],
+    _count: {
+      createdAt: true,
+    },
+    where: {
+      createdAt: {
+        gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+      },
+    },
+    orderBy: {
+      createdAt: "asc",
+    },
+  });
+
+  // The above query groups by timestamp, so we need to aggregate by day
+  const dailyCounts = incidents.reduce((acc, incident) => {
+    const date = new Date(incident.createdAt).toISOString().split("T")[0];
+    if (!acc[date]) {
+      acc[date] = 0;
+    }
+    acc[date] += incident._count.createdAt;
+    return acc;
+  }, {} as Record<string, number>);
+
+  // Format for the chart
+  return Object.entries(dailyCounts).map(([date, count]) => ({
+    date,
+    count,
+  }));
+}
+
+export async function getIncidentsByStatus() {
+  const incidents = await prisma.incident.groupBy({
+    by: ["status"],
+    _count: {
+      status: true,
+    },
+  });
+
+  return incidents.map((incident) => ({
+    status: incident.status,
+    count: incident._count.status,
+  }));
+}
+
