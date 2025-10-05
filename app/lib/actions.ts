@@ -930,3 +930,70 @@ export async function getIncidentCategories() {
     },
   });
 }
+
+import { IncidentStatus, IncidentSeverity, IncidentPriority } from "@prisma/client";
+
+interface GetAllIncidentsParams {
+  status?: IncidentStatus;
+  severity?: IncidentSeverity;
+  priority?: IncidentPriority;
+  departmentId?: string;
+  assigneeId?: string;
+  reporterId?: string;
+  search?: string;
+  orderBy?: string;
+  orderDirection?: 'asc' | 'desc';
+  page?: number;
+  pageSize?: number;
+}
+
+export async function getAllIncidents(params: GetAllIncidentsParams = {}) {
+  const {
+    status,
+    severity,
+    priority,
+    departmentId,
+    assigneeId,
+    reporterId,
+    search,
+    orderBy = 'createdAt',
+    orderDirection = 'desc',
+    page = 1,
+    pageSize = 10,
+  } = params;
+
+  const skip = (page - 1) * pageSize;
+
+  const where: any = {};
+  if (status) where.status = status;
+  if (severity) where.severity = severity;
+  if (priority) where.priority = priority;
+  if (departmentId) where.departmentId = departmentId;
+  if (assigneeId) where.assigneeId = assigneeId;
+  if (reporterId) where.reporterId = reporterId;
+  if (search) {
+    where.OR = [
+      { title: { contains: search, mode: 'insensitive' } },
+      { description: { contains: search, mode: 'insensitive' } },
+    ];
+  }
+
+  const incidents = await prisma.incident.findMany({
+    where,
+    include: {
+      reporter: true,
+      assignee: true,
+      department: true,
+      category: true,
+    },
+    orderBy: {
+      [orderBy]: orderDirection,
+    },
+    skip,
+    take: pageSize,
+  });
+
+  const totalIncidents = await prisma.incident.count({ where });
+
+  return { incidents, totalIncidents };
+}

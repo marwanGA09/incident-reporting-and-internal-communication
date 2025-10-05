@@ -21,18 +21,23 @@ export function AdminNavigationBar() {
           <CreateCategoryDialog />
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link href="/dashboard/users" legacyBehavior passHref>
-            <a className={navigationMenuTriggerStyle()}>Users</a>
+          <Link href="/dashboard/users" passHref>
+            <span className={navigationMenuTriggerStyle()}>Users</span>
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link href="/dashboard/departments" legacyBehavior passHref>
-            <a className={navigationMenuTriggerStyle()}>Departments</a>
+          <Link href="/dashboard/departments" passHref>
+            <span className={navigationMenuTriggerStyle()}>Departments</span>
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link href="/dashboard/categories" legacyBehavior passHref>
-            <a className={navigationMenuTriggerStyle()}>Categories</a>
+          <Link href="/dashboard/categories" passHref>
+            <span className={navigationMenuTriggerStyle()}>Categories</span>
+          </Link>
+        </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link href="/dashboard/incidents" passHref>
+            <span className={navigationMenuTriggerStyle()}>Incidents</span>
           </Link>
         </NavigationMenuItem>
       </NavigationMenuList>
