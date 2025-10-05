@@ -747,7 +747,23 @@ export async function getRecentIncidents() {
   });
 }
 
-export async function getIncidentsPerDay() {
+export async function getIncidentsPerDay(range: '7d' | '30d' | '365d' = '7d') {
+  let startDate: Date;
+  const now = new Date();
+
+  switch (range) {
+    case '30d':
+      startDate = new Date(new Date().setDate(now.getDate() - 30));
+      break;
+    case '365d':
+      startDate = new Date(new Date().setFullYear(now.getFullYear() - 1));
+      break;
+    case '7d':
+    default:
+      startDate = new Date(new Date().setDate(now.getDate() - 7));
+      break;
+  }
+
   const incidents = await prisma.incident.groupBy({
     by: ["createdAt"],
     _count: {
@@ -755,7 +771,7 @@ export async function getIncidentsPerDay() {
     },
     where: {
       createdAt: {
-        gte: new Date(new Date().setDate(new Date().getDate() - 7)),
+        gte: startDate,
       },
     },
     orderBy: {
