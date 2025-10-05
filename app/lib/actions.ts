@@ -825,3 +825,31 @@ export async function getIncidentsByStatus() {
   }));
 }
 
+export async function getMyIncidents() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return [];
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
+  if (!user) return [];
+
+  return await prisma.incident.findMany({
+    where: {
+      OR: [
+        { reporterId: user.id },
+        { assigneeId: user.id },
+      ],
+    },
+    orderBy: {
+      createdAt: "desc",
+    },
+    take: 10, // Also limit this to a reasonable number for the homepage
+    include: {
+      assignee: true,
+      department: true,
+    },
+  });
+}
+

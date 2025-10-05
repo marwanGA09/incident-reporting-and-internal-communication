@@ -1,6 +1,6 @@
-// app/(dashboard)/(routes)/_components/IncidentFeed.tsx
+// app/(dashboard)/(routes)/_components/MyIncidentsFeed.tsx
 
-import { getRecentIncidents } from "@/app/lib/actions";
+import { getMyIncidents } from "@/app/lib/actions";
 import {
   Card,
   CardContent,
@@ -12,13 +12,13 @@ import Link from "next/link";
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-export const IncidentFeed = async () => {
-  const incidents = await getRecentIncidents();
+export const MyIncidentsFeed = async () => {
+  const incidents = await getMyIncidents();
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Incidents</CardTitle>
+        <CardTitle>My Incidents</CardTitle>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-72">

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import { StatsCards } from "./StatsCards";
 import { IncidentFeed } from "./IncidentFeed";
+import { MyIncidentsFeed } from "./MyIncidentsFeed";
 import { Charts } from "./Charts";
 
 export default function HomePage() {
@@ -15,7 +16,10 @@ export default function HomePage() {
         </Link>
       </div>
       <StatsCards />
-      <IncidentFeed />
+      <div className="grid gap-4 md:grid-cols-2 mt-6">
+        <IncidentFeed />
+        <MyIncidentsFeed />
+      </div>
       <Charts />
     </div>
   );
