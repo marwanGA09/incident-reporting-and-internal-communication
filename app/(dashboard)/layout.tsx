@@ -14,14 +14,21 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
       <SidebarProvider defaultOpen={true}>
         <AppSidebar />
         <main className="w-full h-screen flex flex-col">
-          <div className="bg-primary-foreground h-[80px] flex items-center justify-end  px-6  inset-y-0 w-full z-10 ">
-            <div className="flex items-center gap-x-4 h-full pt-8">
-              <NotificationBell />
-              <NavigationMenu />
+          <div className="bg-primary-foreground h-[80px] flex items-center justify-between px-6 inset-y-0 w-full z-10">
+            <div className="flex items-center gap-x-2 h-full">
+              <SidebarTrigger />
+              <div className="flex items-center gap-x-2 ml-4">
+                <img
+                  src="/obn-logo.png"
+                  alt="OBN Logo"
+                  className="h-8 w-auto"
+                />
+                {/* <span className="text-xl font-bold">OBN</span> */}
+              </div>
             </div>
-          </div>
-          <div className=" absolute top-2 z-50">
-            <SidebarTrigger />
+            <div className="flex items-center gap-x-4 h-full">
+              <NotificationBell />
+            </div>
           </div>
           <div className="inset-y-0 w-full">
             <div className="w-full overflow-y-auto">{children}</div>

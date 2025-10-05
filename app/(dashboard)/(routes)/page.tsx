@@ -5,11 +5,5 @@ export default async function Home() {
   // console.log({ someThing });
   // const curUser = await currentUser();
   // console.log({ curUser });
-  return (
-    <div>
-      <div>
-        <HomePage />
-      </div>
-    </div>
-  );
+  return <HomePage />;
 }

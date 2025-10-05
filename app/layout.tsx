@@ -24,6 +24,9 @@ export const metadata = {
   },
   description:
     "A platform for reporting incidents and facilitating internal communication within organizations.",
+  icons: {
+    icon: "/favicon.ico",
+  },
 };
 export default function RootLayout({
   children,
