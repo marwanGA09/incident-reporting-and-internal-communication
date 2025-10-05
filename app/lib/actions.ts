@@ -629,3 +629,21 @@ export async function addAttachmentToAction(payload: {
     throw new Error("Failed to add attachment.");
   }
 }
+
+export async function updateUserPresence() {
+  const { userId: clerkId } = await auth();
+  if (!clerkId) return;
+
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
+
+  if (!user) return;
+
+  await prisma.userPresence.upsert({
+    where: { userId: user.id },
+    update: { lastSeen: new Date() },
+    create: { userId: user.id, lastSeen: new Date() },
+  });
+}
