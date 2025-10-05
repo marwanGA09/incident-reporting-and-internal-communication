@@ -1,16 +1,25 @@
 "use client";
 
 import {
-  BlendIcon,
-  Grid2X2Check,
-  NotebookIcon,
+  BookmarkIcon,
+  Building2Icon,
+  HomeIcon,
+  LayoutDashboardIcon,
+  SettingsIcon,
+  ShieldAlertIcon,
   ShieldCheckIcon,
   ShieldPlusIcon,
+  UsersIcon,
 } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { User } from "@clerk/nextjs/server";
-import { Department, Notification } from "@prisma/client";
 
+import { getNotifications, getUnreadIncidentsCount } from "@/app/lib/actions";
+import { supabase } from "@/lib/supabaseClient";
+import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
 import {
   Sidebar,
   SidebarContent,
@@ -21,12 +30,12 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "@/components/ui/sidebar";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/lib/supabaseClient";
-import Image from "next/image";
+import { Department, Notification } from "@prisma/client";
 import SearchUsers from "./SearchUser";
-import { getNotifications, getUnreadIncidentsCount } from "@/app/lib/actions";
 
 interface UserFromDB {
   id: string;
@@ -39,18 +48,6 @@ interface UserFromDB {
   } | null;
 }
 
-interface GroupDepartmentLink {
-  title: string;
-  url: string;
-  icon: React.ElementType;
-}
-
-interface IncidentsLink {
-  title: string;
-  url: string;
-  icon: React.ElementType;
-}
-
 interface SidebarClientProps {
   dbUser: {
     id: string;
@@ -59,12 +56,17 @@ interface SidebarClientProps {
     clerkId: string | null;
   };
   unreadNotificationsProps: Notification[];
-  // groupsDepartmentLink: GroupDepartmentLink[];
   departments: Department[];
   usersFromDB: UserFromDB[];
 }
 
-const incidentsLink = [
+const homeLink = {
+  title: "Home",
+  url: "/",
+  icon: HomeIcon,
+};
+
+const incidentsLinks = [
   {
     title: "Incidents",
     url: "/incidents",
@@ -77,20 +79,41 @@ const incidentsLink = [
   },
 ];
 
+const adminSubLinks = [
+  {
+    title: "Users",
+    url: "/dashboard/users",
+    icon: UsersIcon,
+  },
+  {
+    title: "Incident Management",
+    url: "/dashboard/incidents",
+    icon: ShieldAlertIcon,
+  },
+  {
+    title: "General",
+    url: "/dashboard",
+    icon: SettingsIcon,
+  },
+];
+
 export default function SidebarClient({
   dbUser,
   unreadNotificationsProps,
-  // groupsDepartmentLink,
   departments,
   usersFromDB,
 }: SidebarClientProps) {
-  const [unreadNot, setUnreadNot] = useState<Notification[]>([]);
+  const pathname = usePathname();
+  const [unreadNot, setUnreadNot] = useState<Notification[]>(
+    unreadNotificationsProps
+  );
   const [unreadIncidentsCount, setUnreadIncidentsCount] = useState(0);
+
+  const activeClass = "bg-primary text-primary-foreground hover:bg-primary/90";
 
   useEffect(() => {
     let isMounted = true;
 
-    // Fetch initial data
     const fetchInitialData = async () => {
       const { unReadNotifications } = await getNotifications();
       if (isMounted && unReadNotifications) {
@@ -105,11 +128,9 @@ export default function SidebarClient({
 
     fetchInitialData();
 
-    // Setup Supabase channels and subscriptions
     const handleNotification = (payload: any) => {
       const newNotification = payload.payload;
 
-      // Ensure the notification is for the current user
       if (newNotification.recipientId !== dbUser.id) {
         return;
       }
@@ -146,74 +167,74 @@ export default function SidebarClient({
       .on("broadcast", { event: "incident-read" }, handleIncidentRead)
       .subscribe();
 
-    // Cleanup function
     return () => {
       isMounted = false;
       supabase.removeChannel(notificationChannel);
       supabase.removeChannel(incidentReadChannel);
     };
-  }, [dbUser.id]); // Only re-run when dbUser.id changes
+  }, [dbUser.id]);
 
-  const unreadNotifications = unreadNot;
-  console.log(
-    "unread notification",
-    unreadNotifications.length,
-    unreadNotifications
-  );
-  const notificationCounts = unreadNotifications.reduce((acc, notification) => {
+  const notificationCounts = unreadNot.reduce((acc, notification) => {
     if (notification.url) {
       acc[notification.url] = (acc[notification.url] || 0) + 1;
     }
     return acc;
   }, {} as Record<string, number>);
 
-  // const incidentNotificationCount = Object.entries(notificationCounts).reduce(
-  //   (acc, [url, count]) => {
-  //     if (url.startsWith("/incidents")) {
-  //       return acc + count;
-  //     }
-  //     return acc;
-  //   },
-  //   0
-  // );
-
   const groupsDepartmentLink =
     dbUser.role === "admin"
       ? departments.map((dep) => ({
           title: dep.name,
           url: `/group-chat/${dep.id}`,
-          icon: BlendIcon,
+          icon: Building2Icon,
         }))
-      : [
-          {
-            title:
-              departments.find((dep) => dep.id === dbUser.departmentId)?.name ||
-              "General",
-            url: `/group-chat/${dbUser.departmentId}`,
-            icon: BlendIcon,
-          },
-        ];
+      : departments
+          .filter((dep) => dep.id === dbUser.departmentId)
+          .map((dep) => ({
+            title: dep.name,
+            url: `/group-chat/${dep.id}`,
+            icon: Building2Icon,
+          }));
 
   return (
     <Sidebar collapsible="icon" variant="floating">
       <SidebarContent>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <SidebarMenuButton
+              asChild
+              tooltip={homeLink.title}
+              className={cn(pathname === homeLink.url && activeClass)}
+            >
+              <Link href={homeLink.url}>
+                <homeLink.icon className="size-5 shrink-0" />
+                <span>{homeLink.title}</span>
+              </Link>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        </SidebarMenu>
+
         <SidebarGroup>
           <SidebarGroupLabel>Incidents</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              {incidentsLink.map((item) => {
+              {incidentsLinks.map((item) => {
+                const isActive = pathname.startsWith(item.url);
                 const isIncidentParent = item.url === "/incidents";
                 const count = isIncidentParent ? unreadIncidentsCount : 0;
-
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
+                      className={cn(isActive && activeClass)}
+                    >
+                      <Link
                         href={item.url}
                         className="flex justify-between items-center w-full"
                       >
                         <div className="flex items-center gap-2">
-                          <item.icon />
+                          <item.icon className="size-5 shrink-0" />
                           <span>{item.title}</span>
                         </div>
                         {count > 0 && (
@@ -221,7 +242,7 @@ export default function SidebarClient({
                             {count}
                           </Badge>
                         )}
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -229,21 +250,63 @@ export default function SidebarClient({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {dbUser.role === "admin" && (
+          <SidebarGroup>
+            <SidebarGroupLabel>Admin</SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild tooltip="Admin Dashboard">
+                    <div>
+                      <LayoutDashboardIcon className="size-5 shrink-0" />
+                      <span>Dashboard</span>
+                    </div>
+                  </SidebarMenuButton>
+                  <SidebarMenuSub>
+                    {adminSubLinks.map((link) => {
+                      const isActive = pathname === link.url;
+                      return (
+                        <SidebarMenuSubItem key={link.url}>
+                          <SidebarMenuSubButton
+                            asChild
+                            className={cn(isActive && activeClass)}
+                          >
+                            <Link href={link.url}>
+                              <link.icon className="size-5 shrink-0" />
+                              <span>{link.title}</span>
+                            </Link>
+                          </SidebarMenuSubButton>
+                        </SidebarMenuSubItem>
+                      );
+                    })}
+                  </SidebarMenuSub>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         <SidebarGroup>
-          <SidebarGroupLabel>Departments Groups</SidebarGroupLabel>
+          <SidebarGroupLabel>Departments</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {groupsDepartmentLink.map((item) => {
+                const isActive = pathname === item.url;
                 const count = notificationCounts[item.url] || 0;
                 return (
                   <SidebarMenuItem key={item.title}>
-                    <SidebarMenuButton asChild>
-                      <a
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={item.title}
+                      className={cn(isActive && activeClass)}
+                    >
+                      <Link
                         href={item.url}
                         className="flex justify-between items-center w-full"
                       >
                         <div className="flex items-center gap-2">
-                          <item.icon />
+                          <item.icon className="size-5 shrink-0" />
                           <span>{item.title}</span>
                         </div>
                         {count > 0 && (
@@ -251,7 +314,7 @@ export default function SidebarClient({
                             {count}
                           </Badge>
                         )}
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -259,57 +322,62 @@ export default function SidebarClient({
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
-        <SidebarGroup className=" h-full">
+
+        <SidebarGroup className="h-full">
           <SidebarGroupLabel>Chats</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
-              <SidebarMenuItem key={dbUser.id}>
-                <SidebarMenuButton asChild>
-                  <a
+              <SidebarMenuItem>
+                <SidebarMenuButton
+                  asChild
+                  tooltip="Saved Messages"
+                  className={cn(
+                    pathname === `/direct-chat/${dbUser.clerkId}` && activeClass
+                  )}
+                >
+                  <Link
                     href={`/direct-chat/${dbUser.clerkId}`}
                     className="flex items-center gap-2"
                   >
-                    <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300 flex justify-center items-center">
-                      {<NotebookIcon className="w-5 h-5" />}
-                    </div>
-                    <span>Saved Message</span>
-                  </a>
+                    <BookmarkIcon className="size-5 shrink-0" />
+                    <span>Saved Messages</span>
+                  </Link>
                 </SidebarMenuButton>
               </SidebarMenuItem>
-              {usersFromDB.map((dbUser) => {
-                const url = `/direct-chat/${dbUser.clerkId}`;
+
+              {usersFromDB.map((user) => {
+                const url = `/direct-chat/${user.clerkId}`;
+                const isActive = pathname === url;
                 const count = notificationCounts[url] || 0;
                 return (
-                  <SidebarMenuItem key={dbUser.id}>
-                    <SidebarMenuButton asChild>
-                      <a
+                  <SidebarMenuItem key={user.id}>
+                    <SidebarMenuButton
+                      asChild
+                      tooltip={user.username || "User"}
+                      className={cn(isActive && activeClass)}
+                    >
+                      <Link
                         href={url}
                         className="flex justify-between items-center w-full"
                       >
                         <div className="flex items-center gap-2">
-                          <div className="w-6 h-6 rounded-full overflow-hidden border border-gray-300">
-                            {dbUser.imageUrl ? (
-                              <Image
-                                src={dbUser.imageUrl}
-                                alt={dbUser.username || "user"}
-                                width={20}
-                                height={20}
-                                className="w-full h-full object-cover"
-                              />
-                            ) : (
-                              <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                                {dbUser.username?.charAt(0).toUpperCase()}
-                              </div>
-                            )}
-                          </div>
-                          <span>{dbUser.username}</span>
+                          <Avatar className="size-5">
+                            <AvatarImage
+                              src={user.imageUrl || ""}
+                              alt={user.username || "user"}
+                            />
+                            <AvatarFallback>
+                              {user.username?.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <span>{user.username}</span>
                         </div>
                         {count > 0 && (
                           <Badge className="h-5 w-5 flex items-center justify-center p-0">
                             {count}
                           </Badge>
                         )}
-                      </a>
+                      </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
@@ -322,18 +390,7 @@ export default function SidebarClient({
         </SidebarGroup>
       </SidebarContent>
       <SidebarFooter>
-        {dbUser.role === "admin" && (
-          <SidebarMenu>
-            <SidebarMenuItem>
-              <SidebarMenuButton asChild>
-                <a href={"/dashboard"}>
-                  <Grid2X2Check />
-                  <span>Admin Dashboard</span>
-                </a>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          </SidebarMenu>
-        )}
+        {/* User profile button or other items can go here */}
       </SidebarFooter>
     </Sidebar>
   );
