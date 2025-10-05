@@ -42,10 +42,10 @@ import { uploadFile } from "@/lib/uploadFile";
 import { PendingAttachment } from "@/lib/defination";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import GroupMembers from "./GroupMembers";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { UsersIcon } from "lucide-react";
 
 interface ExtendedGroupMessage extends GroupMessage {
@@ -64,7 +64,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { DialogTitle } from "@radix-ui/react-dialog";
+// import { DialogTitle } from "@radix-ui/react-dialog";
 // import { toast } from "sonner";
 
 // Helper function for date formatting
@@ -463,6 +463,9 @@ export default function GroupChat({
               </Button>
             </SheetTrigger>
             <SheetContent>
+              <SheetHeader>
+                <SheetTitle>Group Members</SheetTitle>
+              </SheetHeader>
               <GroupMembers groupId={department.id} />
             </SheetContent>
           </Sheet>
@@ -563,7 +566,9 @@ export default function GroupChat({
                                     {attachment.type === "IMAGE" ? (
                                       <Image
                                         src={attachment.url}
-                                        alt={attachment.fileName || "Attachment"}
+                                        alt={
+                                          attachment.fileName || "Attachment"
+                                        }
                                         width={200}
                                         height={200}
                                         className="rounded-md cursor-pointer"
@@ -623,10 +628,13 @@ export default function GroupChat({
                                 <CheckCheckIcon className="w-4 h-4 text-blue-500" />
                               )}
                               <p className="text-xs opacity-70">
-                                {new Date(msg.createdAt).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {new Date(msg.createdAt).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
                               </p>
                               {msg.updatedAt &&
                                 new Date(msg.updatedAt).getTime() !==
@@ -798,8 +806,8 @@ export default function GroupChat({
 
         {/* Image Modal */}
         <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
-          {/* <DialogTitle>Image Preview</DialogTitle> */}
           <DialogContent className="max-w-3xl">
+            <DialogTitle className="sr-only">Image Preview</DialogTitle>
             {currentImage && (
               <Image
                 src={currentImage}
@@ -815,8 +823,8 @@ export default function GroupChat({
 
         {/* Video Modal */}
         <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
-          {/* <DialogTitle>Video Playback</DialogTitle> */}
           <DialogContent className="max-w-3xl">
+            <DialogTitle className="sr-only">Video Playback</DialogTitle>
             {currentVideo && (
               <video controls width="100%" src={currentVideo}>
                 Your browser does not support the video tag.
@@ -931,7 +939,9 @@ export default function GroupChat({
                                     {attachment.type === "IMAGE" ? (
                                       <Image
                                         src={attachment.url}
-                                        alt={attachment.fileName || "Attachment"}
+                                        alt={
+                                          attachment.fileName || "Attachment"
+                                        }
                                         width={200}
                                         height={200}
                                         className="rounded-md cursor-pointer"
@@ -991,10 +1001,13 @@ export default function GroupChat({
                                 <CheckCheckIcon className="w-4 h-4 text-blue-500" />
                               )}
                               <p className="text-xs opacity-70">
-                                {new Date(msg.createdAt).toLocaleTimeString([], {
-                                  hour: "2-digit",
-                                  minute: "2-digit",
-                                })}
+                                {new Date(msg.createdAt).toLocaleTimeString(
+                                  [],
+                                  {
+                                    hour: "2-digit",
+                                    minute: "2-digit",
+                                  }
+                                )}
                               </p>
                               {msg.updatedAt &&
                                 new Date(msg.updatedAt).getTime() !==

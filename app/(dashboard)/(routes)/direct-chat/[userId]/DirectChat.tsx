@@ -48,7 +48,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Dialog, DialogContent } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import usePresence from "@/hooks/use-presence";
 
 interface ExtendedDirectMessage extends DirectMessage {
@@ -696,6 +696,7 @@ export default function DirectChat({
       {/* Image Modal */}
       <Dialog open={showImageModal} onOpenChange={setShowImageModal}>
         <DialogContent className="max-w-3xl">
+          <DialogTitle className="sr-only">Image Preview</DialogTitle>
           {currentImage && (
             <Image
               src={currentImage}
@@ -712,6 +713,7 @@ export default function DirectChat({
       {/* Video Modal */}
       <Dialog open={showVideoModal} onOpenChange={setShowVideoModal}>
         <DialogContent className="max-w-3xl">
+          <DialogTitle className="sr-only">Video Playback</DialogTitle>
           {currentVideo && (
             <video controls width="100%" src={currentVideo}>
               Your browser does not support the video tag.
