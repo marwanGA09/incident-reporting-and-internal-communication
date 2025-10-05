@@ -5,6 +5,7 @@ import UserMetadataGuard from "../_components/UserMetadataGuard";
 import { currentUser } from "@clerk/nextjs/server";
 import { NotificationBell } from "./_components/NotificationBell";
 import { ToggleTheme } from "./_components/ToggleTheme";
+import { UserButton } from "@clerk/nextjs";
 
 async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
@@ -29,6 +30,7 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-x-4">
               <NotificationBell />
               <ToggleTheme />
+              <UserButton />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">

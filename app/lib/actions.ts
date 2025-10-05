@@ -997,3 +997,43 @@ export async function getAllIncidents(params: GetAllIncidentsParams = {}) {
 
   return { incidents, totalIncidents };
 }
+
+export async function getIncidentsByDepartment() {
+  const incidents = await prisma.incident.groupBy({
+    by: ['departmentId'],
+    _count: {
+      departmentId: true,
+    },
+  });
+
+  const departments = await prisma.department.findMany({
+    select: { id: true, name: true },
+  });
+
+  const departmentMap = new Map(departments.map(dept => [dept.id, dept.name]));
+
+  return incidents.map(incident => ({
+    name: departmentMap.get(incident.departmentId) || 'Unknown',
+    count: incident._count.departmentId,
+  }));
+}
+
+export async function getIncidentsByCategory() {
+  const incidents = await prisma.incident.groupBy({
+    by: ['categoryId'],
+    _count: {
+      categoryId: true,
+    },
+  });
+
+  const categories = await prisma.incidentCategory.findMany({
+    select: { id: true, name: true },
+  });
+
+  const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
+
+  return incidents.map(incident => ({
+    name: categoryMap.get(incident.categoryId) || 'Unknown',
+    count: incident._count.categoryId,
+  }));
+}
