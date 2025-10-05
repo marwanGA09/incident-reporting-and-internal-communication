@@ -656,9 +656,26 @@ export async function getGroupMembers(groupId: string) {
   const groupWithMembers = await prisma.department.findUnique({
     where: { id: groupId },
     include: {
-      users: true,
+      users: {
+        include: {
+          presence: true,
+        },
+      },
     },
   });
 
   return groupWithMembers?.users || [];
+}
+
+export async function getUserPresence(clerkId: string) {
+  const user = await prisma.user.findUnique({
+    where: { clerkId },
+    select: { id: true },
+  });
+
+  if (!user) return null;
+
+  return await prisma.userPresence.findUnique({
+    where: { userId: user.id },
+  });
 }

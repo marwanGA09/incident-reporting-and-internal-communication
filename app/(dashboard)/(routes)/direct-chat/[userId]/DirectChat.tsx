@@ -50,6 +50,9 @@ import {
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import usePresence from "@/hooks/use-presence";
+import { getUserPresence } from "@/app/lib/actions";
+import { formatTimeAgo } from "@/lib/time-ago";
+import { UserPresence } from "@prisma/client";
 
 interface ExtendedDirectMessage extends DirectMessage {
   status?: "pending" | "sent" | "error";
@@ -114,6 +117,16 @@ export default function DirectChat({
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
+  const [targetUserPresence, setTargetUserPresence] =
+    useState<UserPresence | null>(null);
+
+  useEffect(() => {
+    const fetchPresence = async () => {
+      const presence = await getUserPresence(targetUser.id);
+      setTargetUserPresence(presence);
+    };
+    fetchPresence();
+  }, [targetUser.id]);
 
   const isOnline = onlineUsers.includes(targetUser.id);
 
@@ -370,7 +383,11 @@ export default function DirectChat({
                     {targetUser.username || "Unknown User"}
                   </span>
                   <span className="text-xs text-gray-500">
-                    {isOnline ? "Online" : "Offline"}
+                    {isOnline
+                      ? "Online"
+                      : targetUserPresence
+                      ? formatTimeAgo(new Date(targetUserPresence.lastSeen))
+                      : "Offline"}
                   </span>
                 </div>
               </>
