@@ -10,7 +10,6 @@ import {
   NavigationMenuList,
 } from "@/components/ui/navigation-menu"; // or from '@radix-ui/react-navigation-menu'
 import { UserButton } from "@clerk/nextjs";
-import { ToggleTheme } from "./ToggleTheme";
 
 export function NavigationMenu() {
   return (
@@ -30,11 +29,6 @@ export function NavigationMenu() {
           <NavigationMenuItem className="pl-4">
             <NavigationMenuLink asChild>
               <UserButton />
-            </NavigationMenuLink>
-          </NavigationMenuItem>
-          <NavigationMenuItem className="pl-4">
-            <NavigationMenuLink asChild>
-              <ToggleTheme />
             </NavigationMenuLink>
           </NavigationMenuItem>
           {/* Add more items here */}

@@ -1,10 +1,10 @@
 import React from "react";
-import { NavigationMenu } from "./_components/Navbar";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./_components/Sidebar";
 import UserMetadataGuard from "../_components/UserMetadataGuard";
 import { currentUser } from "@clerk/nextjs/server";
 import { NotificationBell } from "./_components/NotificationBell";
+import { ToggleTheme } from "./_components/ToggleTheme";
 
 async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
@@ -26,8 +26,11 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {/* <span className="text-xl font-bold">OBN</span> */}
               </div>
             </div>
-            <div className="flex items-center justify-center gap-x-4 h-full">
+            <div className="flex items-center gap-x-4 h-full">
               <NotificationBell />
+              <div className="h-full flex items-center">
+                <ToggleTheme />
+              </div>
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
