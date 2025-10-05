@@ -3,8 +3,8 @@ import GroupChat from "./GroupChat";
 import logger from "@/app/lib/logger";
 import { prisma } from "@/app/lib/prisma";
 
-async function page({ params }: { params: { groupId: string } }) {
-  const { groupId } = params;
+async function page({ params }: { params: Promise<{ groupId: string }> }) {
+  const { groupId } = await params;
 
   const department = await prisma.department.findUnique({
     where: { id: groupId },
