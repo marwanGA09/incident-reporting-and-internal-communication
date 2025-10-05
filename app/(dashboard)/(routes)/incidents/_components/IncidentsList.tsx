@@ -34,7 +34,10 @@ const getSeverityProps = (severity: string) => {
     case "CRITICAL":
       return { icon: <Siren className="h-4 w-4" />, color: "bg-red-500" };
     case "HIGH":
-      return { icon: <ShieldAlert className="h-4 w-4" />, color: "bg-orange-500" };
+      return {
+        icon: <ShieldAlert className="h-4 w-4" />,
+        color: "bg-orange-500",
+      };
     case "MEDIUM":
       return {
         icon: <AlertTriangle className="h-4 w-4" />,
@@ -113,7 +116,7 @@ function IncidentItem({
                   INC-{String(incident.incidentNumber).padStart(5, "0")}
                 </span>
                 <span className="font-bold text-lg">
-                  {textShorter(incident.title, 25)}
+                  {textShorter(incident.title, 20)}
                 </span>
               </div>
             </div>

@@ -22,11 +22,11 @@ export default async function AdminDashboardPage() {
 
   return (
     <div className="p-6">
-      <div className="border-b bg-card shadow-sm p-6">
-        <h1 className="text-3xl font-bold text-green-600 italic">
+      <div className="rounded-xl border bg-card p-6 shadow-sm">
+        <h1 className="text-3xl font-bold tracking-tight text-green-600">
           Admin Dashboard
         </h1>
-        <p className="text-muted-foreground text-sm mt-1">
+        <p className="mt-1 text-muted-foreground">
           Centralized control panel for managing all aspects of the incident reporting system.
         </p>
       </div>
