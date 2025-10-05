@@ -15,7 +15,7 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
         <AppSidebar />
         <main className="w-full flex flex-col">
           <div className="bg-primary-foreground h-[80px] flex items-center justify-between px-6 inset-y-0 w-full z-10">
-            <div className="flex items-center gap-x-2 h-full">
+            <div className="flex items-center gap-x-2">
               <SidebarTrigger />
               <div className="flex items-center gap-x-2 ml-4">
                 <img
@@ -26,11 +26,9 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {/* <span className="text-xl font-bold">OBN</span> */}
               </div>
             </div>
-            <div className="flex items-center gap-x-4 h-full">
+            <div className="flex items-center gap-x-4">
               <NotificationBell />
-              <div className="h-full flex items-center">
-                <ToggleTheme />
-              </div>
+              <ToggleTheme />
             </div>
           </div>
           <div className="flex-1 overflow-y-auto">
