@@ -25,6 +25,11 @@ export function AdminNavigationBar() {
             <a className={navigationMenuTriggerStyle()}>Users</a>
           </Link>
         </NavigationMenuItem>
+        <NavigationMenuItem>
+          <Link href="/dashboard/departments" legacyBehavior passHref>
+            <a className={navigationMenuTriggerStyle()}>Departments</a>
+          </Link>
+        </NavigationMenuItem>
       </NavigationMenuList>
     </NavigationMenuPrimitive>
   );

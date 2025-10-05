@@ -879,4 +879,47 @@ export async function updateUserRoleAndDepartment(
   revalidatePath("/dashboard/users");
 }
 
+export async function updateDepartment(
+  id: string,
+  name: string,
+  email: string
+) {
+  await prisma.department.update({
+    where: { id },
+    data: {
+      name,
+      email,
+    },
+  });
+  revalidatePath("/dashboard/departments");
+}
+
+export async function deleteDepartment(id: string) {
+  await prisma.department.delete({
+    where: { id },
+  });
+  revalidatePath("/dashboard/departments");
+}
+
+export async function updateIncidentCategory(
+  id: string,
+  name: string,
+  description: string
+) {
+  await prisma.incidentCategory.update({
+    where: { id },
+    data: {
+      name,
+      description,
+    },
+  });
+  revalidatePath("/dashboard/categories");
+}
+
+export async function deleteIncidentCategory(id: string) {
+  await prisma.incidentCategory.delete({
+    where: { id },
+  });
+  revalidatePath("/dashboard/categories");
+}
 
