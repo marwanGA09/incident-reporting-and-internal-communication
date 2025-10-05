@@ -36,13 +36,8 @@ export function AdminNavigationBar() {
           </Link>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <Link href="/dashboard/incidents" passHref>
+          <Link href="/dashboard/incidents" legacyBehavior passHref>
             <a className={navigationMenuTriggerStyle()}>Incidents</a>
-          </Link>
-        </NavigationMenuItem>
-        <NavigationMenuItem>
-          <Link href="/dashboard/analytics" passHref>
-            <a className={navigationMenuTriggerStyle()}>Analytics</a>
           </Link>
         </NavigationMenuItem>
       </NavigationMenuList>
