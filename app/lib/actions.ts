@@ -923,3 +923,10 @@ export async function deleteIncidentCategory(id: string) {
   revalidatePath("/dashboard/categories");
 }
 
+export async function getIncidentCategories() {
+  return await prisma.incidentCategory.findMany({
+    orderBy: {
+      name: 'asc',
+    },
+  });
+}
