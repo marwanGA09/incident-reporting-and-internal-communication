@@ -74,7 +74,7 @@ export default function Step3Form() {
       animate={{ opacity: 1, x: 0 }}
       exit={{ opacity: 0, x: 20 }}
       transition={{ duration: 0.3 }}
-      className="max-w-xl mx-auto"
+      className="max-w-xl mx-auto p-6"
     >
       <div className="flex flex-col items-center justify-center mb-6">
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">

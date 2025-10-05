@@ -26,7 +26,7 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
                 {/* <span className="text-xl font-bold">OBN</span> */}
               </div>
             </div>
-            <div className="flex items-center gap-x-4 h-full">
+            <div className="flex items-center justify-center gap-x-4 h-full">
               <NotificationBell />
             </div>
           </div>

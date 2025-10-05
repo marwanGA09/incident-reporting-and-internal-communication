@@ -864,3 +864,19 @@ export async function getAllUsers() {
   });
 }
 
+export async function updateUserRoleAndDepartment(
+  userId: string,
+  role: string,
+  departmentId: string
+) {
+  await prisma.user.update({
+    where: { id: userId },
+    data: {
+      role,
+      departmentId,
+    },
+  });
+  revalidatePath("/dashboard/users");
+}
+
+

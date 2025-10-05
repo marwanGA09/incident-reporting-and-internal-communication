@@ -87,7 +87,7 @@ export default function Review() {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="max-w-3xl mx-auto pt-8"
+      className="max-w-3xl mx-auto p-6"
     >
       <div className="flex flex-col items-center justify-center mb-6">
         <div className="w-full bg-gray-200 rounded-full h-1.5 mb-2">

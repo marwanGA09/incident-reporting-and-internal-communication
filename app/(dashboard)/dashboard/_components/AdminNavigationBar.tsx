@@ -4,9 +4,11 @@ import {
   NavigationMenu as NavigationMenuPrimitive,
   NavigationMenuList,
   NavigationMenuItem,
+  navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { CreateDepartmentDialog } from "./CreateDepartmentDialog";
 import { CreateCategoryDialog } from "./CreateCategoryDialog";
+import Link from "next/link";
 
 export function AdminNavigationBar() {
   return (
@@ -19,12 +21,10 @@ export function AdminNavigationBar() {
           <CreateCategoryDialog />
         </NavigationMenuItem>
         <NavigationMenuItem>
-          {/* <CreateSomethingNewDialog /> */}
-          <CreateDepartmentDialog />
+          <Link href="/dashboard/users" legacyBehavior passHref>
+            <a className={navigationMenuTriggerStyle()}>Users</a>
+          </Link>
         </NavigationMenuItem>
-        {/* <NavigationMenuItem>
-          <Link href="/chat">Chat</Link>
-        </NavigationMenuItem> */}
       </NavigationMenuList>
     </NavigationMenuPrimitive>
   );
