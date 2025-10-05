@@ -29,8 +29,8 @@ import { IncidentCategoryScroll } from "./_components/IncidentCategoryScroll";
 
 export default function AdminDashboardPage() {
   return (
-    <div className="min-h-screen bg-background text-foreground ">
-      <div className="border-b bg-card shadow-sm p-6  pl-24">
+    <div className="p-6">
+      <div className="border-b bg-card shadow-sm p-6">
         <h1 className="text-3xl font-bold text-green-600 italic">
           Admin Dashboard
         </h1>
@@ -39,14 +39,14 @@ export default function AdminDashboardPage() {
         </p>
       </div>
 
-      <div className="max-w-6xl px-4  py-8 space-y-8">
+      <div className="py-8 space-y-8">
         <section className="p-6 space-y-4">
           <h2 className="text-2xl font-semibold">Quick Actions</h2>
           <AdminNavigationBar />
         </section>
 
         <section className="grid md:grid-cols-2 gap-6">
-          <div className="  p-6 space-y-4">
+          <div className="p-6 space-y-4">
             <h2 className="text-xl font-semibold">Departments</h2>
             <DepartmentsScroll />
           </div>

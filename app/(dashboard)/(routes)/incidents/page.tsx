@@ -77,7 +77,7 @@ export default async function IncidentsPage({
   }));
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
+    <div className="p-6">
       {/* New Header */}
       <div className="flex items-center justify-between mb-6">
         <div>

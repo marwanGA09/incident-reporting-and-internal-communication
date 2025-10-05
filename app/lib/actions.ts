@@ -853,3 +853,14 @@ export async function getMyIncidents() {
   });
 }
 
+export async function getAllUsers() {
+  return await prisma.user.findMany({
+    include: {
+      department: true,
+    },
+    orderBy: {
+      createdAt: 'desc',
+    },
+  });
+}
+

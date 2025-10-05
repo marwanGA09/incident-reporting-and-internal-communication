@@ -157,7 +157,7 @@ export default async function IncidentDetailPage({
   const priorityProps = getPriorityProps(incident.priority);
 
   return (
-    <div className="container mx-auto p-4 md:p-8">
+    <div className="p-6">
       <Link
         href="/incidents"
         className="flex items-center gap-2 text-sm text-muted-foreground hover:text-primary mb-4"

@@ -26,7 +26,7 @@ async function page({ params }: { params: Promise<{ groupId: string }> }) {
   });
 
   return (
-    <div className="w-full h-full flex justify-center p-4 lg:p-6">
+    <div className="p-6 w-full h-full">
       <div className="w-full max-w-5xl h-full">
         <GroupChat department={department} users={users} />
       </div>
