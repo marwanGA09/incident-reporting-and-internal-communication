@@ -647,3 +647,14 @@ export async function updateUserPresence() {
     create: { userId: user.id, lastSeen: new Date() },
   });
 }
+
+export async function getGroupMembers(groupId: string) {
+  const groupWithMembers = await prisma.department.findUnique({
+    where: { id: groupId },
+    include: {
+      users: true,
+    },
+  });
+
+  return groupWithMembers?.users || [];
+}

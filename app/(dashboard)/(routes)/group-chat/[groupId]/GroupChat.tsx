@@ -43,6 +43,7 @@ import { PendingAttachment } from "@/lib/defination";
 import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import GroupMembers from "./GroupMembers";
 
 interface ExtendedGroupMessage extends GroupMessage {
   status?: "pending" | "sent" | "error";
@@ -446,319 +447,326 @@ export default function GroupChat({
   }, [messages.length, page, isLoadingMore]);
 
   return (
-    <div className="flex flex-col h-full bg-background rounded-lg border shadow-sm">
-      {/* Header */}
-      <div className="p-4 border-b">
-        <h2 className="text-xl font-bold"># {department.name}</h2>
-      </div>
-
-      {/* Message Area */}
-      <ScrollArea ref={scrollAreaContainerRef}>
-        <div className="flex-1 overflow-y-auto p-4 space-y-1 h-[60vh]">
-          {isLoadingMore && (
-            <div className="text-center text-muted-foreground py-2">
-              Loading older messages...
-            </div>
-          )}
-          {messages.map((msg, idx) => {
-            const isOwn = msg.senderId === user?.id;
-            const prevMsg = messages[idx - 1];
-            const msgDate = new Date(msg.createdAt);
-            const prevMsgDate = prevMsg ? new Date(prevMsg.createdAt) : null;
-
-            let showDateSeparator = false;
-            if (!prevMsgDate) {
-              showDateSeparator = true;
-            } else {
-              showDateSeparator = !isSameDay(msgDate, prevMsgDate);
-            }
-
-            const isGrouped =
-              prevMsg &&
-              prevMsg.senderId === msg.senderId &&
-              new Date(msg.createdAt).getTime() -
-                new Date(prevMsg.createdAt).getTime() <
-                5 * 60 * 1000 &&
-              prevMsgDate !== null && // Ensure prevMsgDate is not null
-              isSameDay(msgDate, prevMsgDate);
-
-            const currentUser = findUser(msg.senderId);
-
-            return (
-              <React.Fragment key={msg.id}>
-                {showDateSeparator && (
-                  <div className="relative my-6 text-center">
-                    <div className="absolute inset-0 flex items-center">
-                      <span className="w-full border-t" />
-                    </div>
-                    <div className="relative flex justify-center text-xs uppercase">
-                      <span className="bg-background px-2 text-muted-foreground">
-                        {formatDateForDisplay(msgDate)}
-                      </span>
-                    </div>
-                  </div>
-                )}
-                <div
-                  className={cn(
-                    "flex items-start gap-3",
-                    isOwn && "justify-end",
-                    isGrouped && "mt-1"
-                  )}
-                >
-                  {!isOwn && (
-                    <div className="w-8 h-8 rounded-full overflow-hidden border flex-shrink-0">
-                      {isGrouped ? (
-                        <div className="w-8" />
-                      ) : currentUser.imageUrl ? (
-                        <Image
-                          src={currentUser.imageUrl}
-                          alt={currentUser.name}
-                          width={32}
-                          height={32}
-                        />
-                      ) : (
-                        <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
-                          {currentUser.name?.charAt(0).toUpperCase()}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                  <div className={cn("flex flex-col", isOwn && "items-end")}>
-                    {!isGrouped && !isOwn && (
-                      <p className="text-xs text-muted-foreground mb-0.5 ml-2">
-                        {currentUser.name}
-                      </p>
-                    )}
-                    <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <div
-                          className={cn(
-                            "relative max-w-xs md:max-w-md px-3 py-2 rounded-xl cursor-pointer",
-                            isOwn
-                              ? "bg-primary text-primary-foreground rounded-br-none"
-                              : "bg-muted rounded-bl-none"
-                          )}
-                        >
-                          <p className="whitespace-pre-wrap">{msg.text}</p>
-                          {msg.attachments && msg.attachments.length > 0 && (
-                            <div className="flex flex-col gap-2 mt-2">
-                              {msg.attachments.map((attachment) => (
-                                <div key={attachment.id}>
-                                  {attachment.type === "IMAGE" ? (
-                                    <Image
-                                      src={attachment.url}
-                                      alt={attachment.fileName || "Attachment"}
-                                      width={200}
-                                      height={200}
-                                      className="rounded-md cursor-pointer"
-                                      onClick={() => {
-                                        setCurrentImage(attachment.url);
-                                        setShowImageModal(true);
-                                      }}
-                                    />
-                                  ) : attachment.type === "VIDEO" ? (
-                                    <div
-                                      onClick={() => {
-                                        setCurrentVideo(attachment.url);
-                                        setShowVideoModal(true);
-                                      }}
-                                      className="relative block rounded-md overflow-hidden cursor-pointer"
-                                    >
-                                      <video
-                                        src={attachment.url}
-                                        controls={false}
-                                        preload="metadata"
-                                        className="w-full h-auto max-h-[200px] object-cover"
-                                      />
-                                      <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
-                                        <PlayIcon className="w-8 h-8 text-white" />
-                                      </div>
-                                    </div>
-                                  ) : (
-                                    <a
-                                      href={attachment.url}
-                                      target="_blank"
-                                      rel="noopener noreferrer"
-                                      className="flex items-center gap-1 bg-background p-1 rounded-md text-sm hover:underline"
-                                    >
-                                      <FileIcon className="w-4 h-4" />
-                                      <span className="truncate max-w-[100px]">
-                                        {attachment.fileName || "File"}
-                                      </span>
-                                    </a>
-                                  )}
-                                </div>
-                              ))}
-                            </div>
-                          )}
-                          <div className="flex items-center justify-end gap-1 mt-1">
-                            {" "}
-                            {msg.status === "pending" && (
-                              <span className="text-xs text-muted-foreground">
-                                Sending...
-                              </span>
-                            )}
-                            {msg.status === "error" && (
-                              <span className="text-xs text-red-500">
-                                Failed
-                              </span>
-                            )}
-                            {isOwn && msg.status === "sent" && (
-                              <CheckCheckIcon className="w-4 h-4 text-blue-500" />
-                            )}
-                            <p className="text-xs opacity-70">
-                              {new Date(msg.createdAt).toLocaleTimeString([], {
-                                hour: "2-digit",
-                                minute: "2-digit",
-                              })}
-                            </p>
-                            {msg.updatedAt &&
-                              new Date(msg.updatedAt).getTime() !==
-                                new Date(msg.createdAt).getTime() && (
-                                <span className="text-xs opacity-50 ml-1">
-                                  (Edited)
-                                </span>
-                              )}
-                          </div>
-                        </div>
-                      </DropdownMenuTrigger>
-                      {isOwn && (
-                        <DropdownMenuContent align={isOwn ? "end" : "start"}>
-                          <DropdownMenuItem onClick={() => handleEdit(msg)}>
-                            Edit
-                          </DropdownMenuItem>
-                          <DropdownMenuItem
-                            onClick={() => handleDeleteClick(msg.id)}
-                            className="text-red-500"
-                          >
-                            Delete
-                          </DropdownMenuItem>
-                        </DropdownMenuContent>
-                      )}
-                    </DropdownMenu>
-                  </div>
-                </div>
-              </React.Fragment>
-            );
-          })}
-          <div ref={scrollRef} />
+    <div className="flex h-full bg-background rounded-lg border shadow-sm">
+      <div className="flex flex-col flex-grow h-full">
+        {/* Header */}
+        <div className="p-4 border-b">
+          <h2 className="text-xl font-bold"># {department.name}</h2>
         </div>
-      </ScrollArea>
-      {/* Input Area */}
-      <div className="p-2 border-t bg-background">
-        {editingMessage ? (
-          <div className="flex flex-col gap-2">
-            <Textarea
-              rows={1}
-              value={editedText}
-              onChange={(e) => setEditedText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleUpdateMessage();
-                }
-              }}
-              placeholder="Edit your message"
-              className="pr-24 resize-none"
-            />
-            <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={handleCancelEdit}>
-                Cancel
-              </Button>
-              <Button onClick={handleUpdateMessage}>Save</Button>
-            </div>
-          </div>
-        ) : (
-          <div className="relative">
-            {pendingAttachments.length > 0 && (
-              <div className="flex flex-wrap gap-2 p-2 border-t border-b bg-secondary/20">
-                {pendingAttachments.map((attachment, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center gap-1 bg-secondary rounded-md p-1"
-                  >
-                    {attachment.type === "IMAGE" ||
-                    attachment.type === "VIDEO" ? (
-                      <Image
-                        src={attachment.url}
-                        alt={attachment.fileName}
-                        width={24}
-                        height={24}
-                        className="rounded"
-                      />
-                    ) : (
-                      <FileIcon className="w-4 h-4" />
-                    )}
-                    <span className="text-sm truncate max-w-[100px]">
-                      {attachment.fileName}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="w-5 h-5"
-                      onClick={() => {
-                        const newSelectedFiles = selectedFiles.filter(
-                          (_, i) => i !== index
-                        );
-                        setSelectedFiles(newSelectedFiles);
-                        setPendingAttachments(
-                          pendingAttachments.filter((_, i) => i !== index)
-                        );
-                      }}
-                    >
-                      <XIcon className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
+
+        {/* Message Area */}
+        <ScrollArea ref={scrollAreaContainerRef}>
+          <div className="flex-1 overflow-y-auto p-4 space-y-1 h-[60vh]">
+            {isLoadingMore && (
+              <div className="text-center text-muted-foreground py-2">
+                Loading older messages...
               </div>
             )}
-            <Textarea
-              rows={1}
-              placeholder={`Message #${department.name}`}
-              className="pr-24 resize-none"
-              value={messageText}
-              onChange={(e) => setMessageText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
-              <label htmlFor="file-upload">
-                <Button variant="ghost" size="icon" asChild>
-                  <PaperclipIcon className="w-5 h-5" />
-                </Button>
-                <Input
-                  id="file-upload"
-                  type="file"
-                  multiple
-                  className="hidden"
-                  onChange={(e) => {
-                    if (!e.target.files) return;
-                    const files = Array.from(e.target.files);
-                    setSelectedFiles(files);
-                    setPendingAttachments(
-                      files.map((file) => ({
-                        fileName: file.name,
-                        type: file.type.startsWith("image/")
-                          ? "IMAGE"
-                          : file.type.startsWith("video/")
-                          ? "VIDEO"
-                          : "FILE",
-                        url: URL.createObjectURL(file),
-                      }))
-                    );
-                  }}
-                />
-              </label>
-              <Button onClick={handleSend} size="icon">
-                <SendIcon className="w-5 h-5" />
-              </Button>
-            </div>
+            {messages.map((msg, idx) => {
+              const isOwn = msg.senderId === user?.id;
+              const prevMsg = messages[idx - 1];
+              const msgDate = new Date(msg.createdAt);
+              const prevMsgDate = prevMsg ? new Date(prevMsg.createdAt) : null;
+
+              let showDateSeparator = false;
+              if (!prevMsgDate) {
+                showDateSeparator = true;
+              } else {
+                showDateSeparator = !isSameDay(msgDate, prevMsgDate);
+              }
+
+              const isGrouped =
+                prevMsg &&
+                prevMsg.senderId === msg.senderId &&
+                new Date(msg.createdAt).getTime() -
+                  new Date(prevMsg.createdAt).getTime() <
+                  5 * 60 * 1000 &&
+                prevMsgDate !== null && // Ensure prevMsgDate is not null
+                isSameDay(msgDate, prevMsgDate);
+
+              const currentUser = findUser(msg.senderId);
+
+              return (
+                <React.Fragment key={msg.id}>
+                  {showDateSeparator && (
+                    <div className="relative my-6 text-center">
+                      <div className="absolute inset-0 flex items-center">
+                        <span className="w-full border-t" />
+                      </div>
+                      <div className="relative flex justify-center text-xs uppercase">
+                        <span className="bg-background px-2 text-muted-foreground">
+                          {formatDateForDisplay(msgDate)}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  <div
+                    className={cn(
+                      "flex items-start gap-3",
+                      isOwn && "justify-end",
+                      isGrouped && "mt-1"
+                    )}
+                  >
+                    {!isOwn && (
+                      <div className="w-8 h-8 rounded-full overflow-hidden border flex-shrink-0">
+                        {isGrouped ? (
+                          <div className="w-8" />
+                        ) : currentUser.imageUrl ? (
+                          <Image
+                            src={currentUser.imageUrl}
+                            alt={currentUser.name}
+                            width={32}
+                            height={32}
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-400 text-white flex items-center justify-center text-sm font-semibold">
+                            {currentUser.name?.charAt(0).toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    <div className={cn("flex flex-col", isOwn && "items-end")}>
+                      {!isGrouped && !isOwn && (
+                        <p className="text-xs text-muted-foreground mb-0.5 ml-2">
+                          {currentUser.name}
+                        </p>
+                      )}
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <div
+                            className={cn(
+                              "relative max-w-xs md:max-w-md px-3 py-2 rounded-xl cursor-pointer",
+                              isOwn
+                                ? "bg-primary text-primary-foreground rounded-br-none"
+                                : "bg-muted rounded-bl-none"
+                            )}
+                          >
+                            <p className="whitespace-pre-wrap">{msg.text}</p>
+                            {msg.attachments && msg.attachments.length > 0 && (
+                              <div className="flex flex-col gap-2 mt-2">
+                                {msg.attachments.map((attachment) => (
+                                  <div key={attachment.id}>
+                                    {attachment.type === "IMAGE" ? (
+                                      <Image
+                                        src={attachment.url}
+                                        alt={attachment.fileName || "Attachment"}
+                                        width={200}
+                                        height={200}
+                                        className="rounded-md cursor-pointer"
+                                        onClick={() => {
+                                          setCurrentImage(attachment.url);
+                                          setShowImageModal(true);
+                                        }}
+                                      />
+                                    ) : attachment.type === "VIDEO" ? (
+                                      <div
+                                        onClick={() => {
+                                          setCurrentVideo(attachment.url);
+                                          setShowVideoModal(true);
+                                        }}
+                                        className="relative block rounded-md overflow-hidden cursor-pointer"
+                                      >
+                                        <video
+                                          src={attachment.url}
+                                          controls={false}
+                                          preload="metadata"
+                                          className="w-full h-auto max-h-[200px] object-cover"
+                                        />
+                                        <div className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-md">
+                                          <PlayIcon className="w-8 h-8 text-white" />
+                                        </div>
+                                      </div>
+                                    ) : (
+                                      <a
+                                        href={attachment.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-1 bg-background p-1 rounded-md text-sm hover:underline"
+                                      >
+                                        <FileIcon className="w-4 h-4" />
+                                        <span className="truncate max-w-[100px]">
+                                          {attachment.fileName || "File"}
+                                        </span>
+                                      </a>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <div className="flex items-center justify-end gap-1 mt-1">
+                              {" "}
+                              {msg.status === "pending" && (
+                                <span className="text-xs text-muted-foreground">
+                                  Sending...
+                                </span>
+                              )}
+                              {msg.status === "error" && (
+                                <span className="text-xs text-red-500">
+                                  Failed
+                                </span>
+                              )}
+                              {isOwn && msg.status === "sent" && (
+                                <CheckCheckIcon className="w-4 h-4 text-blue-500" />
+                              )}
+                              <p className="text-xs opacity-70">
+                                {new Date(msg.createdAt).toLocaleTimeString([], {
+                                  hour: "2-digit",
+                                  minute: "2-digit",
+                                })}
+                              </p>
+                              {msg.updatedAt &&
+                                new Date(msg.updatedAt).getTime() !==
+                                  new Date(msg.createdAt).getTime() && (
+                                  <span className="text-xs opacity-50 ml-1">
+                                    (Edited)
+                                  </span>
+                                )}
+                            </div>
+                          </div>
+                        </DropdownMenuTrigger>
+                        {isOwn && (
+                          <DropdownMenuContent align={isOwn ? "end" : "start"}>
+                            <DropdownMenuItem onClick={() => handleEdit(msg)}>
+                              Edit
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => handleDeleteClick(msg.id)}
+                              className="text-red-500"
+                            >
+                              Delete
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        )}
+                      </DropdownMenu>
+                    </div>
+                  </div>
+                </React.Fragment>
+              );
+            })}
+            <div ref={scrollRef} />
           </div>
-        )}
+        </ScrollArea>
+        {/* Input Area */}
+        <div className="p-2 border-t bg-background">
+          {editingMessage ? (
+            <div className="flex flex-col gap-2">
+              <Textarea
+                rows={1}
+                value={editedText}
+                onChange={(e) => setEditedText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleUpdateMessage();
+                  }
+                }}
+                placeholder="Edit your message"
+                className="pr-24 resize-none"
+              />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" onClick={handleCancelEdit}>
+                  Cancel
+                </Button>
+                <Button onClick={handleUpdateMessage}>Save</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="relative">
+              {pendingAttachments.length > 0 && (
+                <div className="flex flex-wrap gap-2 p-2 border-t border-b bg-secondary/20">
+                  {pendingAttachments.map((attachment, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center gap-1 bg-secondary rounded-md p-1"
+                    >
+                      {attachment.type === "IMAGE" ||
+                      attachment.type === "VIDEO" ? (
+                        <Image
+                          src={attachment.url}
+                          alt={attachment.fileName}
+                          width={24}
+                          height={24}
+                          className="rounded"
+                        />
+                      ) : (
+                        <FileIcon className="w-4 h-4" />
+                      )}
+                      <span className="text-sm truncate max-w-[100px]">
+                        {attachment.fileName}
+                      </span>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="w-5 h-5"
+                        onClick={() => {
+                          const newSelectedFiles = selectedFiles.filter(
+                            (_, i) => i !== index
+                          );
+                          setSelectedFiles(newSelectedFiles);
+                          setPendingAttachments(
+                            pendingAttachments.filter((_, i) => i !== index)
+                          );
+                        }}
+                      >
+                        <XIcon className="w-3 h-3" />
+                      </Button>
+                    </div>
+                  ))}
+                </div>
+              )}
+              <Textarea
+                rows={1}
+                placeholder={`Message #${department.name}`}
+                className="pr-24 resize-none"
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+              />
+              <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center">
+                <label htmlFor="file-upload">
+                  <Button variant="ghost" size="icon" asChild>
+                    <PaperclipIcon className="w-5 h-5" />
+                  </Button>
+                  <Input
+                    id="file-upload"
+                    type="file"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (!e.target.files) return;
+                      const files = Array.from(e.target.files);
+                      setSelectedFiles(files);
+                      setPendingAttachments(
+                        files.map((file) => ({
+                          fileName: file.name,
+                          type: file.type.startsWith("image/")
+                            ? "IMAGE"
+                            : file.type.startsWith("video/")
+                            ? "VIDEO"
+                            : "FILE",
+                          url: URL.createObjectURL(file),
+                        }))
+                      );
+                    }}
+                  />
+                </label>
+                <Button onClick={handleSend} size="icon">
+                  <SendIcon className="w-5 h-5" />
+                </Button>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Right Column: Group Members */}
+      <div className="w-1/3 border-l">
+        <GroupMembers groupId={department.id} />
       </div>
 
       {/* Delete Confirmation Dialog */}
