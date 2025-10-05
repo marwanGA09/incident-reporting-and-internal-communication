@@ -49,6 +49,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
+import usePresence from "@/hooks/use-presence";
 
 interface ExtendedDirectMessage extends DirectMessage {
   status?: "pending" | "sent" | "error";
@@ -95,6 +96,7 @@ export default function DirectChat({
   };
 }) {
   const { user } = useUser();
+  const { onlineUsers } = usePresence("direct-chat");
   const [messages, setMessages] = useState<ExtendedDirectMessage[]>([]);
   const [messageText, setMessageText] = useState("");
   const [editingMessage, setEditingMessage] =
@@ -112,6 +114,8 @@ export default function DirectChat({
   const [currentImage, setCurrentImage] = useState<string | null>(null);
   const [showVideoModal, setShowVideoModal] = useState(false);
   const [currentVideo, setCurrentVideo] = useState<string | null>(null);
+
+  const isOnline = onlineUsers.includes(targetUser.id);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const scrollAreaContainerRef = useRef<HTMLDivElement>(null);
@@ -366,7 +370,7 @@ export default function DirectChat({
                     {targetUser.username || "Unknown User"}
                   </span>
                   <span className="text-xs text-gray-500">
-                    last seen recently
+                    {isOnline ? "Online" : "Offline"}
                   </span>
                 </div>
               </>
