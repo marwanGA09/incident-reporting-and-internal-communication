@@ -227,7 +227,17 @@ export default function SidebarClient({
           <SidebarGroupContent>
             <SidebarMenu>
               {incidentsLinks.map((item) => {
-                const isActive = pathname.startsWith(item.url);
+                const isNewIncidentFlow = pathname.startsWith("/incidents/new");
+
+                let isActive;
+                if (item.url.includes("/new")) {
+                  isActive = isNewIncidentFlow;
+                } else {
+                  isActive =
+                    (pathname === "/incidents" || pathname.startsWith("/incidents/")) &&
+                    !isNewIncidentFlow;
+                }
+
                 const isIncidentParent = item.url === "/incidents";
                 const count = isIncidentParent ? unreadIncidentsCount : 0;
                 return (

@@ -19,8 +19,8 @@ export const IncidentFormSchema = z.object({
   // Step 2
   severity: IncidentSeverityEnum.default("MEDIUM"),
   priority: IncidentPriorityEnum.default("NORMAL"),
-  categoryId: z.uuid("Please select a valid category."),
-  // categoryId: z.string().uuid("Please select a valid category."),
+  // categoryId: z.uuid("Please select a valid category."),
+  categoryId: z.string().uuid("Please select a valid category."),
 
   // Step 3
   locationAddress: z.string().optional(),
@@ -37,10 +37,10 @@ export const IncidentFormSchema = z.object({
   }, z.array(z.string()).optional()),
 
   // Step 4 (was previously step 3)
-  // departmentId: z.string().uuid("Please select a valid department."),
-  departmentId: z.uuid("Please select a valid department."),
-  // assigneeId: z.string().uuid().optional(), // Changed from assignedToId
-  assigneeId: z.uuid().optional(), // Changed from assignedToId
+  departmentId: z.string().uuid("Please select a valid department."),
+  // departmentId: z.uuid("Please select a valid department."),
+  assigneeId: z.string().uuid().optional(), // Changed from assignedToId
+  // assigneeId: z.uuid().optional(), // Changed from assignedToId
   attachments: z
     .array(
       z.object({
