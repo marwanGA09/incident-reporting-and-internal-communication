@@ -3,14 +3,12 @@ import logger from "@/app/lib/logger";
 import { prisma } from "@/app/lib/prisma";
 import { IncidentFormSchema } from "@/lib/validation/incidents";
 import { NextResponse } from "next/server";
-
-// import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
+import { Resend } from "resend";
+import CriticalIncidentEmail from "@/emails/CriticalIncidentEmail";
+import { clerkClient } from "@/lib/clerkClient";
 
-// import logger from "@/app/lib/logger";
-// import { prisma } from "@/app/lib/prisma";
-// import { supabase } from "@/lib/supabaseClient";
-// import { IncidentFormSchema } from "@/lib/validation/incidents";
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(req: Request) {
   try {
@@ -56,6 +54,9 @@ export async function POST(req: Request) {
           },
         },
       },
+      include: {
+        department: true, // Include department for notification purposes
+      },
     });
 
     // --- Start Notification Logic ---
@@ -70,7 +71,7 @@ export async function POST(req: Request) {
       if (usersToNotify.length > 0) {
         const notificationsData = usersToNotify.map((user) => ({
           type: "INCIDENT" as const,
-          message: `New incident reported: "${incident.title}"`,
+          message: `New incident reported: "${incident.title}"`, // Corrected here
           url: `/incidents/${incident.id}`,
           recipientId: user.id,
         }));
@@ -98,6 +99,62 @@ export async function POST(req: Request) {
       );
     }
     // --- End Notification Logic ---
+
+    // --- Start Critical Email Notification Logic ---
+    if (incident.priority === "URGENT" || incident.severity === "CRITICAL") {
+      try {
+        const usersToEmail = await prisma.user.findMany({
+          where: {
+            departmentId: incident.departmentId,
+            position: {
+              in: ["higher", "middle"],
+            },
+          },
+          select: {
+            clerkId: true,
+          },
+        });
+
+        const clerkIdsToEmail = usersToEmail
+          .map((u) => u.clerkId)
+          .filter((id): id is string => id !== null);
+
+        if (clerkIdsToEmail.length > 0) {
+          const userList = await clerkClient.users.getUserList({
+            userId: clerkIdsToEmail,
+          });
+
+          const emailList = userList.data
+            .map((u) => u.emailAddresses[0]?.emailAddress)
+            .filter((email): email is string => !!email);
+
+          if (emailList.length > 0) {
+            const incidentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/incidents/${incident.id}`;
+            await resend.emails.send({
+              from: "IncidentManagement <delivered@resend.dev>", // Replace with your "from" address
+              to: emailList,
+              subject: `Critical Incident: ${incident.title}`,
+              react: CriticalIncidentEmail({
+                incidentTitle: incident.title,
+                incidentDescription:
+                  incident?.description || "No description provided.",
+                incidentUrl,
+              }),
+            });
+            logger.info(
+              { incidentId: incident.id, emails: emailList.length },
+              "Critical incident email sent."
+            );
+          }
+        }
+      } catch (emailError) {
+        logger.error(
+          { incidentId: incident.id, error: emailError },
+          "Failed to send critical incident email."
+        );
+      }
+    }
+    // --- End Critical Email Notification Logic ---
 
     return NextResponse.json(incident, { status: 201 });
   } catch (error) {
