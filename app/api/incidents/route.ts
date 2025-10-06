@@ -111,41 +111,43 @@ export async function POST(req: Request) {
             },
           },
           select: {
-            clerkId: true,
+            email: true, // Select email directly from the database
           },
         });
 
-        const clerkIdsToEmail = usersToEmail
-          .map((u) => u.clerkId)
-          .filter((id): id is string => id !== null);
+        const emailList = usersToEmail
+          .map((u) => u.email)
+          .filter((email): email is string => !!email); // Filter out null emails
 
-        if (clerkIdsToEmail.length > 0) {
-          const userList = await clerkClient.users.getUserList({
-            userId: clerkIdsToEmail,
+        if (emailList.length > 0) {
+          const incidentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/incidents/${incident.id}`;
+          await resend.emails.send({
+            from: "IncidentManagement <delivered@resend.dev>", // Replace with your "from" address
+            to: emailList,
+            subject: `Critical Incident: ${incident.title}`,
+            react: CriticalIncidentEmail({
+              incidentTitle: incident.title,
+              incidentDescription:
+                incident?.description || "No description provided.",
+              incidentUrl,
+            }),
+          });
+          console.log("Critical incident email sent to:", {
+            from: "IncidentManagement <delivered@resend.dev>", // Replace with your "from" address
+            to: emailList,
+            subject: `Critical Incident: ${incident.title}`,
+            react: CriticalIncidentEmail({
+              incidentTitle: incident.title,
+              incidentDescription:
+                incident?.description || "No description provided.",
+              incidentUrl,
+            }),
           });
 
-          const emailList = userList.data
-            .map((u) => u.emailAddresses[0]?.emailAddress)
-            .filter((email): email is string => !!email);
-
-          if (emailList.length > 0) {
-            const incidentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/incidents/${incident.id}`;
-            await resend.emails.send({
-              from: "IncidentManagement <delivered@resend.dev>", // Replace with your "from" address
-              to: emailList,
-              subject: `Critical Incident: ${incident.title}`,
-              react: CriticalIncidentEmail({
-                incidentTitle: incident.title,
-                incidentDescription:
-                  incident?.description || "No description provided.",
-                incidentUrl,
-              }),
-            });
-            logger.info(
-              { incidentId: incident.id, emails: emailList.length },
-              "Critical incident email sent."
-            );
-          }
+          logger.info(
+            { incidentId: incident.id, emails: emailList.length },
+            "Critical incident email sent."
+          );
         }
       } catch (emailError) {
         logger.error(
