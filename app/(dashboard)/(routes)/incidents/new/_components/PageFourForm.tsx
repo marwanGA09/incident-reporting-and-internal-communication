@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import { useMemo, useEffect } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -59,6 +60,8 @@ export default function PageFourForm({ departments, users }: Step4FormProps) {
     defaultValues,
   });
 
+  const { formState: { isSubmitting } } = form;
+
   const watchedDepartmentId = form.watch("departmentId");
 
   const assignableUsers = useMemo(() => {
@@ -79,7 +82,8 @@ export default function PageFourForm({ departments, users }: Step4FormProps) {
     }
   }, [watchedDepartmentId, assignableUsers, form]);
 
-  function onSubmit(values: z.infer<typeof Step4Schema>) {
+  async function onSubmit(values: z.infer<typeof Step4Schema>) {
+    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
     const departmentName = departments.find(
       (dep) => dep.id === values.departmentId
     )?.name;
@@ -186,7 +190,16 @@ export default function PageFourForm({ departments, users }: Step4FormProps) {
                 >
                   Back
                 </Button>
-                <Button type="submit">Review Incident</Button>
+                                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait
+                    </>
+                  ) : (
+                    "Review Incident"
+                  )}
+                </Button>
               </div>
             </form>
           </Form>

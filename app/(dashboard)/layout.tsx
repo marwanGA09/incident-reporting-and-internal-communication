@@ -1,3 +1,4 @@
+import NextTopLoader from 'nextjs-toploader';
 import React from "react";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "./_components/Sidebar";
@@ -12,6 +13,7 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
   if (!user) return null;
   return (
     <UserMetadataGuard>
+      <NextTopLoader color="#3498db" />
       <SidebarProvider defaultOpen={true}>
         <AppSidebar />
         <main className="w-full flex flex-col">

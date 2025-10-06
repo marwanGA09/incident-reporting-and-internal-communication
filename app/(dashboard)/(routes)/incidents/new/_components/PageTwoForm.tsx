@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -56,7 +57,10 @@ export default function PageTwoForm({ categories }: PageTwoFormProps) {
     defaultValues,
   });
 
-  function onSubmit(values: z.infer<typeof Step2Schema>) {
+  const { formState: { isSubmitting } } = form;
+
+  async function onSubmit(values: z.infer<typeof Step2Schema>) {
+    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
     const categoryName = categories.find(
       (cat) => cat.id === values.categoryId
     )?.name;
@@ -182,7 +186,16 @@ export default function PageTwoForm({ categories }: PageTwoFormProps) {
                 >
                   Back
                 </Button>
-                <Button type="submit">Next Step</Button>
+                                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait
+                    </>
+                  ) : (
+                    "Next Step"
+                  )}
+                </Button>
               </div>
             </form>
           </Form>

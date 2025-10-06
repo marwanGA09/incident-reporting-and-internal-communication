@@ -2,7 +2,7 @@
 
 import { zodResolver } from "@hookform/resolvers/zod";
 import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { CalendarIcon, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import * as React from "react";
 import { useForm } from "react-hook-form";
@@ -51,7 +51,10 @@ export default function Step1() {
     },
   });
 
-  function onSubmit(values: z.infer<typeof Step1Schema>) {
+  const { formState: { isSubmitting } } = form;
+
+  async function onSubmit(values: z.infer<typeof Step1Schema>) {
+    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
     setData(values);
     router.push("/incidents/new/step-2");
   }
@@ -199,7 +202,16 @@ export default function Step1() {
               />
 
               <div className="flex justify-end">
-                <Button type="submit">Next Step</Button>
+                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait
+                    </>
+                  ) : (
+                    "Next Step"
+                  )}
+                </Button>
               </div>
             </form>
           </Form>

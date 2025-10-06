@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 import toast from "react-hot-toast";
 
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,8 @@ export default function Step3Form() {
     defaultValues,
   });
 
+  const { formState: { isSubmitting } } = form;
+
   const handleGetCurrentLocation = () => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -63,7 +66,8 @@ export default function Step3Form() {
     }
   };
 
-  function onSubmit(values: z.infer<typeof Step3Schema>) {
+  async function onSubmit(values: z.infer<typeof Step3Schema>) {
+    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
     setData(values);
     router.push("/incidents/new/step-4");
   }
@@ -152,7 +156,16 @@ export default function Step3Form() {
                 >
                   Back
                 </Button>
-                <Button type="submit">Next Step</Button>
+                                <Button type="submit" disabled={isSubmitting}>
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Please wait
+                    </>
+                  ) : (
+                    "Next Step"
+                  )}
+                </Button>
               </div>
             </form>
           </Form>

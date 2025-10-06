@@ -9,9 +9,11 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Activity, AlertTriangle, UserCheck } from "lucide-react";
 
 export const StatsCards = async () => {
-  const activeIncidents = await getActiveIncidentsCount();
-  const todaysIncidents = await getIncidentsReportedTodayCount();
-  const myOpenIncidents = await getMyOpenIncidentsCount();
+  const [activeIncidents, todaysIncidents, myOpenIncidents] = await Promise.all([
+    getActiveIncidentsCount(),
+    getIncidentsReportedTodayCount(),
+    getMyOpenIncidentsCount(),
+  ]);
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
