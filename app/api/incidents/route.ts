@@ -123,18 +123,8 @@ export async function POST(req: Request) {
           const incidentUrl = `${process.env.NEXT_PUBLIC_BASE_URL}/incidents/${incident.id}`;
           await resend.emails.send({
             from: "IncidentManagement <delivered@resend.dev>", // Replace with your "from" address
-            to: emailList,
-            subject: `Critical Incident: ${incident.title}`,
-            react: CriticalIncidentEmail({
-              incidentTitle: incident.title,
-              incidentDescription:
-                incident?.description || "No description provided.",
-              incidentUrl,
-            }),
-          });
-          console.log("Critical incident email sent to:", {
-            from: "IncidentManagement <delivered@resend.dev>", // Replace with your "from" address
-            to: emailList,
+            // to: emailList,
+            to: "ademkedir724@gmail.com",
             subject: `Critical Incident: ${incident.title}`,
             react: CriticalIncidentEmail({
               incidentTitle: incident.title,
