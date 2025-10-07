@@ -1,11 +1,6 @@
-
-import {
-  NextResponse
-} from "next/server";
-import {
-  OpenAI
-} from "openai";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
+import { NextResponse } from "next/server";
+import { OpenAI } from "openai";
 
 export const runtime = "edge";
 
@@ -22,48 +17,48 @@ export async function POST(
 
     if (!incidentId) {
       return new NextResponse("Incident ID is required", {
-        status: 400
+        status: 400,
       });
     }
 
     const incident = await prisma.incident.findUnique({
       where: {
-        id: incidentId
+        id: incidentId,
       },
       include: {
         reporter: {
           select: {
             firstName: true,
-            lastName: true
-          }
+            lastName: true,
+          },
         },
         assignee: {
           select: {
             firstName: true,
-            lastName: true
-          }
+            lastName: true,
+          },
         },
         category: {
           select: {
-            name: true
-          }
+            name: true,
+          },
         },
         department: {
           select: {
-            name: true
-          }
+            name: true,
+          },
         },
         statusNotes: {
           orderBy: {
-            changedAt: "asc"
-          }
+            changedAt: "asc",
+          },
         },
       },
     });
 
     if (!incident) {
       return new NextResponse("Incident not found", {
-        status: 404
+        status: 404,
       });
     }
 
@@ -75,16 +70,22 @@ export async function POST(
     incidentText += `Priority: ${incident.priority}\n`;
     incidentText += `Category: ${incident.category?.name || "N/A"}\n`;
     incidentText += `Department: ${incident.department?.name || "N/A"}\n`;
-    incidentText += `Reported by: ${incident.reporter?.firstName || ""} ${incident.reporter?.lastName || ""}\n`;
+    incidentText += `Reported by: ${incident.reporter?.firstName || ""} ${
+      incident.reporter?.lastName || ""
+    }\n`;
     if (incident.assignee) {
-      incidentText += `Assigned to: ${incident.assignee?.firstName || ""} ${incident.assignee?.lastName || ""}\n`;
+      incidentText += `Assigned to: ${incident.assignee?.firstName || ""} ${
+        incident.assignee?.lastName || ""
+      }\n`;
     }
     incidentText += `Occurred At: ${incident.occurredAt.toLocaleString()}\n`;
 
     if (incident.statusNotes && incident.statusNotes.length > 0) {
       incidentText += "\nStatus Updates:\n";
       incident.statusNotes.forEach((note) => {
-        incidentText += `- [${note.changedAt.toLocaleString()}] Status changed to ${note.status}: ${note.note}\n`;
+        incidentText += `- [${note.changedAt.toLocaleString()}] Status changed to ${
+          note.status
+        }: ${note.note}\n`;
       });
     }
 
@@ -112,17 +113,17 @@ export async function POST(
 
     if (!summary) {
       return new NextResponse("Failed to generate summary", {
-        status: 500
+        status: 500,
       });
     }
 
     return NextResponse.json({
-      summary
+      summary,
     });
   } catch (error) {
     console.error("[INCIDENT_SUMMARIZE_ERROR]", error);
     return new NextResponse("Internal Server Error", {
-      status: 500
+      status: 500,
     });
   }
 }

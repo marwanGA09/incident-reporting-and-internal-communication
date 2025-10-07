@@ -13,63 +13,59 @@ async function seedDatabase() {
     await prisma.userIncidentReadStatus.deleteMany({});
     await prisma.attachment.deleteMany({});
 
-    // Get existing Departments (if they exist, otherwise create them)
-    let existingDepartments = await prisma.department.findMany();
+    // Clear existing departments and create the OBN-specific ones
+    await prisma.department.deleteMany({});
+    console.log('Cleared existing departments');
     
-    if (existingDepartments.length === 0) {
-      // Create Departments if they don't exist
-      const departments = [
-        { name: 'Branch of News' },
-        { name: 'Department of Educational Program' },
-        { name: 'Department of Entertainment Program' },
-        { name: 'Human Resource & Training' },
-        { name: 'Service of Plan, Research & Budget' },
-        { name: 'Law Affair Service' },
-        { name: 'Department of Market & Promotion' },
-        { name: 'Auditor' },
-        { name: 'System Administration' },
-        { name: 'ICT Service' },
-        { name: 'Maintenance' },
-        { name: 'Television Broadcasting' },
-        { name: 'Radio Broadcasting' },
-      ];
+    // Create OBN-specific Departments
+    const departments = [
+      { name: 'Branch of News' },
+      { name: 'Department of Educational Program' },
+      { name: 'Department of Entertainment Program' },
+      { name: 'Human Resource & Training' },
+      { name: 'Service of Plan, Research & Budget' },
+      { name: 'Law Affair Service' },
+      { name: 'Department of Market & Promotion' },
+      { name: 'Auditor' },
+      { name: 'System Administration' },
+      { name: 'ICT Service' },
+      { name: 'Maintenance' },
+      { name: 'Television Broadcasting' },
+      { name: 'Radio Broadcasting' },
+    ];
 
-      for (const dept of departments) {
-        const createdDept = await prisma.department.create({
-          data: dept,
-        });
-        existingDepartments.push(createdDept);
-        console.log(`Created department: ${dept.name}`);
-      }
-    } else {
-      console.log(`Found ${existingDepartments.length} existing departments`);
+    const existingDepartments = [];
+    for (const dept of departments) {
+      const createdDept = await prisma.department.create({
+        data: dept,
+      });
+      existingDepartments.push(createdDept);
+      console.log(`Created department: ${dept.name}`);
     }
 
-    // Get existing Incident Categories (if they exist, otherwise create them)
-    let existingCategories = await prisma.incidentCategory.findMany();
+    // Clear existing incident categories and create the OBN-specific ones
+    await prisma.incidentCategory.deleteMany({});
+    console.log('Cleared existing incident categories');
     
-    if (existingCategories.length === 0) {
-      // Create Incident Categories if they don't exist
-      const categories = [
-        { name: 'Broadcast Disruption', description: 'Live feed or programming interruption' },
-        { name: 'Equipment Failure', description: 'Broken or malfunctioning broadcasting equipment' },
-        { name: 'Content Issue', description: 'Problem with program content or quality' },
-        { name: 'Technical Infrastructure', description: 'System or network infrastructure problems' },
-        { name: 'Security Concern', description: 'Safety or security threats to staff or facilities' },
-        { name: 'Personnel', description: 'Staffing issues, conflicts, or HR matters' },
-        { name: 'Regulatory Compliance', description: 'Issues related to broadcasting regulations' },
-        { name: 'External Relations', description: 'Matters involving external partners or public relations' },
-      ];
+    // Create OBN-specific Incident Categories
+    const categories = [
+      { name: 'Broadcast Disruption', description: 'Live feed or programming interruption' },
+      { name: 'Equipment Failure', description: 'Broken or malfunctioning broadcasting equipment' },
+      { name: 'Content Issue', description: 'Problem with program content or quality' },
+      { name: 'Technical Infrastructure', description: 'System or network infrastructure problems' },
+      { name: 'Security Concern', description: 'Safety or security threats to staff or facilities' },
+      { name: 'Personnel', description: 'Staffing issues, conflicts, or HR matters' },
+      { name: 'Regulatory Compliance', description: 'Issues related to broadcasting regulations' },
+      { name: 'External Relations', description: 'Matters involving external partners or public relations' },
+    ];
 
-      for (const category of categories) {
-        const createdCat = await prisma.incidentCategory.create({
-          data: category,
-        });
-        existingCategories.push(createdCat);
-        console.log(`Created category: ${category.name}`);
-      }
-    } else {
-      console.log(`Found ${existingCategories.length} existing categories`);
+    const existingCategories = [];
+    for (const category of categories) {
+      const createdCat = await prisma.incidentCategory.create({
+        data: category,
+      });
+      existingCategories.push(createdCat);
+      console.log(`Created category: ${category.name}`);
     }
 
     // Get all existing users

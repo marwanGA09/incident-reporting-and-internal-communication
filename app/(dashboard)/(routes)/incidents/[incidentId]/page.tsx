@@ -18,24 +18,19 @@ import {
   User as UserIcon,
   Building,
   Tag,
-  Sparkles,
-  Loader2,
 } from "lucide-react";
 import Image from "next/image";
-import * as React from "react";
 
 import { markIncidentAsRead } from "@/app/lib/actions";
 import { Badge } from "@/components/ui/badge";
 import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import IncidentInteraction from "../_components/IncidentInteraction";
 import AddAttachment from "../_components/AddAttachment";
 import { Attachment } from "@prisma/client";
-import toast from "react-hot-toast";
-import { cn } from "@/lib/utils";
+import { AISummaryCard } from "../_components/AISummaryCard"; // Import the new client component
 
 // Helper to get icon and label for priority
 const getPriorityProps = (priority: string) => {
@@ -122,15 +117,15 @@ const renderAttachment = (file: Attachment) => {
 export default async function IncidentDetailPage({
   params,
 }: {
-  params: Promise<{ incidentId: string }>;
+  params: { incidentId: string };
 }) {
   const user = await currentUser();
   if (!user) redirect("/");
-  const incidentId = (await params).incidentId;
-  await markIncidentAsRead(incidentId);
+
+  await markIncidentAsRead(params.incidentId);
 
   const incident = await prisma.incident.findUnique({
-    where: { id: incidentId },
+    where: { id: params.incidentId },
     include: {
       category: true,
       department: true,
@@ -162,34 +157,6 @@ export default async function IncidentDetailPage({
   const severityProps = getSeverityProps(incident.severity);
   const priorityProps = getPriorityProps(incident.priority);
 
-  const [aiSummary, setAiSummary] = React.useState<string | null>(null);
-  const [isSummarizing, setIsSummarizing] = React.useState(false);
-
-  const handleSummarize = async () => {
-    setIsSummarizing(true);
-    setAiSummary(null); // Clear previous summary
-    try {
-      const response = await fetch(`/api/incidents/${incident.id}/summarize`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to generate summary. Please try again.");
-      }
-
-      const result = await response.json();
-      setAiSummary(result.summary);
-      toast.success("AI summary generated successfully!");
-    } catch (error) {
-      toast.error(
-        error instanceof Error ? error.message : "An unknown error occurred."
-      );
-    } finally {
-      setIsSummarizing(false);
-    }
-  };
-
   return (
     <div className="p-6">
       <Link
@@ -218,39 +185,8 @@ export default async function IncidentDetailPage({
             )}
           </div>
 
-          {/* AI Summary Card */}
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-lg font-semibold">
-                AI Summary
-              </CardTitle>
-              <Button
-                onClick={handleSummarize}
-                disabled={isSummarizing}
-                size="sm"
-                variant="outline"
-              >
-                {isSummarizing ? (
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
-                )}
-                Generate Summary
-              </Button>
-            </CardHeader>
-            <CardContent>
-              {aiSummary ? (
-                <p className="text-sm text-muted-foreground whitespace-pre-wrap">
-                  {aiSummary}
-                </p>
-              ) : (
-                <p className="text-sm text-muted-foreground">
-                  Click "Generate Summary" to get an AI-powered overview of this
-                  incident.
-                </p>
-              )}
-            </CardContent>
-          </Card>
+          {/* AI Summary Card (Client Component) */}
+          <AISummaryCard incidentId={incident.id} />
 
           {/* Status & Vitals */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
