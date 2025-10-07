@@ -7,10 +7,10 @@
     "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
-    "seed": "ts-node prisma/seed.ts",
     "sync-users": "tsx scripts/sync-users.ts",
     "assign-positions": "tsx scripts/assign-random-positions-departments.ts",
-    "seed-in-detail": "tsx scripts/seed.ts"
+    "db:seed:meta": "tsx scripts/seed-meta.ts",
+    "db:seed:incidents": "tsx scripts/seed-incidents.ts"
   },
   "dependencies": {
     "@clerk/backend": "^2.17.0",
