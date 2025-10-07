@@ -48,7 +48,7 @@ model UserPresence {
 model Department {
   id            String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   name          String
-  email         String?        @unique
+email         String?        @unique
   incidents     Incident[]
   groupMessages GroupMessage[]
   users         User[]

@@ -30,6 +30,7 @@ import { cn } from "@/lib/utils";
 import IncidentInteraction from "../_components/IncidentInteraction";
 import AddAttachment from "../_components/AddAttachment";
 import { Attachment } from "@prisma/client";
+import { AISummaryCard } from "../_components/AISummaryCard"; // Import the new client component
 
 // Helper to get icon and label for priority
 const getPriorityProps = (priority: string) => {
@@ -185,6 +186,9 @@ export default async function IncidentDetailPage({
               </p>
             )}
           </div>
+
+          {/* AI Summary Card (Client Component) */}
+          <AISummaryCard incidentId={incident.id} />
 
           {/* Status & Vitals */}
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
