@@ -117,15 +117,15 @@ const renderAttachment = (file: Attachment) => {
 export default async function IncidentDetailPage({
   params,
 }: {
-  params: { incidentId: string };
+  params: Promise<{ incidentId: string }>;
 }) {
   const user = await currentUser();
   if (!user) redirect("/");
-
-  await markIncidentAsRead(params.incidentId);
+  const incidentIdParams = (await params).incidentId;
+  await markIncidentAsRead(incidentIdParams);
 
   const incident = await prisma.incident.findUnique({
-    where: { id: params.incidentId },
+    where: { id: incidentIdParams },
     include: {
       category: true,
       department: true,

@@ -10,10 +10,10 @@ const openai = new OpenAI({
 
 export async function POST(
   req: Request,
-  { params }: { params: { incidentId: string } }
+  { params }: { params: Promise<{ incidentId: string }> }
 ) {
   try {
-    const { incidentId } = params;
+    const { incidentId } = await params;
 
     if (!incidentId) {
       return new NextResponse("Incident ID is required", {
