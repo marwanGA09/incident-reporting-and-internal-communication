@@ -2,7 +2,7 @@
 import { ClerkProvider, SignInButton, SignedOut } from "@clerk/nextjs";
 
 import ToasterProvider from "@/components/Providers/toastProvider";
-
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ThemeProvider } from "@/components/Providers/theme-provider";
@@ -57,7 +57,7 @@ export default function RootLayout({
             enableSystem
             disableTransitionOnChange
           >
-            {children}
+            {children} <SpeedInsights />
           </ThemeProvider>
         </body>
       </html>
