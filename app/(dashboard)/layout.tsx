@@ -7,6 +7,7 @@ import { currentUser } from "@clerk/nextjs/server";
 import { NotificationBell } from "./_components/NotificationBell";
 import { ToggleTheme } from "./_components/ToggleTheme";
 import { UserButton } from "@clerk/nextjs";
+import Image from "next/image";
 
 async function DashboardLayout({ children }: { children: React.ReactNode }) {
   const user = await currentUser();
@@ -21,9 +22,11 @@ async function DashboardLayout({ children }: { children: React.ReactNode }) {
             <div className="flex items-center gap-x-2">
               <SidebarTrigger />
               <div className="flex items-center gap-x-2 ml-4">
-                <img
+                <Image
                   src="/obn-logo.png"
                   alt="OBN Logo"
+                  width={32}
+                  height={32}
                   className="h-8 w-auto"
                 />
                 {/* <span className="text-xl font-bold">OBN</span> */}

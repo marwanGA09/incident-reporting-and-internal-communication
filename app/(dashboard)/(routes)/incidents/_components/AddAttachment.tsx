@@ -11,14 +11,14 @@ interface AddAttachmentProps {
 }
 
 export default function AddAttachment({ incidentId }: AddAttachmentProps) {
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
 
   const handleUpload = (url: string, fileName: string) => {
     startTransition(async () => {
       try {
         await addAttachmentToAction({ incidentId, url, fileName });
         toast.success("Attachment added successfully!");
-      } catch (error) {
+      } catch {
         toast.error("Failed to add attachment.");
       }
     });

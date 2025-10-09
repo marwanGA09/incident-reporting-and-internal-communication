@@ -21,7 +21,7 @@ export async function uploadFile(folder: string, file: File, userId: string) {
   const ext = file.name.split(".").pop();
   const path = `${folder}/${userId}/${crypto.randomUUID()}.${ext}`;
 
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from("chat-uploads")
     .upload(path, file);
   

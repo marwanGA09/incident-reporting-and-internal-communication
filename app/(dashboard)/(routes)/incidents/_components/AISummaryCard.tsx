@@ -69,7 +69,7 @@ export function AISummaryCard({ incidentId }: AISummaryCardProps) {
           </p>
         ) : (
           <p className="text-sm text-muted-foreground">
-            Click "Generate Summary" to get an AI-powered overview of this
+            Click &apos;Generate Summary&apos; to get an AI-powered overview of this
             incident.
           </p>
         )}

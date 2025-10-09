@@ -6,7 +6,6 @@ import { supabase } from "@/lib/supabaseClient";
 import {
   deleteDirectMessage,
   getDirectMessages,
-  markNotificationsAsRead,
   sendDirectMessage,
   updateDirectMessage,
 } from "@/app/lib/actions";
@@ -16,7 +15,6 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { DirectMessage, DirectMessageAttachment } from "@prisma/client";
 import {
   CheckCheckIcon,
-  Edit3Icon,
   FileIcon,
   MoreHorizontalIcon,
   MoveLeftIcon,

@@ -8,6 +8,7 @@ import { PendingAttachment } from "@/lib/defination";
 import { auth } from "@clerk/nextjs/server";
 import { supabase } from "@/lib/supabaseClient";
 import { revalidatePath } from "next/cache";
+import { Notification, Prisma } from "@prisma/client";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
@@ -43,7 +44,7 @@ export async function createIncidentCategory(
   // optionally redirect or revalidate
 }
 
-export const getDepartments = async (id?: string) => {
+export const getDepartments = async () => {
   const departments =
     // id
     //   ? await prisma.department.findMany({
@@ -117,7 +118,7 @@ export async function sendGroupMessage({
     include: { attachments: true },
   });
 
-  let notifications: any[] = [];
+  const notifications: Notification[] = [];
   try {
     const sender = await prisma.user.findUnique({
       where: { clerkId: senderId },
@@ -463,7 +464,7 @@ export async function getUnreadIncidentsCount() {
       })
     ).map((status) => status.incidentId);
 
-    const where: any = {
+    const where: Prisma.IncidentWhereInput = {
       id: {
         notIn: readIncidentIds,
       },
@@ -538,7 +539,7 @@ export async function getNotifications() {
 
 export async function updateIncidentAction(payload: {
   id: string;
-  status?: any;
+  status?: IncidentStatus;
   assigneeId?: string | null;
   note?: string;
 }) {
@@ -550,7 +551,7 @@ export async function updateIncidentAction(payload: {
   const { id, status, assigneeId, note } = payload;
 
   try {
-    const dataToUpdate: any = {};
+    const dataToUpdate: Prisma.IncidentUpdateInput = {};
 
     if (status) {
       dataToUpdate.status = status;
@@ -948,7 +949,7 @@ export async function getAllIncidents(params: GetAllIncidentsParams = {}) {
 
   const skip = (page - 1) * pageSize;
 
-  const where: any = {};
+  const where: Prisma.IncidentWhereInput = {};
   if (status) where.status = status;
   if (severity) where.severity = severity;
   if (priority) where.priority = priority;

@@ -6,7 +6,6 @@ import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import { Resend } from "resend";
 import CriticalIncidentEmail from "@/emails/CriticalIncidentEmail";
-import { clerkClient } from "@/lib/clerkClient";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 

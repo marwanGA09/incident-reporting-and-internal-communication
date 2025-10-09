@@ -12,7 +12,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/ui/card";
 import {
   Dialog,
@@ -90,7 +89,7 @@ export default function IncidentInteraction({
         setIsDialogOpen(false);
         setNewStatus(null);
         setStatusNote("");
-      } catch (error) {
+      } catch {
         toast.error("Failed to update status.");
       }
     });
@@ -105,7 +104,7 @@ export default function IncidentInteraction({
         }
         await updateIncidentAction({ id: incident.id, ...payload });
         toast.success("Assignee updated successfully!");
-      } catch (error) {
+      } catch {
         toast.error("Failed to update assignee.");
       }
     });

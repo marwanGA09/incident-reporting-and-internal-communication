@@ -72,15 +72,9 @@ export default function Review() {
         clear();
         clearUI();
         router.push("/incidents");
-      } catch (error: any) {
+      } catch (error: Error) {
         logger.error({ error }, "Submission Error");
-        toast.error(
-          `Failed to submit incident: ${
-            typeof error.message === "object"
-              ? JSON.stringify(error.message)
-              : error.message
-          }`
-        );
+        toast.error(`Failed to submit incident: ${error.message}`);
       }
     });
   };

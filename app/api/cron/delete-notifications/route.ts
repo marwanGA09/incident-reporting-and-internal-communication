@@ -1,5 +1,4 @@
 import { deleteOldReadNotifications } from "@/app/lib/actions";
-import logger from "@/app/lib/logger";
 // import { NextResponse } from "next/server";
 
 // export async function GET(request: Request) {
@@ -40,7 +39,7 @@ export async function GET(req: NextRequest) {
   try {
     const result = await deleteOldReadNotifications();
     return NextResponse.json({ success: true, deletedCount: result.count });
-  } catch (error) {
+  } catch {
     return NextResponse.json(
       { error: "Failed to delete notifications" },
       { status: 500 }

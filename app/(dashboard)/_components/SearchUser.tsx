@@ -2,7 +2,6 @@
 
 import { searchUsers } from "@/app/lib/actions";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,16 +11,13 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { SidebarMenuButton } from "@/components/ui/sidebar";
 import { User } from "@prisma/client";
 import { SearchIcon } from "lucide-react";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 
-import {
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
+
 
 export default function SearchUsers() {
   const [open, setOpen] = useState(false);

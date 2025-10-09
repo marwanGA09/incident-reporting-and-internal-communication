@@ -34,10 +34,7 @@
 // };
 
 "use client";
-interface IncidentManagementTableProps {
-  incidents: IncidentWithRelations[];
-  totalIncidents: number;
-}
+
 
 // app/(dashboard)/dashboard/incidents/_components/IncidentManagementTable.tsx
 
@@ -85,11 +82,6 @@ type IncidentWithRelations = Incident & {
   department: Department;
   category: IncidentCategory;
 };
-
-interface IncidentManagementTableProps {
-  incidents: IncidentWithRelations[];
-  totalIncidents: number;
-}
 
 export const IncidentManagementTable = () => {
   const router = useRouter();

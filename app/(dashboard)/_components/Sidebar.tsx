@@ -1,22 +1,3 @@
-import {
-  BlendIcon,
-  Grid2X2Check,
-  NotebookIcon,
-  ShieldCheckIcon,
-  ShieldPlusIcon,
-} from "lucide-react";
-
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarFooter,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
-} from "@/components/ui/sidebar";
 import { currentUser } from "@clerk/nextjs/server";
 import { getDepartments, getNotifications } from "@/app/lib/actions";
 import { prisma } from "@/app/lib/prisma";

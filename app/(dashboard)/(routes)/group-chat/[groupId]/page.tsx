@@ -1,6 +1,5 @@
 import { getGroupMembers } from "@/app/lib/actions";
 import GroupChat from "./GroupChat";
-import logger from "@/app/lib/logger";
 import { prisma } from "@/app/lib/prisma";
 
 async function page({ params }: { params: Promise<{ groupId: string }> }) {

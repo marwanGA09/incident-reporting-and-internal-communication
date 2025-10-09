@@ -17,8 +17,14 @@ import { Button } from "@/components/ui/button";
 
 type Range = '7d' | '30d' | '365d';
 
+interface IncidentData {
+  date: string;
+  count: number;
+  month?: string;
+}
+
 export const IncidentsBarChart = () => {
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<IncidentData[]>([]);
   const [range, setRange] = useState<Range>('7d');
 
   useEffect(() => {
@@ -36,7 +42,7 @@ export const IncidentsBarChart = () => {
       return tick; // Already formatted as "Mon 'YY"
     }
     // For '7d' and '30d', the tick is 'YYYY-MM-DD'
-    const [year, month, day] = tick.split('-');
+    const [, month, day] = tick.split('-');
     return `${month}/${day}`;
   };
 

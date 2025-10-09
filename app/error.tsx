@@ -23,7 +23,7 @@ export default function Error({
           Something went wrong!
         </h2>
         <p className="text-muted-foreground mb-6">
-          We've logged the issue and our team will look into it. Please try
+          We&apos;ve logged the issue and our team will look into it. Please try
           again.
         </p>
         <Button onClick={() => reset()}>Try again</Button>

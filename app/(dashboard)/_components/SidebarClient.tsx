@@ -130,7 +130,7 @@ export default function SidebarClient({
 
     fetchInitialData();
 
-    const handleNotification = (payload: any) => {
+    const handleNotification = (payload: { payload: Notification }) => {
       const newNotification = payload.payload;
 
       if (newNotification.recipientId !== dbUser.id) {
@@ -148,7 +148,7 @@ export default function SidebarClient({
       }
     };
 
-    const handleIncidentRead = (payload: any) => {
+    const handleIncidentRead = (payload: { payload: { incidentId: string; userId: string } }) => {
       const { userId } = payload.payload;
       if (userId === dbUser.id) {
         setUnreadIncidentsCount((prev) => Math.max(0, prev - 1));

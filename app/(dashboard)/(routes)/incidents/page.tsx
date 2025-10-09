@@ -1,4 +1,5 @@
 import { prisma } from "@/app/lib/prisma";
+import { Prisma } from "@prisma/client";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
 import Link from "next/link";
@@ -30,7 +31,7 @@ export default async function IncidentsPage({
   const query = (await searchParams)?.query || "";
   const sortBy = (await searchParams)?.sortBy || "newest";
 
-  const whereClause: any = {
+  const whereClause: Prisma.IncidentWhereInput = {
     title: {
       contains: query,
       mode: "insensitive",
@@ -41,7 +42,7 @@ export default async function IncidentsPage({
     whereClause.departmentId = currentUserDb.departmentId;
   }
 
-  let orderByClause: any = { createdAt: "desc" };
+  let orderByClause: Prisma.IncidentOrderByWithRelationInput = { createdAt: "desc" };
   if (sortBy === "oldest") {
     orderByClause = { createdAt: "asc" };
   }

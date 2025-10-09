@@ -4,7 +4,6 @@ import React, { useEffect, useRef, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Card, CardContent } from "@/components/ui/card";
 import { supabase } from "@/lib/supabaseClient";
 import {
   deleteGroupMessage,
@@ -15,9 +14,7 @@ import {
 } from "@/app/lib/actions";
 import {
   CheckCheckIcon,
-  Edit3Icon,
   FileIcon,
-  MoreHorizontalIcon,
   PaperclipIcon,
   SendIcon,
   XIcon,
@@ -34,7 +31,6 @@ import {
   Department,
   GroupMessage,
   GroupMessageAttachment,
-  AttachmentType,
 } from "@prisma/client";
 import Image from "next/image";
 import logger from "@/app/lib/logger";

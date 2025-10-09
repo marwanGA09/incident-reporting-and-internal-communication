@@ -4,16 +4,15 @@ import { formatDistanceToNow } from "date-fns";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import {
-  AlertTriangle,
-  ArrowDown,
-  ArrowUp,
-  Flame,
-  Minus,
-  ShieldAlert,
   Siren,
+  ShieldAlert,
+  AlertTriangle,
+  Flame,
+  ArrowUp,
+  Minus,
+  ArrowDown,
 } from "lucide-react";
 
-import { Badge } from "@/components/ui/badge";
 import {
   Card,
   CardContent,
@@ -21,7 +20,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { getBadgeVariantForStatus } from "@/lib/getBadgeVariantForStatus";
 import { Incident, User } from "@prisma/client";
 import { IncidentSkeleton } from "./IncidentSkeleton";
 import { textShorter } from "@/lib/textShorter";
