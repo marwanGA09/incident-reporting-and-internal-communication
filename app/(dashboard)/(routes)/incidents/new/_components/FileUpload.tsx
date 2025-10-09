@@ -7,6 +7,7 @@ import { useUser } from "@clerk/nextjs";
 import toast from "react-hot-toast";
 
 import { supabase } from "@/lib/supabaseClient";
+import logger from "@/app/lib/logger";
 
 interface FileUploadProps {
   onUpload: (url: string, fileName: string) => void;
@@ -52,7 +53,7 @@ export default function FileUpload({ onUpload }: FileUploadProps) {
       onUpload(publicUrlData.publicUrl, file.name);
       toast.success("File uploaded successfully!", { id: toastId });
     } catch (error: any) {
-      console.error("File upload error:", error);
+      logger.error("File upload error:", error);
       toast.error(`Upload failed: ${error.message}`, { id: toastId });
     } finally {
       setIsUploading(false);

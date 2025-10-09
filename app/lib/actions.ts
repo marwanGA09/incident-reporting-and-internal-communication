@@ -11,15 +11,14 @@ import { revalidatePath } from "next/cache";
 
 export async function createDepartment(name: string, email: string) {
   if (!name) throw new Error("Department name is required");
-  // console.log({ name, email });
-  // console.log("some thing");
+
   await prisma.department.create({
     data: {
       name,
       email: email || null,
     },
   });
-  // console.log({ testDepartment });
+
   // optionally redirect or revalidate
 }
 export async function createIncidentCategory(
@@ -27,8 +26,7 @@ export async function createIncidentCategory(
   description: string
 ) {
   if (!name) throw new Error("Department name is required");
-  // console.log({ name, description });
-  // console.log("some thing");
+
   await prisma.incidentCategory.create({
     data: {
       name,
@@ -41,7 +39,7 @@ export async function createIncidentCategory(
   //     email: email || null,
   //   },
   // });
-  // console.log({ testCategory });
+
   // optionally redirect or revalidate
 }
 
@@ -101,13 +99,7 @@ export async function sendGroupMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
-  console.log("we are sending group message", {
-    text,
-    departmentId,
-    senderId,
-    roomName,
-    attachments,
-  });
+  
   const newGroupMessage = await prisma.groupMessage.create({
     data: {
       text,
@@ -183,12 +175,12 @@ export async function sendGroupMessage({
   } catch (error) {
     logger.error(error, "Failed to create group message notifications");
   }
-  console.log("from send group message", { newGroupMessage, notifications });
+  
   return { newGroupMessage, notifications };
 }
 
 export async function deleteGroupMessage(messageId: string) {
-  // console.log({ messageId });
+
   return await prisma.groupMessage.delete({
     where: {
       id: messageId,
@@ -196,7 +188,7 @@ export async function deleteGroupMessage(messageId: string) {
   });
 }
 export async function updateGroupMessage(messageId: string, newText: string) {
-  // console.log({ messageId, newText });
+
   return await prisma.groupMessage.update({
     where: { id: messageId },
     data: { text: newText },
@@ -238,13 +230,7 @@ export async function sendDirectMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
-  console.log("we are sending direct message", {
-    text,
-    senderId,
-    receiverId,
-    roomName,
-    attachments,
-  });
+  
   const newMessage = await prisma.directMessage.create({
     data: {
       senderId,
@@ -305,7 +291,7 @@ export async function getDirectMessages(userId1: string, userId2: string) {
 }
 
 export async function deleteDirectMessage(messageId: string) {
-  // console.log({ messageId });
+
   return await prisma.directMessage.delete({
     where: {
       id: messageId,
@@ -314,7 +300,7 @@ export async function deleteDirectMessage(messageId: string) {
 }
 
 export async function updateDirectMessage(messageId: string, newText: string) {
-  // console.log({ messageId, newText });
+
   return await prisma.directMessage.update({
     where: { id: messageId },
     data: { text: newText },
@@ -390,9 +376,7 @@ export async function deleteOldReadNotifications() {
 
 export async function markIncidentAsRead(incidentId: string) {
   const { userId: clerkId } = await auth();
-  console.log(
-    `markIncidentAsRead called for incidentId: ${incidentId}, clerkId: ${clerkId}`
-  );
+  
   if (!clerkId) return { error: "User not authenticated" };
 
   try {
@@ -419,7 +403,7 @@ export async function markIncidentAsRead(incidentId: string) {
         readAt: new Date(),
       },
     });
-    console.log(`UserIncidentReadStatus upserted: ${JSON.stringify(result)}`);
+    
 
     // Broadcast an event that the incident has been read
     supabase.channel("INCIDENT_READ_STATUS").send({

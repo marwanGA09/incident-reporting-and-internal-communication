@@ -150,7 +150,7 @@ export default function DirectChat({
     const notificationChannel = supabase.channel(roomName, {
       config: { presence: { key: currentUserId } },
     });
-    console.log({ directChannel, notificationChannel });
+
     directChannel
       .on("broadcast", { event: "direct-message" }, (payload) => {
         const newMessage = payload.payload;

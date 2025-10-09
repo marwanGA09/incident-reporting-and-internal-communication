@@ -12,10 +12,6 @@ export async function POST(req: NextRequest) {
       signingSecret: process.env.CLERK_WEBHOOK_SIGNING_SECRET!,
     });
 
-    console.log(
-      "Received Clerk webhook event env:",
-      process.env.CLERK_WEBHOOK_SIGNING_SECRET
-    );
     const eventType = evt.type;
 
     if (eventType === "user.created" || eventType === "user.updated") {

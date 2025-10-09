@@ -1,18 +1,19 @@
 import { PrismaClient } from "@prisma/client";
+import logger from "../app/lib/logger";
 
 const prisma = new PrismaClient();
 
 async function seedMetadata() {
-  console.log("Seeding metadata (Departments and Categories)...");
+  
 
   try {
-    console.log("DATABASE_URL:", process.env.DATABASE_URL);
+    
     const result = await prisma.$queryRaw`SELECT current_database();`;
-    console.log("Connected to database:", result);
+    
 
     // Clear existing departments and create the OBN-specific ones
     await prisma.department.deleteMany({});
-    console.log("Cleared existing departments");
+    
 
     const departments = [
       { name: "Branch of News" },
@@ -34,12 +35,12 @@ async function seedMetadata() {
       await prisma.department.create({
         data: dept,
       });
-      console.log(`Created department: ${dept.name}`);
+      
     }
 
     // Clear existing incident categories and create the OBN-specific ones
     await prisma.incidentCategory.deleteMany({});
-    console.log("Cleared existing incident categories");
+    
 
     const categories = [
       {
@@ -80,12 +81,12 @@ async function seedMetadata() {
       await prisma.incidentCategory.create({
         data: category,
       });
-      console.log(`Created category: ${category.name}`);
+      
     }
 
-    console.log("Metadata seeding completed successfully!");
+    
   } catch (error) {
-    console.error("Error during metadata seeding:", error);
+    logger.error("Error during metadata seeding:", error);
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -93,8 +94,8 @@ async function seedMetadata() {
 }
 
 seedMetadata()
-  .then(() => console.log("Metadata seeding process finished."))
+  .then(() => 
   .catch((error) => {
-    console.error("Metadata seeding failed:", error);
+    logger.error("Metadata seeding failed:", error);
     process.exit(1);
   });

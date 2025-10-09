@@ -1,4 +1,5 @@
 import { prisma } from '@/app/lib/prisma';
+import logger from '@/app/lib/logger';
 
 /**
  * Assigns random positions and departments to all users in the database.
@@ -8,7 +9,7 @@ import { prisma } from '@/app/lib/prisma';
  */
 export async function assignRandomPositionsAndDepartments(): Promise<{ updated: number }> {
   try {
-    console.log('Starting assignment of random positions and departments to all users...');
+    
     
     // Fetch all users from the database
     const users = await prisma.user.findMany();
@@ -20,7 +21,7 @@ export async function assignRandomPositionsAndDepartments(): Promise<{ updated: 
       throw new Error('No departments found in the database. Please create at least one department first.');
     }
 
-    console.log(`Found ${users.length} users and ${departments.length} departments in the database`);
+    
     
     let updatedCount = 0;
 
@@ -47,13 +48,13 @@ export async function assignRandomPositionsAndDepartments(): Promise<{ updated: 
       });
       
       updatedCount++;
-      console.log(`Updated user: ${user.firstName} ${user.lastName} (ID: ${user.id}) - Position: ${randomPosition}, Department: ${randomDepartment.name}`);
+      
     }
 
-    console.log(`Successfully updated ${updatedCount} users with random positions and departments.`);
+    
     return { updated: updatedCount };
   } catch (error) {
-    console.error('Error assigning random positions and departments:', error);
+    logger.error('Error assigning random positions and departments:', error);
     throw new Error(`Failed to assign random positions and departments: ${error}`);
   }
 }
@@ -63,11 +64,11 @@ if (require.main === module) {
   import('@/app/lib/prisma').then(() => {
     assignRandomPositionsAndDepartments()
       .then(result => {
-        console.log(`\nAssignment completed successfully! ${result.updated} users updated.`);
+        
         process.exit(0);
       })
       .catch(error => {
-        console.error('Assignment failed:', error);
+        logger.error('Assignment failed:', error);
         process.exit(1);
       });
   });

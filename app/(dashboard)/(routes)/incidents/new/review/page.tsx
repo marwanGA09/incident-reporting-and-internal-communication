@@ -46,7 +46,10 @@ export default function Review() {
   const handleSubmit = async () => {
     const result = IncidentFormSchema.safeParse(data);
     if (!result.success) {
-      console.error("Form validation failed on review:", result.error.issues);
+      logger.error(
+        { error: result.error },
+        "Form validation failed on review:"
+      );
       toast.error(
         "Form has invalid or incomplete data. Please go back and edit."
       );

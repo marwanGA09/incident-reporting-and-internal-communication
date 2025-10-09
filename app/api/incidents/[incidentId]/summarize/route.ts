@@ -128,6 +128,7 @@ import {
 import { auth } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
+import logger from "@/app/lib/logger";
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 
@@ -230,7 +231,7 @@ export async function POST(req: Request, { params }: IncidentParams) {
     return NextResponse.json({ summary });
   } catch (error) {
     // 7. Robust Error Handling
-    console.error("[INCIDENT_SUMMARIZE_ERROR]", error);
+    logger.error({ error }, "[INCIDENT_SUMMARIZE_ERROR]");
 
     if (error instanceof GoogleGenerativeAIError) {
       // Handle specific Gemini API errors

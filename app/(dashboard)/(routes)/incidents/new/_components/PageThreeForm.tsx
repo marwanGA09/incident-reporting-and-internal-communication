@@ -29,6 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useIncidentFormStore } from "./IncidentFormStore";
 import { Step3Schema } from "@/lib/validation/incidents";
+import logger from "@/app/lib/logger";
 
 export default function Step3Form() {
   const router = useRouter();
@@ -59,7 +60,7 @@ export default function Step3Form() {
           toast.success("Location captured successfully!");
         },
         (error) => {
-          console.error("Geolocation error:", error);
+          logger.error({ error }, "Geolocation error:");
           toast.error(`Error: ${error.message}`);
         }
       );

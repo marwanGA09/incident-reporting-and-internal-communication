@@ -1,5 +1,6 @@
 import { clerkClient } from "./clerkClient";
 import { prisma } from "@/app/lib/prisma";
+import logger from "@/app/lib/logger";
 
 /**
  * Synchronizes all users from Clerk to the database.
@@ -11,7 +12,7 @@ export async function syncClerkUsers(): Promise<{
   total: number;
 }> {
   try {
-    console.log("Starting user synchronization from Clerk to database...");
+    
 
     // Fetch all users from Clerk
     const { data: clerkUsers, totalCount } =
@@ -19,9 +20,7 @@ export async function syncClerkUsers(): Promise<{
         limit: 500, // Fetch in batches of up to 500 users
       });
 
-    console.log(
-      `Found ${totalCount} users in Clerk (received ${clerkUsers.length} in first batch)`
-    );
+    
 
     let createdCount = 0;
 
@@ -52,22 +51,16 @@ export async function syncClerkUsers(): Promise<{
         });
 
         createdCount++;
-        console.log(
-          `Created user: ${clerkUser.firstName} ${clerkUser.lastName} (ID: ${clerkUser.id})`
-        );
+        
       } else {
-        console.log(
-          `User already exists: ${clerkUser.firstName} ${clerkUser.lastName} (ID: ${clerkUser.id})`
-        );
+        
       }
     }
 
-    console.log(
-      `Successfully synchronized users. ${createdCount} users created out of ${totalCount} total users.`
-    );
+    
     return { created: createdCount, total: totalCount };
   } catch (error) {
-    console.error("Error synchronizing users from Clerk to database:", error);
+    logger.error("Error synchronizing users from Clerk to database:", error);
     throw new Error(`Failed to synchronize users: ${error}`);
   }
 }
@@ -81,9 +74,7 @@ export async function syncClerkUsersWithPagination(): Promise<{
   total: number;
 }> {
   try {
-    console.log(
-      "Starting user synchronization from Clerk to database (with pagination)..."
-    );
+    
 
     let totalProcessed = 0;
     let totalCreated = 0;
@@ -98,9 +89,7 @@ export async function syncClerkUsersWithPagination(): Promise<{
           offset: offset,
         });
 
-      console.log(
-        `Fetched batch: ${clerkUsers.length} users (offset: ${offset})`
-      );
+      
 
       // Process each Clerk user in the current batch
       for (const clerkUser of clerkUsers) {
@@ -130,13 +119,9 @@ export async function syncClerkUsersWithPagination(): Promise<{
           });
 
           totalCreated++;
-          console.log(
-            `Created user: ${clerkUser.firstName} ${clerkUser.lastName} (ID: ${clerkUser.id})`
-          );
+          
         } else {
-          console.log(
-            `User already exists: ${clerkUser.firstName} ${clerkUser.lastName} (ID: ${clerkUser.id})`
-          );
+          
         }
 
         totalProcessed++;
@@ -144,7 +129,7 @@ export async function syncClerkUsersWithPagination(): Promise<{
 
       // If we've processed all users, break the loop
       if (clerkUsers.length < limit) {
-        console.log(`Completed sync: Processed all ${totalProcessed} users`);
+        
         break;
       }
 
@@ -152,12 +137,10 @@ export async function syncClerkUsersWithPagination(): Promise<{
       offset += limit;
     }
 
-    console.log(
-      `Successfully synchronized all users. ${totalCreated} users created out of ${totalProcessed} total users.`
-    );
+    
     return { created: totalCreated, total: totalProcessed };
   } catch (error) {
-    console.error("Error synchronizing users from Clerk to database:", error);
+    logger.error("Error synchronizing users from Clerk to database:", error);
     throw new Error(`Failed to synchronize users: ${error}`);
   }
 }

@@ -15,6 +15,7 @@
 // }
 
 import { supabase } from "@/lib/supabaseClient";
+import logger from "@/app/lib/logger";
 
 export async function uploadFile(folder: string, file: File, userId: string) {
   const ext = file.name.split(".").pop();
@@ -23,13 +24,13 @@ export async function uploadFile(folder: string, file: File, userId: string) {
   const { data, error } = await supabase.storage
     .from("chat-uploads")
     .upload(path, file);
-  console.log("FROM UPLOAD ", { data, error });
+  
   // if (error) throw error;
   if (error) {
-    console.error("Upload error:", error.message);
+    logger.error("Upload error:", error.message);
     throw error;
   } else {
-    console.log("Uploaded:", data);
+    
   }
   const { data: publicUrl } = supabase.storage
     .from("chat-uploads")
