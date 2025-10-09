@@ -1,25 +1,20 @@
 #!/usr/bin/env node
 
-import { syncClerkUsersWithPagination } from '../lib/syncClerkUsers';
-import logger from '../app/lib/logger';
+import { syncClerkUsersWithPagination } from "../lib/syncClerkUsers";
+import logger from "../app/lib/logger";
 
 /**
  * Script to sync users from Clerk to the database
  * Run this script manually when you need to sync users
- * 
+ *
  * Usage:
  *   pnpm tsx scripts/sync-users.ts
  */
 async function main() {
-  
-  
   try {
     const result = await syncClerkUsersWithPagination();
-    
-    
-    
   } catch (error) {
-    logger.error('Synchronization failed:', error);
+    logger.error({ error }, "Synchronization failed:");
     process.exit(1);
   }
 }

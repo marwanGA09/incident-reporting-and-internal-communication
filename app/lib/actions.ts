@@ -100,7 +100,6 @@ export async function sendGroupMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
-  
   const newGroupMessage = await prisma.groupMessage.create({
     data: {
       text,
@@ -174,14 +173,13 @@ export async function sendGroupMessage({
       }
     }
   } catch (error) {
-    logger.error(error, "Failed to create group message notifications");
+    logger.error({ error }, "Failed to create group message notifications");
   }
-  
+
   return { newGroupMessage, notifications };
 }
 
 export async function deleteGroupMessage(messageId: string) {
-
   return await prisma.groupMessage.delete({
     where: {
       id: messageId,
@@ -189,7 +187,6 @@ export async function deleteGroupMessage(messageId: string) {
   });
 }
 export async function updateGroupMessage(messageId: string, newText: string) {
-
   return await prisma.groupMessage.update({
     where: { id: messageId },
     data: { text: newText },
@@ -231,7 +228,6 @@ export async function sendDirectMessage({
   roomName: string;
   attachments?: PendingAttachment[];
 }) {
-  
   const newMessage = await prisma.directMessage.create({
     data: {
       senderId,
@@ -270,7 +266,7 @@ export async function sendDirectMessage({
       });
     }
   } catch (error) {
-    logger.error(error, "Failed to create direct message notification");
+    logger.error({ error }, "Failed to create direct message notification");
   }
 
   return { newMessage, notification };
@@ -292,7 +288,6 @@ export async function getDirectMessages(userId1: string, userId2: string) {
 }
 
 export async function deleteDirectMessage(messageId: string) {
-
   return await prisma.directMessage.delete({
     where: {
       id: messageId,
@@ -301,7 +296,6 @@ export async function deleteDirectMessage(messageId: string) {
 }
 
 export async function updateDirectMessage(messageId: string, newText: string) {
-
   return await prisma.directMessage.update({
     where: { id: messageId },
     data: { text: newText },
@@ -352,7 +346,10 @@ export async function markNotificationsAsRead(url: string) {
       },
     });
   } catch (error) {
-    logger.error(error, `Failed to mark notifications as read for url: ${url}`);
+    logger.error(
+      { error },
+      `Failed to mark notifications as read for url: ${url}`
+    );
   }
 }
 
@@ -370,14 +367,14 @@ export async function deleteOldReadNotifications() {
     logger.info(`Deleted ${result.count} old read notifications.`);
     return result;
   } catch (error) {
-    logger.error(error, "Failed to delete old read notifications");
+    logger.error({ error }, "Failed to delete old read notifications");
     throw error; // Re-throw so the cron job service knows it failed
   }
 }
 
 export async function markIncidentAsRead(incidentId: string) {
   const { userId: clerkId } = await auth();
-  
+
   if (!clerkId) return { error: "User not authenticated" };
 
   try {
@@ -388,7 +385,7 @@ export async function markIncidentAsRead(incidentId: string) {
 
     if (!user) return { error: "User not found" };
 
-    const result = await prisma.userIncidentReadStatus.upsert({
+    await prisma.userIncidentReadStatus.upsert({
       where: {
         userId_incidentId: {
           userId: user.id,
@@ -404,7 +401,6 @@ export async function markIncidentAsRead(incidentId: string) {
         readAt: new Date(),
       },
     });
-    
 
     // Broadcast an event that the incident has been read
     supabase.channel("INCIDENT_READ_STATUS").send({
@@ -436,7 +432,7 @@ export async function markIncidentAsRead(incidentId: string) {
 
     return { success: true };
   } catch (error) {
-    logger.error(error, `Failed to mark incident ${incidentId} as read`);
+    logger.error({ error }, `Failed to mark incident ${incidentId} as read`);
     return { error: "Failed to mark incident as read" };
   }
 }
@@ -471,10 +467,14 @@ export async function getUnreadIncidentsCount() {
     };
 
     if (user.role !== "admin") {
-      where.OR = [
-        { departmentId: user.departmentId },
-        { assignedToId: clerkId },
-      ];
+      const orConditions: Prisma.IncidentWhereInput[] = [];
+
+      if (user.departmentId) {
+        orConditions.push({ departmentId: user.departmentId });
+      }
+      orConditions.push({ assigneeId: clerkId });
+
+      where.OR = orConditions;
     }
 
     const unreadIncidentsCount = await prisma.incident.count({
@@ -483,7 +483,7 @@ export async function getUnreadIncidentsCount() {
 
     return { count: unreadIncidentsCount };
   } catch (error) {
-    logger.error(error, "Failed to get unread incidents count");
+    logger.error({ error }, "Failed to get unread incidents count");
     return { error: "Failed to fetch unread incidents count", count: 0 };
   }
 }
@@ -528,7 +528,7 @@ export async function getNotifications() {
 
     return { notifications, unreadCount, unReadNotifications };
   } catch (error) {
-    logger.error(error, "Failed to get notifications");
+    logger.error({ error }, "Failed to get notifications");
     return {
       error: "Failed to fetch notifications",
       notifications: [],
@@ -568,7 +568,11 @@ export async function updateIncidentAction(payload: {
     }
 
     if (assigneeId !== undefined) {
-      dataToUpdate.assigneeId = assigneeId;
+      if (assigneeId === null) {
+        dataToUpdate.assignee = { disconnect: true };
+      } else {
+        dataToUpdate.assignee = { connect: { id: assigneeId } };
+      }
     }
 
     if (Object.keys(dataToUpdate).length === 0) {
@@ -633,7 +637,7 @@ export async function updateUserPresence() {
       create: { userId: user.id, lastSeen: new Date() },
     });
   } catch (error) {
-    logger.error(error, "Failed to update user presence");
+    logger.error({ error }, "Failed to update user presence");
   }
 }
 
@@ -709,10 +713,7 @@ export async function getMyOpenIncidentsCount() {
           },
         },
         {
-          OR: [
-            { reporterId: user.id },
-            { assigneeId: user.id },
-          ],
+          OR: [{ reporterId: user.id }, { assigneeId: user.id }],
         },
       ],
     },
@@ -732,18 +733,18 @@ export async function getRecentIncidents() {
   });
 }
 
-export async function getIncidentsPerDay(range: '7d' | '30d' | '365d' = '7d') {
+export async function getIncidentsPerDay(range: "7d" | "30d" | "365d" = "7d") {
   let startDate: Date;
   const now = new Date();
 
   switch (range) {
-    case '30d':
+    case "30d":
       startDate = new Date(new Date().setDate(now.getDate() - 30));
       break;
-    case '365d':
+    case "365d":
       startDate = new Date(new Date().setFullYear(now.getFullYear() - 1));
       break;
-    case '7d':
+    case "7d":
     default:
       startDate = new Date(new Date().setDate(now.getDate() - 7));
       break;
@@ -759,14 +760,17 @@ export async function getIncidentsPerDay(range: '7d' | '30d' | '365d' = '7d') {
       createdAt: true,
     },
     orderBy: {
-      createdAt: 'asc',
+      createdAt: "asc",
     },
   });
 
-  if (range === '365d') {
+  if (range === "365d") {
     // Aggregate by month
     const monthlyCounts = incidents.reduce((acc, incident) => {
-      const month = new Date(incident.createdAt).toLocaleString('default', { month: 'short', year: '2-digit' });
+      const month = new Date(incident.createdAt).toLocaleString("default", {
+        month: "short",
+        year: "2-digit",
+      });
       if (!acc[month]) {
         acc[month] = 0;
       }
@@ -781,7 +785,7 @@ export async function getIncidentsPerDay(range: '7d' | '30d' | '365d' = '7d') {
   } else {
     // Aggregate by day
     const dailyCounts = incidents.reduce((acc, incident) => {
-      const date = new Date(incident.createdAt).toISOString().split('T')[0];
+      const date = new Date(incident.createdAt).toISOString().split("T")[0];
       if (!acc[date]) {
         acc[date] = 0;
       }
@@ -822,10 +826,7 @@ export async function getMyIncidents() {
 
   return await prisma.incident.findMany({
     where: {
-      OR: [
-        { reporterId: user.id },
-        { assigneeId: user.id },
-      ],
+      OR: [{ reporterId: user.id }, { assigneeId: user.id }],
     },
     orderBy: {
       createdAt: "desc",
@@ -844,7 +845,7 @@ export async function getAllUsers() {
       department: true,
     },
     orderBy: {
-      createdAt: 'desc',
+      createdAt: "desc",
     },
   });
 }
@@ -911,12 +912,16 @@ export async function deleteIncidentCategory(id: string) {
 export async function getIncidentCategories() {
   return await prisma.incidentCategory.findMany({
     orderBy: {
-      name: 'asc',
+      name: "asc",
     },
   });
 }
 
-import { IncidentStatus, IncidentSeverity, IncidentPriority } from "@prisma/client";
+import {
+  IncidentStatus,
+  IncidentSeverity,
+  IncidentPriority,
+} from "@prisma/client";
 
 interface GetAllIncidentsParams {
   status?: IncidentStatus;
@@ -927,7 +932,7 @@ interface GetAllIncidentsParams {
   reporterId?: string;
   search?: string;
   orderBy?: string;
-  orderDirection?: 'asc' | 'desc';
+  orderDirection?: "asc" | "desc";
   page?: number;
   pageSize?: number;
 }
@@ -941,8 +946,8 @@ export async function getAllIncidents(params: GetAllIncidentsParams = {}) {
     assigneeId,
     reporterId,
     search,
-    orderBy = 'createdAt',
-    orderDirection = 'desc',
+    orderBy = "createdAt",
+    orderDirection = "desc",
     page = 1,
     pageSize = 10,
   } = params;
@@ -958,8 +963,8 @@ export async function getAllIncidents(params: GetAllIncidentsParams = {}) {
   if (reporterId) where.reporterId = reporterId;
   if (search) {
     where.OR = [
-      { title: { contains: search, mode: 'insensitive' } },
-      { description: { contains: search, mode: 'insensitive' } },
+      { title: { contains: search, mode: "insensitive" } },
+      { description: { contains: search, mode: "insensitive" } },
     ];
   }
 
@@ -985,7 +990,7 @@ export async function getAllIncidents(params: GetAllIncidentsParams = {}) {
 
 export async function getIncidentsByDepartment() {
   const incidents = await prisma.incident.groupBy({
-    by: ['departmentId'],
+    by: ["departmentId"],
     _count: {
       departmentId: true,
     },
@@ -995,17 +1000,19 @@ export async function getIncidentsByDepartment() {
     select: { id: true, name: true },
   });
 
-  const departmentMap = new Map(departments.map(dept => [dept.id, dept.name]));
+  const departmentMap = new Map(
+    departments.map((dept) => [dept.id, dept.name])
+  );
 
-  return incidents.map(incident => ({
-    name: departmentMap.get(incident.departmentId) || 'Unknown',
+  return incidents.map((incident) => ({
+    name: departmentMap.get(incident.departmentId) || "Unknown",
     count: incident._count.departmentId,
   }));
 }
 
 export async function getIncidentsByCategory() {
   const incidents = await prisma.incident.groupBy({
-    by: ['categoryId'],
+    by: ["categoryId"],
     _count: {
       categoryId: true,
     },
@@ -1015,10 +1022,10 @@ export async function getIncidentsByCategory() {
     select: { id: true, name: true },
   });
 
-  const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
+  const categoryMap = new Map(categories.map((cat) => [cat.id, cat.name]));
 
-  return incidents.map(incident => ({
-    name: categoryMap.get(incident.categoryId) || 'Unknown',
+  return incidents.map((incident) => ({
+    name: categoryMap.get(incident.categoryId) || "Unknown",
     count: incident._count.categoryId,
   }));
 }

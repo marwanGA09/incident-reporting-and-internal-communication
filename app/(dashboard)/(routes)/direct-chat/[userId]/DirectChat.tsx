@@ -206,7 +206,7 @@ export default function DirectChat({
         )
       );
     } catch (err) {
-      logger.error(err, "File upload failed");
+      logger.error({ err }, "File upload failed");
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId

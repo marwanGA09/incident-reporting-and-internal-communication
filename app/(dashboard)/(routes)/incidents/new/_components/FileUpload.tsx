@@ -52,9 +52,14 @@ export default function FileUpload({ onUpload }: FileUploadProps) {
 
       onUpload(publicUrlData.publicUrl, file.name);
       toast.success("File uploaded successfully!", { id: toastId });
-    } catch (error: Error) {
-      logger.error("File upload error:", error);
-      toast.error(`Upload failed: ${error.message}`, { id: toastId });
+    } catch (error: unknown) {
+      logger.error({ error }, "File upload error:");
+      toast.error(
+        `Upload failed: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`,
+        { id: toastId }
+      );
     } finally {
       setIsUploading(false);
     }

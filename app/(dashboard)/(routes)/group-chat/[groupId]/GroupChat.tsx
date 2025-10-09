@@ -41,7 +41,13 @@ import { Input } from "@/components/ui/input";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import GroupMembers from "./GroupMembers";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { UsersIcon } from "lucide-react";
 
 interface ExtendedGroupMessage extends GroupMessage {
@@ -284,7 +290,7 @@ export default function GroupChat({
         selectedFiles.map((f) => uploadFile("group-messages", f, user.id))
       );
     } catch (err) {
-      logger.error(err, "File upload failed");
+      logger.error({ err }, "File upload failed");
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === tempId

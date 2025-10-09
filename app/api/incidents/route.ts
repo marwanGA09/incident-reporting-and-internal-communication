@@ -93,7 +93,7 @@ export async function POST(req: Request) {
       }
     } catch (notificationError) {
       logger.error(
-        notificationError,
+        { notificationError },
         "Failed to create or broadcast incident notifications"
       );
     }

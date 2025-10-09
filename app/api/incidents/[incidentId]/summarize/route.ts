@@ -139,11 +139,11 @@ if (!GOOGLE_API_KEY) {
 const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
 
 // Define a type for the dynamic route parameter
-type IncidentParams = {
-  params: { incidentId: string };
-};
 
-export async function POST(req: Request, { params }: IncidentParams) {
+export async function POST(
+  req: Request,
+  { params }: { params: Promise<{ incidentId: string }> }
+) {
   try {
     // 1. Authentication and Authorization
     const { userId } = await auth();
@@ -151,7 +151,7 @@ export async function POST(req: Request, { params }: IncidentParams) {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
-    const { incidentId } = params;
+    const { incidentId } = await params;
     if (!incidentId) {
       return new NextResponse("Incident ID is required", { status: 400 });
     }

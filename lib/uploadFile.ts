@@ -24,13 +24,12 @@ export async function uploadFile(folder: string, file: File, userId: string) {
   const { error } = await supabase.storage
     .from("chat-uploads")
     .upload(path, file);
-  
+
   // if (error) throw error;
   if (error) {
-    logger.error("Upload error:", error.message);
+    logger.error({ error }, "Upload error:");
     throw error;
   } else {
-    
   }
   const { data: publicUrl } = supabase.storage
     .from("chat-uploads")

@@ -4,16 +4,11 @@ import logger from "../app/lib/logger";
 const prisma = new PrismaClient();
 
 async function seedMetadata() {
-  
-
   try {
-    
     const result = await prisma.$queryRaw`SELECT current_database();`;
-    
 
     // Clear existing departments and create the OBN-specific ones
     await prisma.department.deleteMany({});
-    
 
     const departments = [
       { name: "Branch of News" },
@@ -35,12 +30,10 @@ async function seedMetadata() {
       await prisma.department.create({
         data: dept,
       });
-      
     }
 
     // Clear existing incident categories and create the OBN-specific ones
     await prisma.incidentCategory.deleteMany({});
-    
 
     const categories = [
       {
@@ -81,12 +74,9 @@ async function seedMetadata() {
       await prisma.incidentCategory.create({
         data: category,
       });
-      
     }
-
-    
   } catch (error) {
-    logger.error("Error during metadata seeding:", error);
+    logger.error({ error }, "Error during metadata seeding:");
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -94,8 +84,8 @@ async function seedMetadata() {
 }
 
 seedMetadata()
-  .then(() => 
+  .then(() => {})
   .catch((error) => {
-    logger.error("Metadata seeding failed:", error);
+    logger.error({ error }, "Metadata seeding failed:");
     process.exit(1);
   });

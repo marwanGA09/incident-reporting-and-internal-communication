@@ -12,15 +12,11 @@ export async function syncClerkUsers(): Promise<{
   total: number;
 }> {
   try {
-    
-
     // Fetch all users from Clerk
     const { data: clerkUsers, totalCount } =
       await clerkClient.users.getUserList({
         limit: 500, // Fetch in batches of up to 500 users
       });
-
-    
 
     let createdCount = 0;
 
@@ -51,16 +47,16 @@ export async function syncClerkUsers(): Promise<{
         });
 
         createdCount++;
-        
       } else {
-        
       }
     }
 
-    
     return { created: createdCount, total: totalCount };
   } catch (error) {
-    logger.error("Error synchronizing users from Clerk to database:", error);
+    logger.error(
+      { error },
+      "Error synchronizing users from Clerk to database:"
+    );
     throw new Error(`Failed to synchronize users: ${error}`);
   }
 }
@@ -74,8 +70,6 @@ export async function syncClerkUsersWithPagination(): Promise<{
   total: number;
 }> {
   try {
-    
-
     let totalProcessed = 0;
     let totalCreated = 0;
     let offset = 0;
@@ -83,13 +77,10 @@ export async function syncClerkUsersWithPagination(): Promise<{
 
     // Process users in batches to handle large user counts
     while (true) {
-      const { data: clerkUsers, totalCount } =
-        await clerkClient.users.getUserList({
-          limit: limit,
-          offset: offset,
-        });
-
-      
+      const { data: clerkUsers } = await clerkClient.users.getUserList({
+        limit: limit,
+        offset: offset,
+      });
 
       // Process each Clerk user in the current batch
       for (const clerkUser of clerkUsers) {
@@ -119,9 +110,7 @@ export async function syncClerkUsersWithPagination(): Promise<{
           });
 
           totalCreated++;
-          
         } else {
-          
         }
 
         totalProcessed++;
@@ -129,7 +118,6 @@ export async function syncClerkUsersWithPagination(): Promise<{
 
       // If we've processed all users, break the loop
       if (clerkUsers.length < limit) {
-        
         break;
       }
 
@@ -137,10 +125,9 @@ export async function syncClerkUsersWithPagination(): Promise<{
       offset += limit;
     }
 
-    
     return { created: totalCreated, total: totalProcessed };
   } catch (error) {
-    logger.error("Error synchronizing users from Clerk to database:", error);
+    logger.error({ error }, "Error synchronizing users from Clerk to database");
     throw new Error(`Failed to synchronize users: ${error}`);
   }
 }

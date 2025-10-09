@@ -1,4 +1,4 @@
-import { PrismaClient, User } from "@prisma/client";
+import { PrismaClient, User, IncidentStatus } from "@prisma/client";
 import { faker } from "@faker-js/faker";
 import logger from "@/app/lib/logger";
 
@@ -172,7 +172,7 @@ async function createStatusNotesAndSetFinalStatus(
     await prisma.incidentStatusNote.create({
       data: {
         incidentId,
-        status: status,
+        status: status as IncidentStatus,
         note: faker.lorem.sentence(),
         changedAt,
         changedById: changedByUser.id,
@@ -183,22 +183,17 @@ async function createStatusNotesAndSetFinalStatus(
   // Update the incident with the final status
   await prisma.incident.update({
     where: { id: incidentId },
-    data: { status: lastStatus },
+    data: { status: lastStatus as IncidentStatus },
   });
-
-  
 }
 
 async function seedIncidents() {
-  
-
   try {
     // 1. Clear existing incident-related data
     await prisma.incidentStatusNote.deleteMany({});
     await prisma.userIncidentReadStatus.deleteMany({});
     await prisma.attachment.deleteMany({});
     await prisma.incident.deleteMany({});
-    
 
     // 2. Get existing users, departments, and categories
     const users = await prisma.user.findMany();
@@ -214,12 +209,8 @@ async function seedIncidents() {
       );
     }
 
-    
-
     // 3. Generate incidents for each department
     for (const dept of departments) {
-      
-
       for (let i = 0; i < 3; i++) {
         const occurredAt = faker.date.recent({ days: 45 });
         const createdAt = faker.date.between({
@@ -261,16 +252,12 @@ async function seedIncidents() {
           },
         });
 
-        
-
         // 4. Create status notes for the new incident
         await createStatusNotesAndSetFinalStatus(incident.id, createdAt, users);
       }
     }
-
-    
   } catch (error) {
-    logger.error("Error during incident seeding:", error);
+    logger.error({ error }, "Error during incident seeding:");
     throw error;
   } finally {
     await prisma.$disconnect();
@@ -278,8 +265,8 @@ async function seedIncidents() {
 }
 
 seedIncidents()
-  .then(() => 
+  .then(() => {})
   .catch((error) => {
-    logger.error("Incident seeding failed:", error);
+    logger.error({ error }, "Incident seeding failed:");
     process.exit(1);
   });

@@ -39,10 +39,18 @@ export default async function IncidentsPage({
   };
 
   if (currentUserDb.role !== "admin") {
-    whereClause.departmentId = currentUserDb.departmentId;
+    if (currentUserDb.departmentId) {
+      whereClause.departmentId = currentUserDb.departmentId;
+    } else {
+      // If a non-admin user has no department, they should not see any incidents.
+      // Set a condition that will result in no incidents being found.
+      whereClause.id = { in: [] }; // This ensures no incidents are returned.
+    }
   }
 
-  let orderByClause: Prisma.IncidentOrderByWithRelationInput = { createdAt: "desc" };
+  let orderByClause: Prisma.IncidentOrderByWithRelationInput = {
+    createdAt: "desc",
+  };
   if (sortBy === "oldest") {
     orderByClause = { createdAt: "asc" };
   }
