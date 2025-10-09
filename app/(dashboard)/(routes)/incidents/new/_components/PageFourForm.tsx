@@ -60,7 +60,9 @@ export default function PageFourForm({ departments, users }: Step4FormProps) {
     defaultValues,
   });
 
-  const { formState: { isSubmitting } } = form;
+  const {
+    formState: { isSubmitting },
+  } = form;
 
   const watchedDepartmentId = form.watch("departmentId");
 
@@ -83,7 +85,7 @@ export default function PageFourForm({ departments, users }: Step4FormProps) {
   }, [watchedDepartmentId, assignableUsers, form]);
 
   async function onSubmit(values: z.infer<typeof Step4Schema>) {
-    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // 500ms delay
     const departmentName = departments.find(
       (dep) => dep.id === values.departmentId
     )?.name;
@@ -190,7 +192,7 @@ export default function PageFourForm({ departments, users }: Step4FormProps) {
                 >
                   Back
                 </Button>
-                                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

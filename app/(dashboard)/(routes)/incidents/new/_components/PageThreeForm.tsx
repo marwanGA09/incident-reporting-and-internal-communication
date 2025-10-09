@@ -46,7 +46,9 @@ export default function Step3Form() {
     defaultValues,
   });
 
-  const { formState: { isSubmitting } } = form;
+  const {
+    formState: { isSubmitting },
+  } = form;
 
   const handleGetCurrentLocation = () => {
     if ("geolocation" in navigator) {
@@ -67,7 +69,7 @@ export default function Step3Form() {
   };
 
   async function onSubmit(values: z.infer<typeof Step3Schema>) {
-    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // 500ms delay
     setData(values);
     router.push("/incidents/new/step-4");
   }
@@ -156,7 +158,7 @@ export default function Step3Form() {
                 >
                   Back
                 </Button>
-                                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

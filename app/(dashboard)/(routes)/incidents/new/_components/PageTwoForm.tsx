@@ -57,10 +57,12 @@ export default function PageTwoForm({ categories }: PageTwoFormProps) {
     defaultValues,
   });
 
-  const { formState: { isSubmitting } } = form;
+  const {
+    formState: { isSubmitting },
+  } = form;
 
   async function onSubmit(values: z.infer<typeof Step2Schema>) {
-    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // 500ms delay
     const categoryName = categories.find(
       (cat) => cat.id === values.categoryId
     )?.name;
@@ -186,7 +188,7 @@ export default function PageTwoForm({ categories }: PageTwoFormProps) {
                 >
                   Back
                 </Button>
-                                <Button type="submit" disabled={isSubmitting}>
+                <Button type="submit" disabled={isSubmitting}>
                   {isSubmitting ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

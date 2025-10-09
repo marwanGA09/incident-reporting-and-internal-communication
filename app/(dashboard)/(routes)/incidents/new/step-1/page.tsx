@@ -51,10 +51,12 @@ export default function Step1() {
     },
   });
 
-  const { formState: { isSubmitting } } = form;
+  const {
+    formState: { isSubmitting },
+  } = form;
 
   async function onSubmit(values: z.infer<typeof Step1Schema>) {
-    await new Promise((resolve) => setTimeout(resolve, 500)); // 500ms delay
+    await new Promise((resolve) => setTimeout(resolve, 2000)); // 500ms delay
     setData(values);
     router.push("/incidents/new/step-2");
   }
